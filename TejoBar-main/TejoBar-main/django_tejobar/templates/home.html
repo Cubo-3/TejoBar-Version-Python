@@ -10,7 +10,7 @@
     <p>Explora nuestro catálogo de productos o inicia sesión para gestionar tus apartados y torneos.</p>
     <a class="btn btn-primary btn-lg" href="{% url 'tejobar_app:productos_index' %}" role="button">Ver productos</a>
     {% if not user.is_authenticated %}
-        <a class="btn btn-outline-light btn-lg ml-2" href="{% url 'tejobar_app:login' %}" role="button">Iniciar sesión</a>
+        <a class="btn btn-dark btn-lg ml-2" href="{% url 'tejobar_app:login' %}" role="button">Iniciar sesión</a>
     {% endif %}
 </div>
 {% endblock %}

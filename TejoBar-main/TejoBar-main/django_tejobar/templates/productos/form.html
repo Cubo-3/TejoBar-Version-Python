@@ -11,7 +11,7 @@
             <div class="card-header bg-primary text-white">
                 <h4 class="mb-0">{% if producto %}Editar Producto{% else %}Nuevo Producto{% endif %}</h4>
             </div>
-            <div class="card-body">
+            <div class="card-body text-white">
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
 

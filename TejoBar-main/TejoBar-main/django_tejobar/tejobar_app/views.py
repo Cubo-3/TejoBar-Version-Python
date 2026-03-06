@@ -13,7 +13,7 @@ from .forms import (
     ProductoForm,
     RegistroForm,
 )
-from .models import Apartado, Equipo, Historial, Jugador, Persona, Producto
+from .models import Apartado, Equipo, Historial, Jugador, Persona, Producto, JugadorEquipo, Novedad
 
 
 def home(request: HttpRequest) -> HttpResponse:
@@ -133,6 +133,16 @@ def apartar_producto(request: HttpRequest, pk: int) -> HttpResponse:
             cantidad=cantidad,
             estado="pendiente",
         )
+        
+        Novedad.objects.create(
+            producto=producto,
+            tipo_novedad=Novedad.TIPO_VENDIDO,
+            cantidad=cantidad,
+            descripcion="Separado/Vendido por sistema"
+        )
+        
+        producto.stock -= cantidad
+        producto.save()
 
         messages.success(
             request,
@@ -155,24 +165,38 @@ def dashboard(request: HttpRequest) -> HttpResponse:
 
     context: dict = {"usuario": persona, "rol": rol}
 
+    fecha_inicio = request.GET.get("fecha_inicio")
+    fecha_fin = request.GET.get("fecha_fin")
+
     if rol == Persona.ROL_ADMIN:
+        apartados = Apartado.objects.select_related("persona", "producto").order_by("-fecha_apartado").all()
+        if fecha_inicio:
+            apartados = apartados.filter(fecha_apartado__gte=fecha_inicio)
+        if fecha_fin:
+            apartados = apartados.filter(fecha_apartado__lte=fecha_fin)
+            
         context.update(
             {
                 "total_productos": Producto.objects.count(),
                 "productos_bajo_stock": Producto.objects.filter(stock__lt=10).count(),
-                "apartados": Apartado.objects.select_related("persona", "producto")
-                .order_by("-fecha_apartado")
-                .all(),
+                "apartados": apartados,
             }
         )
     else:
+        mis_apartados = Apartado.objects.filter(persona=persona).select_related("producto").order_by("-fecha_apartado")
+        if fecha_inicio:
+            mis_apartados = mis_apartados.filter(fecha_apartado__gte=fecha_inicio)
+        if fecha_fin:
+            mis_apartados = mis_apartados.filter(fecha_apartado__lte=fecha_fin)
+            
         context.update(
             {
-                "mis_apartados": Apartado.objects.filter(persona=persona)
-                .select_related("producto")
-                .order_by("-fecha_apartado"),
+                "mis_apartados": mis_apartados,
             }
         )
+
+    context["fecha_inicio"] = fecha_inicio or ""
+    context["fecha_fin"] = fecha_fin or ""
 
     return render(request, "dashboard/index.html", context)
 
@@ -183,6 +207,9 @@ def dashboard_historial(request: HttpRequest) -> HttpResponse:
     if not persona:
         messages.error(request, "No tienes un perfil de persona asociado.")
         return redirect("tejobar_app:home")
+
+    fecha_inicio = request.GET.get("fecha_inicio")
+    fecha_fin = request.GET.get("fecha_fin")
 
     if persona.rol == Persona.ROL_ADMIN:
         apartados_pendientes = Apartado.objects.pendientes().select_related(
@@ -197,11 +224,29 @@ def dashboard_historial(request: HttpRequest) -> HttpResponse:
             "-fecha_entrega"
         )
 
+    if fecha_inicio:
+        apartados_pendientes = apartados_pendientes.filter(fecha_apartado__gte=fecha_inicio)
+        apartados_entregados = apartados_entregados.filter(fecha_entrega__gte=fecha_inicio)
+    if fecha_fin:
+        from datetime import datetime, time
+        from django.utils import timezone
+        # Allow same day filtering by extending time to end of day
+        try:
+            fin_dt = datetime.strptime(fecha_fin, "%Y-%m-%d").date()
+            dt_end = timezone.make_aware(datetime.combine(fin_dt, time.max))
+            apartados_pendientes = apartados_pendientes.filter(fecha_apartado__lte=dt_end)
+            apartados_entregados = apartados_entregados.filter(fecha_entrega__lte=dt_end)
+        except ValueError:
+            apartados_pendientes = apartados_pendientes.filter(fecha_apartado__lte=fecha_fin)
+            apartados_entregados = apartados_entregados.filter(fecha_entrega__lte=fecha_fin)
+
     context = {
         "usuario": persona,
         "rol": persona.rol,
         "apartados_pendientes": apartados_pendientes,
         "apartados_entregados": apartados_entregados,
+        "fecha_inicio": fecha_inicio or "",
+        "fecha_fin": fecha_fin or "",
     }
     return render(request, "dashboard/historial.html", context)
 
@@ -251,24 +296,85 @@ def persona_delete(request: HttpRequest, pk: int) -> HttpResponse:
 
 @login_required
 def equipo_list(request: HttpRequest) -> HttpResponse:
-    equipos = Equipo.objects.all()
+    persona = getattr(request.user, "persona", None)
+    if not persona:
+        messages.error(request, "No tienes un perfil válido.")
+        return redirect("tejobar_app:home")
+
+    if persona.rol == Persona.ROL_ADMIN:
+        equipos = Equipo.objects.all()
+        return render(request, "equipos/index.html", {"equipos": equipos})
+    
+    # Check if user is already in a team
+    try:
+        if persona.rol in (Persona.ROL_JUGADOR, Persona.ROL_CAPITAN) and hasattr(persona, "jugador"):
+            miembro = JugadorEquipo.objects.filter(jugador=persona.jugador).first()
+            if miembro:
+                return redirect("tejobar_app:equipos_show", pk=miembro.equipo.pk)
+    except Exception:
+        pass
+
+    # For players without a team, show available teams
+    from django.db.models import Count
+    equipos = Equipo.objects.annotate(num_jugadores=Count('equipo_jugadores')).filter(num_jugadores__lt=10)
     return render(request, "equipos/index.html", {"equipos": equipos})
 
 
 @login_required
 def equipo_detail(request: HttpRequest, pk: int) -> HttpResponse:
     equipo = get_object_or_404(Equipo, pk=pk)
-    return render(request, "equipos/show.html", {"equipo": equipo})
+    persona = getattr(request.user, "persona", None)
+    
+    if not persona:
+        messages.error(request, "Perfil no válido.")
+        return redirect("tejobar_app:home")
+
+    es_miembro = False
+    es_capitan = False
+    puede_unirse = False
+    if hasattr(persona, "jugador"):
+        miembro = JugadorEquipo.objects.filter(jugador=persona.jugador, equipo=equipo).first()
+        if miembro:
+            es_miembro = True
+            es_capitan = miembro.es_capitan
+        else:
+            if not JugadorEquipo.objects.filter(jugador=persona.jugador).exists():
+                if equipo.equipo_jugadores.count() < 10:
+                    puede_unirse = True
+
+    jugadores_equipo = equipo.equipo_jugadores.select_related("jugador__persona").all()
+    
+    context = {
+        "equipo": equipo,
+        "jugadores_equipo": jugadores_equipo,
+        "es_miembro": es_miembro,
+        "es_capitan": es_capitan,
+        "es_admin": persona.rol == Persona.ROL_ADMIN,
+        "puede_unirse": puede_unirse,
+    }
+    return render(request, "equipos/show.html", context)
 
 
 @login_required
 def equipo_create(request: HttpRequest) -> HttpResponse:
+    persona = getattr(request.user, "persona", None)
+    if not persona or not hasattr(persona, "jugador"):
+        messages.error(request, "Solo los jugadores pueden crear equipos.")
+        return redirect("tejobar_app:equipos_index")
+
+    if JugadorEquipo.objects.filter(jugador=persona.jugador).exists():
+        messages.error(request, "Ya perteneces a un equipo.")
+        return redirect("tejobar_app:equipos_index")
+
     if request.method == "POST":
         form = EquipoForm(request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(request, "Equipo creado correctamente")
-            return redirect("tejobar_app:equipos_index")
+            equipo = form.save()
+            JugadorEquipo.objects.create(jugador=persona.jugador, equipo=equipo, es_capitan=True)
+            persona.rol = Persona.ROL_CAPITAN
+            persona.save()
+            messages.success(request, "Equipo creado correctamente. Ahora eres el capitán.")
+            return redirect("tejobar_app:equipos_show", pk=equipo.pk)
     else:
         form = EquipoForm()
     return render(request, "equipos/form.html", {"form": form})
@@ -291,11 +397,111 @@ def equipo_update(request: HttpRequest, pk: int) -> HttpResponse:
 @login_required
 def equipo_delete(request: HttpRequest, pk: int) -> HttpResponse:
     equipo = get_object_or_404(Equipo, pk=pk)
+    persona = getattr(request.user, "persona", None)
+
+    es_capitan = False
+    if persona and hasattr(persona, "jugador"):
+        es_capitan = JugadorEquipo.objects.filter(jugador=persona.jugador, equipo=equipo, es_capitan=True).exists()
+
+    if not persona or (persona.rol != Persona.ROL_ADMIN and not es_capitan):
+        messages.error(request, "No tienes permiso para eliminar este equipo.")
+        return redirect("tejobar_app:equipos_index")
+
     if request.method == "POST":
+        # Check who the captain was to reset their role if they delete it
+        capitanes = JugadorEquipo.objects.filter(equipo=equipo, es_capitan=True)
+        for capitan_rel in capitanes:
+            p = capitan_rel.jugador.persona
+            if p.rol != Persona.ROL_ADMIN:
+                p.rol = Persona.ROL_JUGADOR
+                p.save()
+        
+        # When team is deleted, JugadorEquipo cascade deletes automatically (which is good)
         equipo.delete()
-        messages.success(request, "Equipo eliminado correctamente")
+        messages.success(request, "Equipo eliminado correctamente. Los miembros han quedado sin equipo.")
         return redirect("tejobar_app:equipos_index")
     return render(request, "equipos/confirm_delete.html", {"equipo": equipo})
+
+
+@login_required
+def equipo_join(request: HttpRequest, pk: int) -> HttpResponse:
+    equipo = get_object_or_404(Equipo, pk=pk)
+    persona = getattr(request.user, "persona", None)
+    
+    if not persona or not hasattr(persona, "jugador"):
+        messages.error(request, "Solo los jugadores pueden unirse a equipos.")
+        return redirect("tejobar_app:equipos_index")
+
+    if JugadorEquipo.objects.filter(jugador=persona.jugador).exists():
+        messages.error(request, "Ya perteneces a un equipo.")
+        return redirect("tejobar_app:equipos_index")
+
+    if equipo.equipo_jugadores.count() >= 10:
+        messages.error(request, "El equipo está lleno (límite 10 jugadores).")
+        return redirect("tejobar_app:equipos_index")
+
+    if request.method == "POST":
+        JugadorEquipo.objects.create(jugador=persona.jugador, equipo=equipo, es_capitan=False)
+        persona.rol = Persona.ROL_JUGADOR
+        persona.save()
+        messages.success(request, f"Te has unido al equipo {equipo.nombre_equipo} exitosamente.")
+        return redirect("tejobar_app:equipos_show", pk=equipo.pk)
+    
+    return redirect("tejobar_app:equipos_index")
+
+
+@login_required
+def equipo_leave(request: HttpRequest, pk: int) -> HttpResponse:
+    equipo = get_object_or_404(Equipo, pk=pk)
+    persona = getattr(request.user, "persona", None)
+    
+    if not persona or not hasattr(persona, "jugador"):
+        messages.error(request, "Perfil no válido.")
+        return redirect("tejobar_app:equipos_index")
+
+    miembro = JugadorEquipo.objects.filter(jugador=persona.jugador, equipo=equipo).first()
+    if not miembro:
+        messages.error(request, "No perteneces a este equipo.")
+        return redirect("tejobar_app:equipos_index")
+
+    if request.method == "POST":
+        if miembro.es_capitan:
+            messages.error(request, "No puedes salir porque eres el capitán. Debes eliminar el equipo o asignar otro capitan (no habilitado actualmente).")
+            return redirect("tejobar_app:equipos_show", pk=equipo.pk)
+
+        miembro.delete()
+        messages.success(request, f"Has salido del equipo {equipo.nombre_equipo}.")
+        return redirect("tejobar_app:equipos_index")
+        
+    return redirect("tejobar_app:equipos_show", pk=equipo.pk)
+
+
+@login_required
+def equipo_remove_member(request: HttpRequest, pk: int, jugador_pk: int) -> HttpResponse:
+    equipo = get_object_or_404(Equipo, pk=pk)
+    persona = getattr(request.user, "persona", None)
+    
+    es_capitan = False
+    if persona and hasattr(persona, "jugador"):
+        es_capitan = JugadorEquipo.objects.filter(jugador=persona.jugador, equipo=equipo, es_capitan=True).exists()
+
+    if not persona or (persona.rol != Persona.ROL_ADMIN and not es_capitan):
+        messages.error(request, "No tienes permiso para expulsar jugadores de este equipo.")
+        return redirect("tejobar_app:equipos_show", pk=equipo.pk)
+
+    if request.method == "POST":
+        miembro_a_expulsar = get_object_or_404(JugadorEquipo, equipo=equipo, jugador__persona__pk=jugador_pk)
+        
+        # Prevent captain from removing themselves through this view, they should use delete team
+        if miembro_a_expulsar.es_capitan and persona.rol != Persona.ROL_ADMIN:
+            messages.error(request, "El capitán no puede ser expulsado. Elimina el equipo si deseas salir.")
+            return redirect("tejobar_app:equipos_show", pk=equipo.pk)
+            
+        miembro_a_expulsar.delete()
+        messages.success(request, "Jugador expulsado del equipo.")
+        return redirect("tejobar_app:equipos_show", pk=equipo.pk)
+        
+    return redirect("tejobar_app:equipos_show", pk=equipo.pk)
 
 
 def admin_required(view_func):
@@ -322,7 +528,13 @@ def admin_product_create(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         form = ProductoForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
+            nuevo_prod = form.save()
+            Novedad.objects.create(
+                producto=nuevo_prod,
+                tipo_novedad=Novedad.TIPO_AGREGADO,
+                cantidad=nuevo_prod.stock,
+                descripcion="Nuevo producto o lote agregado"
+            )
             messages.success(request, "Producto creado correctamente")
             return redirect("tejobar_app:admin_productos_index")
     else:
@@ -333,10 +545,19 @@ def admin_product_create(request: HttpRequest) -> HttpResponse:
 @admin_required
 def admin_product_update(request: HttpRequest, pk: int) -> HttpResponse:
     producto = get_object_or_404(Producto, pk=pk)
+    stock_anterior = producto.stock
+    
     if request.method == "POST":
         form = ProductoForm(request.POST, request.FILES, instance=producto)
         if form.is_valid():
-            form.save()
+            prod_actualizado = form.save()
+            if prod_actualizado.stock > stock_anterior:
+                Novedad.objects.create(
+                    producto=prod_actualizado,
+                    tipo_novedad=Novedad.TIPO_AGREGADO,
+                    cantidad=(prod_actualizado.stock - stock_anterior),
+                    descripcion="Stock adicional agregado manualmente"
+                )
             messages.success(request, "Producto actualizado correctamente")
             return redirect("tejobar_app:admin_productos_index")
     else:
@@ -352,3 +573,37 @@ def admin_product_delete(request: HttpRequest, pk: int) -> HttpResponse:
         messages.success(request, "Producto eliminado correctamente")
         return redirect("tejobar_app:admin_productos_index")
     return render(request, "productos/confirm_delete.html", {"producto": producto})
+
+
+@admin_required
+def admin_novedades_index(request: HttpRequest) -> HttpResponse:
+    fecha_inicio = request.GET.get("fecha_inicio")
+    fecha_fin = request.GET.get("fecha_fin")
+    tipo_novedad = request.GET.get("tipo_novedad")
+
+    novedades = Novedad.objects.select_related("producto").order_by("-fecha")
+
+    if fecha_inicio:
+        novedades = novedades.filter(fecha__gte=fecha_inicio)
+    
+    if fecha_fin:
+        from datetime import datetime, time
+        from django.utils import timezone
+        try:
+            fin_dt = datetime.strptime(fecha_fin, "%Y-%m-%d").date()
+            dt_end = timezone.make_aware(datetime.combine(fin_dt, time.max))
+            novedades = novedades.filter(fecha__lte=dt_end)
+        except ValueError:
+            novedades = novedades.filter(fecha__lte=fecha_fin)
+            
+    if tipo_novedad:
+        novedades = novedades.filter(tipo_novedad=tipo_novedad)
+
+    context = {
+        "novedades": novedades,
+        "fecha_inicio": fecha_inicio or "",
+        "fecha_fin": fecha_fin or "",
+        "tipo_novedad": tipo_novedad or "",
+        "tipos_choices": Novedad.TIPO_CHOICES,
+    }
+    return render(request, "novedades/index.html", context)

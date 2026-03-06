@@ -87,10 +87,22 @@ class Producto(models.Model):
     def actualizar_stock_vencidos(cls):
         from django.utils import timezone
         today = timezone.now().date()
-        cls.objects.filter(
+        vencidos = cls.objects.filter(
             fecha_vencimiento__lt=today, 
             stock__gt=0
-        ).update(stock=0)
+        )
+        
+        from .models import Novedad # Import here to avoid circular logic at load
+        for p in vencidos:
+            if p.stock > 0:
+                Novedad.objects.create(
+                    producto=p,
+                    tipo_novedad=Novedad.TIPO_VENCIDO,
+                    cantidad=p.stock,
+                    descripcion="Stock caducado automáticamente"
+                )
+        
+        vencidos.update(stock=0)
 
 
 class ApartadoQuerySet(models.QuerySet):
@@ -225,3 +237,27 @@ class Compra(models.Model):
     def __str__(self) -> str:
         return f"Compra #{self.pk} - {self.fecha}"
 
+
+class Novedad(models.Model):
+    TIPO_AGREGADO = "agregado"
+    TIPO_VENDIDO = "vendido"
+    TIPO_VENCIDO = "vencido"
+
+    TIPO_CHOICES = [
+        (TIPO_AGREGADO, "Agregado / Ingreso"),
+        (TIPO_VENDIDO, "Vendido / Apartado"),
+        (TIPO_VENCIDO, "Vencido / Retirado"),
+    ]
+
+    producto = models.ForeignKey(
+        Producto, on_delete=models.CASCADE, related_name="novedades"
+    )
+    tipo_novedad = models.CharField(
+        max_length=20, choices=TIPO_CHOICES, default=TIPO_AGREGADO
+    )
+    cantidad = models.IntegerField()
+    fecha = models.DateTimeField(auto_now_add=True)
+    descripcion = models.CharField(max_length=255, blank=True, null=True)
+
+    def __str__(self) -> str:
+        return f"Novedad: {self.get_tipo_novedad_display()} - {self.producto.nombre} ({self.cantidad})"
