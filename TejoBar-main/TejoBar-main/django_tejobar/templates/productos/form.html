@@ -1,0 +1,54 @@
+{% extends "layouts/public.html" %}
+
+{% block title %}
+{% if producto %}Editar Producto{% else %}Nuevo Producto{% endif %} - TejoBar
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">{% if producto %}Editar Producto{% else %}Nuevo Producto{% endif %}</h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+
+                        {% if field.name == 'imagen' %}
+                        {{ field }}
+                        {% elif field.name == 'fecha_vencimiento' %}
+                        <input type="date" name="{{ field.name }}" id="{{ field.id_for_label }}"
+                            class="form-control {% if field.errors %}is-invalid{% endif %}"
+                            value="{{ field.value|date:'Y-m-d'|default:'' }}">
+                        {% else %}
+                        <input type="{{ field.field.widget.input_type|default:'text' }}" name="{{ field.name }}"
+                            id="{{ field.id_for_label }}"
+                            class="form-control {% if field.errors %}is-invalid{% endif %}"
+                            value="{{ field.value|default_if_none:'' }}">
+                        {% endif %}
+
+                        {% if field.help_text %}
+                        <div class="form-text">{{ field.help_text }}</div>
+                        {% endif %}
+
+                        {% for error in field.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'tejobar_app:admin_productos_index' %}" class="btn btn-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-success">Guardar Producto</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "layouts/public.html" %}
+
+{% block title %}Equipos - TejoBar{% endblock %}
+
+{% block content %}
+<h1 class="mt-4">Equipos</h1>
+<a href="{% url 'tejobar_app:equipos_create' %}" class="btn btn-primary mb-3">Crear equipo</a>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for e in equipos %}
+            <tr>
+                <td>{{ e.nombre_equipo }}</td>
+                <td>
+                    <a href="{% url 'tejobar_app:equipos_show' e.pk %}" class="btn btn-sm btn-info">Ver</a>
+                    <a href="{% url 'tejobar_app:equipos_update' e.pk %}" class="btn btn-sm btn-secondary">Editar</a>
+                    <form method="post" action="{% url 'tejobar_app:equipos_delete' e.pk %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                    </form>
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="2">No hay equipos.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
+

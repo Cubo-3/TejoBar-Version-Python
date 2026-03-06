@@ -1,0 +1,15 @@
+{% extends "layouts/public.html" %}
+
+{% block title %}Eliminar equipo - TejoBar{% endblock %}
+
+{% block content %}
+<h1 class="mt-4">Eliminar equipo</h1>
+<p>¿Seguro que deseas eliminar el equipo <strong>{{ equipo.nombre_equipo }}</strong>?</p>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Eliminar</button>
+    <a href="{% url 'tejobar_app:equipos_index' %}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}
+

@@ -1,0 +1,15 @@
+{% extends "layouts/public.html" %}
+
+{% block title %}Equipo - TejoBar{% endblock %}
+
+{% block content %}
+<h1 class="mt-4">{{ equipo|default_if_none:"Nuevo equipo" }}</h1>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">Guardar</button>
+    <a href="{% url 'tejobar_app:equipos_index' %}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}
+
