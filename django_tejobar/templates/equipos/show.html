@@ -1,0 +1,73 @@
+{% extends "layouts/dashboard_layout.html" %}
+
+{% block title %}Detalles del Equipo - {{ equipo.nombre_equipo }}{% endblock %}
+
+{% block content %}
+<div class="card mt-4 shadow-sm">
+    <div class="card-header bg-primary text-white py-3">
+        <h2 class="mb-0 text-center"><i class="fas fa-users mr-2"></i>{{ equipo.nombre_equipo }}</h2>
+    </div>
+    
+    <div class="card-body p-4">
+        <h4 class="mb-3 text-secondary border-bottom pb-2">Integrantes ({{ jugadores_equipo.count }}/10)</h4>
+        <div class="list-group mb-0">
+            {% for miembro in jugadores_equipo %}
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="fas fa-user text-muted mr-2"></i> <span class="font-weight-bold">{{ miembro.jugador.persona.nombre }}</span>
+                        {% if miembro.es_capitan %}
+                            <span class="badge badge-warning text-dark ml-2"><i class="fas fa-crown mr-1"></i> Capitán</span>
+                        {% else %}
+                            <span class="badge badge-secondary ml-2">Jugador</span>
+                        {% endif %}
+                    </div>
+                    {% if es_capitan or es_admin %}
+                        {% if not miembro.es_capitan %}
+                            <form method="post" action="{% url 'tejobar_app:equipos_remove_member' equipo.pk miembro.jugador.persona.pk %}" class="m-0" onsubmit="return confirm('¿Seguro de expulsar a este jugador?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-user-times"></i> Expulsar
+                                </button>
+                            </form>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            {% empty %}
+                <div class="list-group-item text-center text-muted">No hay jugadores en este equipo.</div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="card-footer bg-light d-flex justify-content-end align-items-center py-3">
+        <a href="{% url 'tejobar_app:equipos_index' %}" class="btn btn-primary mr-2">
+            <i class="fas fa-arrow-left"></i> Volver a equipos
+        </a>
+        
+        {% if request.user.persona.rol == 'admin' or es_capitan %}
+            <a href="{% url 'tejobar_app:equipos_update' equipo.pk %}" class="btn btn-warning mr-2">
+                <i class="fas fa-edit"></i> Renombrar
+            </a>
+            <form method="post" action="{% url 'tejobar_app:equipos_delete' equipo.pk %}" class="m-0" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este equipo? Todos los jugadores quedarán sin equipo.');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-trash-alt"></i> Eliminar Equipo
+                </button>
+            </form>
+        {% elif es_miembro and not es_capitan %}
+            <form method="post" action="{% url 'tejobar_app:equipos_leave' equipo.pk %}" class="m-0" onsubmit="return confirm('¿Estás seguro de que deseas salir de este equipo?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-secondary">
+                    <i class="fas fa-sign-out-alt"></i> Salir del Equipo
+                </button>
+            </form>
+        {% elif puede_unirse %}
+            <form method="post" action="{% url 'tejobar_app:equipos_join' equipo.pk %}" class="m-0">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-sign-in-alt"></i> Unirse al Equipo
+                </button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

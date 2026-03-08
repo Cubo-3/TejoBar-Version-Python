@@ -1,0 +1,46 @@
+{% extends "layouts/public.html" %}
+{% load static %}
+
+{% block title %}{{ producto.nombre }} - TejoBar{% endblock %}
+
+{% block content %}
+<div class="row mt-4">
+    <div class="col-md-6">
+        {% if producto.imagen %}
+            <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="img-fluid rounded">
+        {% else %}
+            <img src="{% static 'img/productos/default.png' %}" alt="{{ producto.nombre }}" class="img-fluid rounded">
+        {% endif %}
+    </div>
+    <div class="col-md-6 {% if 'admin' not in request.path %}text-white{% endif %}" {% if 'admin' not in request.path %}style="background: rgba(0,0,0,0.6); padding: 20px; border-radius: 12px;"{% endif %}>
+        <h2>{{ producto.nombre }}</h2>
+        <p class="lead" {% if 'admin' not in request.path %}style="color: #4ade80; font-weight: bold;"{% else %}style="color: #28a745; font-weight: bold;"{% endif %}>Precio: 💲 {{ producto.precio|floatformat:0 }}</p>
+        <p>Stock disponible: {{ producto.stock }}</p>
+        
+        <p>Vencimiento: 
+            {% if not producto.fecha_vencimiento %}
+                <span class="badge badge-secondary">Sin caducidad</span>
+            {% elif producto.is_expired %}
+                <span class="badge badge-danger">Vencido ({{ producto.fecha_vencimiento }})</span>
+            {% else %}
+                <span class="badge badge-success">Válido hasta {{ producto.fecha_vencimiento }}</span>
+            {% endif %}
+        </p>
+        {% if user.is_authenticated %}
+            <form method="post" action="{% url 'tejobar_app:productos_apartar' producto.pk %}" class="form-inline mt-3">
+                {% csrf_token %}
+                <div class="form-group mr-2">
+                    <label for="cantidad" class="mr-2">Cantidad:</label>
+                    <input type="number" name="cantidad" id="cantidad" min="1" max="{{ producto.stock }}" value="1" class="form-control">
+                </div>
+                <button type="submit" class="btn btn-success">Apartar</button>
+            </form>
+        {% else %}
+            <p class="mt-3">
+                <a href="{% url 'tejobar_app:login' %}" class="btn btn-primary">Inicia sesión para apartar</a>
+            </p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

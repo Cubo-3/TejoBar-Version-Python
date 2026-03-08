@@ -1,0 +1,204 @@
+/* Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Global header styles removed to use Django layout */
+
+body.partidos-page {
+  font-family: 'Segoe UI', serif;
+  font-weight: bold;
+  min-height: 100vh;
+}
+
+
+/* Contenedor principal */
+.container {
+  position: relative;
+  width: 100%;
+  padding-bottom: 1rem;
+}
+
+/* Carteles */
+.carteles {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+  margin-bottom: 3rem;
+}
+
+.cartel {
+  background: url('../img/cartel.png') no-repeat center center;
+  background-size: contain;
+  width: 10rem;
+  height: 10rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.cartel p {
+  font-weight: bold;
+  font-size: 14px;
+  text-align: center;
+  color: #000;
+}
+
+/* Tabla */
+.partidos-page .tabla {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  position: relative;
+  z-index: 10;
+}
+
+.partidos-page .encabezado, .partidos-page .fila {
+  display: grid !important;
+  grid-template-columns: 1fr 2fr 1fr !important;
+  gap: 1rem;
+}
+
+.partidos-page .encabezado div {
+  background-color: #d4af75 !important;
+  padding: 10px;
+  font-weight: bold;
+  text-align: center;
+  border-radius: 4px;
+}
+
+.partidos-page .fila div {
+  background-color: #fdf1de !important;
+  padding: 10px;
+  text-align: center;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+/* Imágenes decorativas */
+.decor {
+  position: absolute;
+  width: 100px;
+  z-index: 1;
+}
+
+.decor-left-top {
+  top: 50px;
+  left: 20px;
+}
+
+.decor-left-bottom {
+  bottom: 20px;
+  left: 30px;
+}
+
+.decor-right-top {
+  top: 50px;
+  right: 20px;
+}
+
+.decor-right-bottom {
+  bottom: 20px;
+  right: 30px;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+  .carteles {
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .cartel {
+    width: 10rem;
+    height: 10rem;
+  }
+
+  .partidos-page .encabezado, .partidos-page .fila {
+    grid-template-columns: 1fr !important;
+    text-align: center;
+  }
+
+  .decor {
+    width: 60px;
+  }
+
+  .decor-left-top, .decor-right-top {
+    top: 10px;
+  }
+
+  .decor-left-bottom, .decor-right-bottom {
+    bottom: 10px;
+  }
+}
+
+.menu-top li a {
+  display: inline-block; /* Necesario para que transform funcione correctamente */
+  transition: transform 0.3s ease;
+}
+
+.menu-top li a:hover {
+  transform: scale(1.1);
+}
+
+.logo {
+  display: inline-block;
+  transition: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.logo:hover {
+  animation: deslizarLogo 0.5s forwards;
+}
+
+@keyframes deslizarLogo {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  40% {
+    transform: translateX(50px);
+    opacity: 0;
+  }
+  50% {
+    transform: translateX(-50px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.container {
+  flex: 1; /* Esto empuja el footer abajo */
+}
+
+footer {
+  background-color: #333;
+  color: white;
+  text-align: center;
+  padding: 15px;
+  position: relative; /* Quitar fixed */
+  bottom: 0;
+  width: 100%;
+}

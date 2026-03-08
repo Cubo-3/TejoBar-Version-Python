@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TejoBar Puente Aranda</title>
+  <link rel="stylesheet" href="newstyle.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Segoe+UI&display=swap" rel="stylesheet" />
+  <script src="newjs.js"></script>
+</head>
+
+
+<body>
+  <header>
+    <a href="/" class="logo">TejoBar</a>
+    <nav>
+      <ul class="menu-top">
+        <li><a href="/">🏠Inicio</a></li>
+        <li><a href="/torneos">🥇Torneos</a></li>
+        <li><a href="productos/productos.php">🍻Comida y Bebida</a></li>
+        <?php if (isset($_SESSION['idPersona'])): ?>
+          <li><a href="../php/logout.php">🚪Cerrar Sesión</a></li>
+        <?php else: ?>
+          <li><a href="../sesion/login.php">🔓Iniciar Sesión</a></li>
+        <?php endif; ?>
+      </ul>
+    </nav>
+  </header>
+
+
+  <div id="loader">
+  <div class="spinner"></div>
+  </div>
+
+<section class="hero oculto">
+  <div class="hero-bg hero-bg1"></div>
+  <div class="hero-bg hero-bg2"></div>
+  <h1>Bienvenido a TejoBar</h1>
+      <p>El mejor lugar en Puente Aranda para disfrutar del tejo, cerveza fría y comida típica colombiana.</p>
+
+</section>
+
+  <section id="torneos" class="section reveal">
+    <h2>Partidos de Tejo</h2>
+    <p>¡Inscríbete con tus amigos y gana premios!</p>
+  </section>
+
+  <section id="menu" class="section1 reveal">
+    <h2>Comida y Bebida</h2>
+    <div class="grid">
+
+    <a href="productos/productos.php" class="card">
+      <div class="card-content">
+        <h3>Cerveza</h3>
+        <p>Variedades Frias, Locales y Nacionales </p>
+      </div>
+      <div class="card-image" style="background-image: url('img/productos/cerveza.jpg');"></div>
+    </a>
+
+    <a href="productos/productos.php" class="card">
+      <div class="card-content">
+        <h3>Gallina Criolla</h3>
+        <p>Variedades Frias, Locales y Nacionales </p>
+      </div>
+      <div class="card-image" style="background-image: url('img/productos/caldo.jpg');"></div>
+    </a>
+
+    <a href="productos/productos.php" class="card">
+      <div class="card-content">
+        <h3>Picada</h3>
+        <p>Variedades Frias, Locales y Nacionales </p>
+      </div>
+      <div class="card-image" style="background-image: url('img/productos/picada.jpg');"></div>
+    </a>
+
+    <a href="productos/productos.html" class="card">
+      <div class="card-content">
+        <h3>Snacks</h3>
+        <p>Variedades Frias, Locales y Nacionales </p>
+      </div>
+      <div class="card-image" style="background-image: url('img/productos/snacks.jpg');"></div>
+    </a>
+    </div>
+  </section>
+
+<section id="reservas" class="section reveal">
+  <h2>inscríbete en un torneo 🏆  </h2>
+  <p>únete al próximo torneo con tu equipo. ¡Es rápido y fácil!</p>
+  <a href="sesion/login.html" class="boton">Registrate</a>
+</section>
+
+
+
+  <section id="contacto" class="section contacto reveal">
+    <h2>Contáctanos</h2>
+    <p>📍 Puente Aranda, Bogotá<br>📞 123 456 7890</p>
+  </section>
+
+  <footer>
+    <p>&copy; 2025 TejoBar. Todos los derechos reservados.</p>
+  </footer>
+
+</body>
+
+
+
+
+
+
+<button id="toggle-btn" onclick="toggleMode()">☀️</button>
+
+
+</html>
+

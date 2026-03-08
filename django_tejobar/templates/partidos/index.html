@@ -1,0 +1,117 @@
+{% extends 'layouts/public.html' %}
+{% load static %}
+
+{% block title %}Partidos - TejoBar{% endblock %}
+
+{% block body_class %}partidos-page{% endblock %}
+
+{% block extra_css %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'css/torneos/estilos.css' %}">
+  <style>
+      /* Force body rules only on this template */
+      body {
+        background: url('{% static "img/fondotorneo.png" %}') no-repeat center center fixed;
+        background-size: cover;
+      }
+      .admin-actions {
+          text-align: right;
+          margin-bottom: 20px;
+          position: relative;
+          z-index: 20;
+      }
+      /* Ensure the table is solid white to clearly read text */
+      .card.shadow {
+          background-color: white !important;
+          border-radius: 8px;
+          overflow: hidden;
+      }
+      /* Title high contrast */
+      .title-high-contrast {
+          color: #ffffff !important;
+          text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+      }
+      .table td {
+          color: #333333 !important; /* Ensure table text is dark */
+      }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3 border-light">
+        <h2 class="title-high-contrast font-weight-bold">
+            <i class="fas fa-trophy mr-2 text-warning"></i> Partidos Programados
+        </h2>
+        {% if user.is_authenticated and user.persona.rol == 'admin' %}
+        <div>
+            <a href="{% url 'admin:tejobar_app_partido_add' %}" class="btn btn-warning font-weight-bold shadow-lg rounded-pill px-4 text-dark">
+                <i class="fas fa-plus mr-1"></i> Crear Partido
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Table Section -->
+    <div class="card shadow mb-5">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0 text-center align-middle bg-white">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th scope="col" class="py-3 text-white">Partido #</th>
+                            <th scope="col" class="py-3 text-white">Encuentro (Equipos)</th>
+                            <th scope="col" class="py-3 text-white">Fecha y Hora</th>
+                            <th scope="col" class="py-3 text-white">Cancha Asignada</th>
+                            <th scope="col" class="py-3 text-white">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if partidos %}
+                            {% for partido in partidos %}
+                            <tr>
+                                <td class="font-weight-bold align-middle">{{ partido.id }}</td>
+                                <td class="align-middle">
+                                    <span class="badge badge-primary px-3 py-2 font-size-14 shadow-sm">{{ partido.equipo1.nombre_equipo|default:"Por definir" }}</span>
+                                    <strong class="mx-2 text-dark">VS</strong>
+                                    <span class="badge badge-danger px-3 py-2 font-size-14 shadow-sm">{{ partido.equipo2.nombre_equipo|default:"Por definir" }}</span>
+                                </td>
+                                <td class="align-middle">
+                                    <div class="text-dark font-weight-bold"><i class="far fa-calendar-alt text-secondary mr-1"></i> {{ partido.fecha|date:"d M, Y" }}</div>
+                                    <div class="text-secondary small"><i class="far fa-clock mr-1"></i> {{ partido.hora }}</div>
+                                </td>
+                                <td class="align-middle">
+                                    <span class="text-dark font-weight-bold">
+                                        {{ partido.cancha.disponibilidad|default:partido.cancha|default:"Cancha por definir" }}
+                                    </span>
+                                </td>
+                                <td class="align-middle">
+                                    {% if partido.estado == 'Pendiente' %}
+                                        <span class="badge badge-warning px-2 py-1 shadow-sm text-dark">{{ partido.estado }}</span>
+                                    {% elif partido.estado == 'Confirmada' %}
+                                        <span class="badge badge-success px-2 py-1 shadow-sm">{{ partido.estado }}</span>
+                                    {% elif partido.estado == 'Cancelada' %}
+                                        <span class="badge badge-danger px-2 py-1 shadow-sm">{{ partido.estado }}</span>
+                                    {% else %}
+                                        <span class="badge badge-secondary px-2 py-1 shadow-sm">{{ partido.estado }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-5">
+                                    <i class="fas fa-calendar-times fa-3x mb-3 text-secondary"></i>
+                                    <h5 class="text-dark font-weight-bold">No hay partidos programados en este momento.</h5>
+                                    <p class="text-secondary">Vuelve más tarde para ver los próximos encuentros.</p>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
