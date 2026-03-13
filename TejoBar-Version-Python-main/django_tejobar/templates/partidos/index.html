@@ -1,0 +1,178 @@
+{% extends "layouts/public.html" %}
+{% load static %}
+
+{% block title %}Partidos - TejoBar{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .match-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border-radius: 15px;
+        overflow: hidden;
+        border: none;
+    }
+    .match-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.2) !important;
+    }
+    
+    .match-header {
+        background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+        color: white;
+        text-align: center;
+        padding: 20px 15px;
+        position: relative;
+    }
+
+    .vs-badge {
+        background-color: #e74c3c;
+        color: white;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 14px;
+        margin: -10px auto 10px auto;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        border: 3px solid #fff;
+    }
+    
+    .team-name {
+        font-size: 1.25rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .match-body {
+        background-color: #f8f9fa;
+        padding: 20px;
+    }
+    
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        align-items: center;
+        border-bottom: 1px solid #e9ecef;
+        padding-bottom: 8px;
+    }
+    .info-row:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+    
+    .info-icon {
+        color: #e67e22;
+        width: 25px;
+        text-align: center;
+        margin-right: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-5 mt-3">
+    <div class="col-12 text-center">
+        <h1 class="font-weight-bold" style="color: #e67e22;">
+            <i class="fas fa-trophy mr-2"></i> Torneos y Retos
+        </h1>
+        <p class="text-muted lead mb-4">Descubre los próximos partidos de tejo y únete a la emoción.</p>
+        
+        <a href="{% url 'tejobar_app:equipos_index' %}" class="btn btn-warning btn-lg rounded-pill shadow-sm text-white font-weight-bold px-4 py-2" style="background-color: #e67e22; border: none; font-size: 1.1rem;">
+            <i class="fas fa-users mr-2"></i> Forma un Equipo o Únete a uno
+        </a>
+    </div>
+</div>
+
+<!-- Grilla de Partidos -->
+<!-- Desktop: col-lg-4 (3 por fila), Tablet: col-md-6 (2 por fila), Móvil: col-12 (1 por fila) -->
+<div class="row">
+    {% for partido in partidos %}
+        <div class="col-12 col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 match-card shadow-sm">
+                
+                <div class="match-header">
+                    <div class="row align-items-center">
+                        <div class="col-5">
+                            <div class="team-name text-truncate" title="{{ partido.equipo1.nombre_equipo|default:'Por definir' }}">
+                                {{ partido.equipo1.nombre_equipo|default:"--" }}
+                            </div>
+                        </div>
+                        <div class="col-2 px-0">
+                            <div class="vs-badge">VS</div>
+                        </div>
+                        <div class="col-5">
+                            <div class="team-name text-truncate" title="{{ partido.equipo2.nombre_equipo|default:'Por definir' }}">
+                                {{ partido.equipo2.nombre_equipo|default:"--" }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="match-body flex-grow-1">
+                    <div class="info-row">
+                        <div class="text-secondary"><i class="far fa-calendar-alt info-icon"></i> <strong>Fecha</strong></div>
+                        <div class="font-weight-bold text-dark">{{ partido.fecha|date:"d M Y" }}</div>
+                    </div>
+                    
+                    <div class="info-row">
+                        <div class="text-secondary"><i class="far fa-clock info-icon"></i> <strong>Hora</strong></div>
+                        <div class="font-weight-bold text-dark">{{ partido.hora|time:"h:i A" }}</div>
+                    </div>
+                    
+                    <div class="info-row">
+                        <div class="text-secondary"><i class="fas fa-map-marker-alt info-icon"></i> <strong>Cancha</strong></div>
+                        <div class="font-weight-bold text-dark text-truncate ml-3" style="max-width: 150px;" title="{{ partido.cancha.disponibilidad|default:partido.cancha|default:'--' }}">
+                            {{ partido.cancha.disponibilidad|default:partido.cancha|default:"--" }}
+                        </div>
+                    </div>
+                    
+                    <div class="info-row mt-3 pt-2">
+                        <div class="text-secondary"><strong>Estado</strong></div>
+                        <div>
+                            {% if partido.estado == 'Pendiente' %}
+                                <span class="badge badge-warning text-dark px-3 py-2 rounded-pill shadow-sm"><i class="fas fa-hourglass-half mr-1"></i> {{ partido.estado }}</span>
+                            {% elif partido.estado == 'Confirmada' %}
+                                <span class="badge badge-success px-3 py-2 rounded-pill shadow-sm"><i class="fas fa-check-circle mr-1"></i> {{ partido.estado }}</span>
+                            {% elif partido.estado == 'Cancelada' %}
+                                <span class="badge badge-danger px-3 py-2 rounded-pill shadow-sm"><i class="fas fa-times-circle mr-1"></i> {{ partido.estado }}</span>
+                            {% else %}
+                                <span class="badge badge-secondary px-3 py-2 rounded-pill shadow-sm">{{ partido.estado }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if partido.hora_inicio %}
+                        <div class="text-center mt-4">
+                            {% if not partido.hora_fin %}
+                                <div class="alert alert-primary py-2 mb-0 shadow-sm" role="alert">
+                                    <i class="fas fa-play-circle fa-pulse mr-2"></i> <strong>¡En curso!</strong>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-secondary py-2 mb-0 shadow-sm" role="alert">
+                                    <i class="fas fa-flag-checkered mr-2"></i> <strong>Finalizado</strong>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <div class="col-12 text-center my-5">
+            <div class="alert alert-light border-0 shadow-sm py-5" role="alert">
+                <i class="fas fa-calendar-times fa-4x text-muted mb-4"></i>
+                <h3 class="text-dark font-weight-bold">No hay partidos programados</h3>
+                <p class="text-muted lead mb-0">¡Reúne a tu equipo y sé el primero en organizar un partido!</p>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

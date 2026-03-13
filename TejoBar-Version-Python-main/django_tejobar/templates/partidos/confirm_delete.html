@@ -1,0 +1,33 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Eliminar Partido - Dashboard{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 mt-4">
+        <div class="card border-danger shadow-sm">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Confirmar Eliminación</h4>
+            </div>
+            <div class="card-body text-center py-5 text-dark">
+                <i class="fas fa-trash-alt fa-4x text-danger mb-4"></i>
+                <h5>¿Estás seguro que deseas eliminar el siguiente partido?</h5>
+                
+                <div class="p-3 bg-light rounded mt-4 mb-4 text-left">
+                    <p class="mb-1"><strong>Encuentro:</strong> {{ partido.equipo1.nombre_equipo }} vs {{ partido.equipo2.nombre_equipo }}</p>
+                    <p class="mb-1"><strong>Fecha:</strong> {{ partido.fecha|date:"d/m/Y" }} a las {{ partido.hora }}</p>
+                    <p class="mb-0"><strong>Cancha:</strong> {{ partido.cancha.disponibilidad|default:partido.cancha }}</p>
+                </div>
+                
+                <p class="text-muted"><small>Esta acción no se puede deshacer.</small></p>
+
+                <form method="post" class="mt-4">
+                    {% csrf_token %}
+                    <a href="{% url 'tejobar_app:admin_partidos_index' %}" class="btn btn-secondary px-4 mr-2">Cancelar</a>
+                    <button type="submit" class="btn btn-danger px-4">Sí, Eliminar Partido</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Administrar Productos - TejoBar{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-boxes mr-2"></i> Administrar Productos</h2>
+    <div>
+        <a href="{% url 'tejobar_app:admin_novedades_index' %}" class="btn btn-secondary shadow-sm mr-2">
+            <i class="fas fa-history"></i> Historial Productos
+        </a>
+        <a href="{% url 'tejobar_app:admin_productos_create' %}" class="btn btn-primary shadow-sm">
+            <i class="fas fa-plus"></i> Nuevo Producto
+        </a>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0 text-center align-middle bg-white text-dark">
+                <thead class="thead-dark">
+                    <tr>
+                        <th class="text-white">ID</th>
+                        <th class="text-white">Nombre</th>
+                        <th class="text-white">Precio</th>
+                        <th class="text-white">Stock</th>
+                        <th class="text-white">Categoría</th>
+                        <th class="text-white">Vencimiento</th>
+                        <th class="text-white">Opciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for producto in productos %}
+                    <tr>
+                        <td class="text-dark">{{ producto.id }}</td>
+                        <td class="font-weight-bold text-dark">{{ producto.nombre }}</td>
+                        <td class="text-dark">${{ producto.precio }}</td>
+                        <td class="text-dark">{{ producto.stock }}</td>
+                        <td class="text-dark">{{ producto.categoria.nombre|default:"Sin Categoría" }}</td>
+                        <td>
+                            {% if producto.is_expired %}
+                            <span class="badge badge-danger text-dark">Vencido: {{ producto.fecha_vencimiento }}</span>
+                            {% else %}
+                            <span class="text-dark">{{ producto.fecha_vencimiento|default_if_none:"N/A" }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'tejobar_app:admin_productos_update' producto.id %}" class="btn btn-sm btn-info text-white" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'tejobar_app:admin_productos_delete' producto.id %}" class="btn btn-sm btn-danger" title="Eliminar">
+                                <i class="fas fa-trash-alt"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted bg-light">No hay productos registrados</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

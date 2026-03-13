@@ -1,0 +1,62 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Administrar Usuarios - TejoBar{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 mt-4">
+    <h2><i class="fas fa-users mr-2"></i> Administrar Usuarios</h2>
+    <a href="{% url 'tejobar_app:personas_create' %}" class="btn btn-primary shadow-sm">
+        <i class="fas fa-plus"></i> Nuevo Usuario
+    </a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0 text-center align-middle bg-white text-dark">
+                <thead class="thead-dark">
+                    <tr>
+                        <th class="text-white">Nombre</th>
+                        <th class="text-white">Correo</th>
+                        <th class="text-white">Número</th>
+                        <th class="text-white">Rol</th>
+                        <th class="text-white">Opciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in personas %}
+                    <tr>
+                        <td class="font-weight-bold text-dark">{{ p.nombre }}</td>
+                        <td class="text-dark">{{ p.correo }}</td>
+                        <td class="text-dark">{{ p.numero }}</td>
+                        <td>
+                            {% if p.rol == 'admin' %}
+                            <span class="badge badge-danger text-dark">{{ p.get_rol_display|default:"Admin" }}</span>
+                            {% elif p.rol == 'capitan' %}
+                            <span class="badge badge-warning text-dark">{{ p.get_rol_display|default:"Capitán" }}</span>
+                            {% else %}
+                            <span class="badge badge-info text-dark">{{ p.get_rol_display|default:"Jugador" }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'tejobar_app:personas_update' p.pk %}" class="btn btn-sm btn-info text-white" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'tejobar_app:personas_delete' p.pk %}" class="btn btn-sm btn-danger" title="Eliminar">
+                                <i class="fas fa-trash-alt"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted bg-light">No hay usuarios registrados.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<a href="{% url 'tejobar_app:dashboard' %}" class="btn btn-secondary mt-3">Volver al Dashboard</a>
+{% endblock %}
+

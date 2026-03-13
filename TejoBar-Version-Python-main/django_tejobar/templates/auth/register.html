@@ -1,0 +1,153 @@
+{% extends "layouts/public.html" %}
+{% load static %}
+
+{% block title %}Registro - TejoBar{% endblock %}
+
+{% block extra_styles %}
+<style>
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-image: url("{% static 'img/fondo.jpg' %}");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    color: #333;
+}
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh;
+}
+.login-box {
+    background: linear-gradient(to bottom, #ffa500, #131313, #141414);
+    padding: 40px;
+    border-radius: 20px;
+    width: 340px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    text-align: center;
+}
+.avatar {
+    width: 80px;
+    height: 80px;
+    background-color: white;
+    border-radius: 50%;
+    margin: 0 auto 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 36px;
+    color: #ffa500;
+}
+h2 {
+    color: white;
+    margin-bottom: 30px;
+    font-weight: bold;
+}
+.input-group {
+    position: relative;
+    margin-bottom: 20px;
+}
+.input-group i {
+    position: absolute;
+    top: 50%;
+    left: 10px;
+    transform: translateY(-50%);
+    color: #ccc;
+}
+.input-group input,
+.input-group select {
+    width: 100%;
+    padding: 10px 10px 10px 35px;
+    border: none;
+    border-bottom: 1px solid white;
+    background: transparent;
+    color: white;
+    outline: none;
+}
+.input-group select option {
+    color: black;
+}
+.btn-login {
+    width: 100%;
+    padding: 12px;
+    background-color: white;
+    color: #131313;
+    font-weight: bold;
+    border: 2px solid #ffa500;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+.btn-login:hover {
+    background-color: #ffa500;
+    color: white;
+}
+.forgot {
+    display: block;
+    margin-top: 20px;
+    color: white;
+    font-size: 14px;
+    text-decoration: none;
+}
+.error-msg {
+  color: #ffdddd;
+  background-color: #b30000;
+  padding: 8px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-box">
+        <div class="avatar">
+            <i class="fas fa-user-plus"></i>
+        </div>
+        <h2>REGISTRO</h2>
+
+        {% if form.errors %}
+            <div class="error-msg">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                        {{ error }}<br>
+                    {% endfor %}
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="input-group">
+                <i class="fas fa-user"></i>
+                <input type="text" name="nombre" placeholder="Nombre completo" value="{{ form.nombre.value|default_if_none:'' }}" required>
+            </div>
+            <div class="input-group">
+                <i class="fas fa-envelope"></i>
+                <input type="email" name="correo" placeholder="Correo electrónico" value="{{ form.correo.value|default_if_none:'' }}" required>
+            </div>
+            <div class="input-group">
+                <i class="fas fa-phone"></i>
+                <input type="text" name="numero" placeholder="Número de teléfono" value="{{ form.numero.value|default_if_none:'' }}" required>
+            </div>
+            <div class="input-group">
+                <i class="fas fa-lock"></i>
+                <input type="password" name="password" placeholder="Contraseña" required>
+            </div>
+            <div class="input-group">
+                <i class="fas fa-lock"></i>
+                <input type="password" name="password2" placeholder="Confirmar contraseña" required>
+            </div>
+            <button type="submit" class="btn-login">Registrarse</button>
+            <a href="{% url 'tejobar_app:login' %}" class="forgot">¿Ya tienes cuenta? Inicia sesión</a>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

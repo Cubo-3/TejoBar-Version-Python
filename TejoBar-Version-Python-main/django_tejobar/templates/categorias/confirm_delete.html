@@ -1,0 +1,37 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Eliminar Categoría{% endblock %}
+
+{% block main_content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2 text-danger">
+        <i class="fas fa-exclamation-triangle mr-2"></i> Eliminar Categoría
+    </h1>
+</div>
+
+<div class="row justify-content-center mt-4">
+    <div class="col-md-6">
+        <div class="card border-danger shadow-sm">
+            <div class="card-body text-center p-5">
+                <i class="fas fa-trash-alt fa-4x text-danger mb-4"></i>
+                
+                <h4 class="mb-3">¿Estás seguro?</h4>
+                <p class="text-muted mb-4 text-left">
+                    Estás a punto de eliminar la categoría <strong>"{{ categoria.nombre }}"</strong>.<br><br>
+                    <small>Nota: Los productos que pertenezcan a esta categoría quedarán sin categoría (Sin Clasificar).</small>
+                </p>
+
+                <form method="post" class="d-flex justify-content-center">
+                    {% csrf_token %}
+                    <a href="{% url 'tejobar_app:admin_categorias_index' %}" class="btn btn-secondary mr-3 px-4">
+                        <i class="fas fa-times mr-1"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-danger px-4">
+                        <i class="fas fa-trash mr-1"></i> Sí, eliminar por favor
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

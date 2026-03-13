@@ -1,0 +1,60 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}
+    {% if cancha %}Editar Cancha{% else %}Nueva Cancha{% endif %} - Dashboard
+{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm mw-100" style="max-width: 600px; margin: 0 auto;">
+    <div class="card-header bg-dark text-white">
+        <h4 class="mb-0">
+            {% if cancha %}
+                <i class="fas fa-edit mr-2"></i> Editar Cancha #{{ cancha.id }}
+            {% else %}
+                <i class="fas fa-plus-circle mr-2"></i> Crear Nueva Cancha
+            {% endif %}
+        </h4>
+    </div>
+    <div class="card-body bg-dark text-white p-4">
+        <form method="post">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="form-group mb-4">
+                <label class="font-weight-bold">{{ form.disponibilidad.label }}</label>
+                {{ form.disponibilidad }}
+                {% if form.disponibilidad.help_text %}
+                    <small class="form-text text-muted">{{ form.disponibilidad.help_text }}</small>
+                {% endif %}
+                {% if form.disponibilidad.errors %}
+                    <small class="text-danger">{{ form.disponibilidad.errors|striptags }}</small>
+                {% endif %}
+            </div>
+
+            <div class="form-group form-check mb-4">
+                {{ form.estado }}
+                <label class="form-check-label font-weight-bold ml-1" for="{{ form.estado.id_for_label }}">
+                    {{ form.estado.label }}
+                </label>
+                {% if form.estado.errors %}
+                    <small class="text-danger d-block mt-1">{{ form.estado.errors|striptags }}</small>
+                {% endif %}
+            </div>
+
+            <div class="d-flex justify-content-end mt-4">
+                <a href="{% url 'tejobar_app:admin_canchas_index' %}" class="btn btn-secondary mr-2">Cancelar</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save mr-1"></i> Guardar Cancha
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
