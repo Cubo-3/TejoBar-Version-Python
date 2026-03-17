@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Reporte TejoBar</title>
+    <style>
+        @page {
+            size: a4 portrait;
+            margin: 2cm;
+        }
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 12pt;
+            color: #333333;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #555;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            color: #e67e22; /* TejoBar Orange */
+            margin: 0;
+            padding: 0;
+            font-size: 24pt;
+        }
+        .meta-info {
+            font-size: 10pt;
+            color: #666;
+            text-align: right;
+            margin-bottom: 20px;
+        }
+        .summary-blocks {
+            width: 100%;
+            margin-bottom: 30px;
+        }
+        .summary-block {
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        .summary-block h3 {
+            margin: 0 0 5px 0;
+            font-size: 16pt;
+            color: #333;
+        }
+        .summary-block p {
+            margin: 0;
+            font-size: 10pt;
+            color: #777;
+        }
+        .section-title {
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #444;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10pt;
+        }
+        th {
+            background-color: #f2f2f2;
+            padding: 8px;
+            border-bottom: 2px solid #ccc;
+            text-align: left;
+        }
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        .badge {
+            font-weight: bold;
+        }
+        .badge-pendiente { color: #856404; }
+        .badge-entregado { color: #155724; }
+        .badge-cancelado { color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Reporte del Sistema TejoBar</h1>
+    </div>
+
+    <div class="meta-info">
+        <p><strong>Generado por:</strong> {{ generado_por }}<br>
+        <strong>Rango de fechas (Apartados):</strong> {% if fecha_inicio and fecha_fin %}{{ fecha_inicio }} a {{ fecha_fin }}{% elif fecha_inicio %}Desde {{ fecha_inicio }}{% elif fecha_fin %}Hasta {{ fecha_fin }}{% else %}Histórico Total{% endif %}</p>
+    </div>
+
+    <h2 class="section-title">Resumen de Métricas</h2>
+    <table class="summary-blocks">
+        <tr>
+            <td class="summary-block">
+                <h3>{{ total_productos }}</h3>
+                <p>Productos ({{ productos_bajo_stock }} bajo stock)</p>
+            </td>
+            <td class="summary-block">
+                <h3>{{ total_usuarios }}</h3>
+                <p>Usuarios Activos</p>
+            </td>
+            <td class="summary-block">
+                <h3>{{ total_partidos }}</h3>
+                <p>Partidos Registrados</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="summary-block">
+                <h3>{{ total_equipos }}</h3>
+                <p>Equipos ({{ total_jugadores }} Jugadores)</p>
+            </td>
+            <td class="summary-block">
+                <h3>{{ total_categorias }}</h3>
+                <p>Categorías</p>
+            </td>
+            <td class="summary-block">
+                <h3>{{ total_canchas }}</h3>
+                <p>Canchas</p>
+            </td>
+        </tr>
+    </table>
+
+    <h2 class="section-title">Apartados {% if fecha_inicio or fecha_fin %}Filtrados{% else %}Recientes{% endif %}</h2>
+    {% if apartados %}
+    <table>
+        <thead>
+            <tr>
+                <th>Persona</th>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for a in apartados %}
+            <tr>
+                <td>{{ a.persona.nombre }}</td>
+                <td>{{ a.producto.nombre }}</td>
+                <td style="text-align: center;">{{ a.cantidad }}</td>
+                <td>{{ a.fecha_apartado|date:"d M Y, H:i" }}</td>
+                <td>
+                    {% if a.estado == 'pendiente' %}
+                        <span class="badge badge-pendiente">{{ a.estado|title }}</span>
+                    {% elif a.estado == 'entregado' %}
+                        <span class="badge badge-entregado">{{ a.estado|title }}</span>
+                    {% elif a.estado == 'cancelado' %}
+                        <span class="badge badge-cancelado">{{ a.estado|title }}</span>
+                    {% else %}
+                        {{ a.estado|title }}
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p>No hay apartados registrados para los filtros actuales.</p>
+    {% endif %}
+
+</body>
+</html>
