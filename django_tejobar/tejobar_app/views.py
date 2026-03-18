@@ -5,6 +5,9 @@ from django.contrib.auth.models import User
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.conf import settings
+from django.urls import reverse
+import mercadopago
 
 from .forms import (
     EquipoForm,
@@ -156,12 +159,17 @@ def apartar_producto(request: HttpRequest, pk: int) -> HttpResponse:
             messages.error(request, "No tienes un perfil de persona asociado.")
             return redirect("tejobar_app:productos_show", pk=producto.pk)
 
-        Apartado.objects.create(
-            persona=persona,
-            producto=producto,
-            cantidad=cantidad,
-            estado="pendiente",
-        )
+        apartado = Apartado.objects.filter(persona=persona, producto=producto, estado='pendiente').first()
+        if apartado:
+            apartado.cantidad += cantidad
+            apartado.save()
+        else:
+            Apartado.objects.create(
+                persona=persona,
+                producto=producto,
+                cantidad=cantidad,
+                estado="pendiente",
+            )
         
         Novedad.objects.create(
             producto=producto,
@@ -175,7 +183,7 @@ def apartar_producto(request: HttpRequest, pk: int) -> HttpResponse:
 
         messages.success(
             request,
-            "Producto apartado con éxito. Puedes verlo en tu dashboard.",
+            "Producto añadido al carrito con éxito. Puedes verlo en tu dashboard.",
         )
         return redirect("tejobar_app:productos_show", pk=producto.pk)
 
@@ -224,6 +232,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         if fecha_fin:
             mis_apartados = mis_apartados.filter(fecha_apartado__lte=fecha_fin)
             
+        total_carrito = sum(a.producto.precio * a.cantidad for a in mis_apartados if a.estado == 'pendiente')
         context.update(
             {
                 "total_productos": Producto.objects.count(),
@@ -233,6 +242,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
                 "total_partidos": Partido.objects.exclude(estado='Cancelada').count(),
                 "total_canchas": Cancha.objects.count(),
                 "mis_apartados": mis_apartados,
+                "total_carrito": total_carrito,
             }
         )
 
@@ -306,6 +316,8 @@ def dashboard_reporte_pdf(request: HttpRequest) -> HttpResponse:
     if not persona or persona.rol != Persona.ROL_ADMIN:
         messages.error(request, "No tienes un perfil de persona asociado o no eres admin.")
         return redirect("tejobar_app:dashboard")
+
+    assert persona is not None
 
     from django.template.loader import render_to_string
     import xhtml2pdf.pisa as pisa
@@ -657,6 +669,8 @@ def equipo_remove_member(request: HttpRequest, pk: int, jugador_pk: int) -> Http
         messages.error(request, "No tienes permiso para expulsar jugadores de este equipo.")
         return redirect("tejobar_app:equipos_show", pk=equipo.pk)
 
+    assert persona is not None
+
     if request.method == "POST":
         miembro_a_expulsar = get_object_or_404(JugadorEquipo, equipo=equipo, jugador__persona__pk=jugador_pk)
         
@@ -741,6 +755,55 @@ def admin_product_delete(request: HttpRequest, pk: int) -> HttpResponse:
         messages.success(request, "Producto eliminado correctamente")
         return redirect("tejobar_app:admin_productos_index")
     return render(request, "productos/confirm_delete.html", {"producto": producto})
+
+
+@login_required
+def crear_preferencia_carrito(request):
+    persona = getattr(request.user, "persona", None)
+    if not persona:
+        messages.error(request, "Perfil no encontrado")
+        return redirect("tejobar_app:dashboard")
+
+    apartados_pendientes = Apartado.objects.filter(persona=persona, estado=Apartado.ESTADO_PENDIENTE)
+    if not apartados_pendientes.exists():
+        messages.warning(request, "Tu carrito está vacío.")
+        return redirect("tejobar_app:dashboard")
+
+    sdk = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
+    items = []
+    
+    for ap in apartados_pendientes:
+        items.append({
+            "id": str(ap.producto.pk),
+            "title": f"Producto: {ap.producto.nombre}",
+            "quantity": int(ap.cantidad),
+            "currency_id": "COP",
+            "unit_price": float(ap.producto.precio)
+        })
+
+    back_urls = {
+        "success": request.build_absolute_uri(reverse("tejobar_app:pago_exitoso")),
+        "failure": request.build_absolute_uri(reverse("tejobar_app:pago_fallido")),
+        "pending": request.build_absolute_uri(reverse("tejobar_app:pago_pendiente"))
+    }
+
+    preference_data = {
+        "items": items,
+        "back_urls": back_urls,
+        "external_reference": f"carrito_{persona.pk}"
+    }
+
+    preference_response = sdk.preference().create(preference_data)
+    
+    if preference_response.get("status") in (200, 201) and "init_point" in preference_response.get("response", {}):
+        return redirect(preference_response["response"]["init_point"])
+    else:
+        error_msg = preference_response.get("response", "Error desconocido en MercadoPago")
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error creando preferencia MercadoPago: {preference_response}")
+        messages.error(request, f"Error al conectar con MercadoPago: Revise los datos. Detalles: {error_msg}")
+        return redirect("tejobar_app:dashboard")
 
 
 @admin_required
@@ -1033,3 +1096,208 @@ def admin_categorias_delete(request, pk):
         return redirect("tejobar_app:admin_categorias_index")
 
     return render(request, "categorias/confirm_delete.html", {"categoria": categoria})
+
+
+# ==========================================
+# MERCADOPAGO PAGOS
+# ==========================================
+
+@login_required
+def crear_preferencia_apartado(request, pk):
+    apartado = get_object_or_404(Apartado, pk=pk, persona=getattr(request.user, "persona", None), estado=Apartado.ESTADO_PENDIENTE)
+    
+    sdk = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
+    
+    precio_unitario = float(apartado.producto.precio)
+    
+    preference_data = {
+        "items": [
+            {
+                "id": str(apartado.producto.pk),
+                "title": f"Apartado: {apartado.producto.nombre}",
+                "quantity": int(apartado.cantidad),
+                "currency_id": "COP",
+                "unit_price": precio_unitario
+            }
+        ],
+        "back_urls": {
+            "success": request.build_absolute_uri(reverse('tejobar_app:pago_exitoso')),
+            "failure": request.build_absolute_uri(reverse('tejobar_app:pago_fallido')),
+            "pending": request.build_absolute_uri(reverse('tejobar_app:pago_pendiente'))
+        },
+        "external_reference": f"apartado_{apartado.pk}"
+    }
+
+    preference_response = sdk.preference().create(preference_data)
+    
+    if preference_response.get("status") in (200, 201) and "init_point" in preference_response.get("response", {}):
+        return redirect(preference_response["response"]["init_point"])
+    else:
+        error_msg = preference_response.get("response", "Error desconocido")
+        messages.error(request, f"Error MercadoPago: {error_msg}")
+        return redirect("tejobar_app:dashboard")
+
+@login_required
+def crear_preferencia_cancha(request, pk):
+    partido = get_object_or_404(Partido, pk=pk)
+    
+    if partido.pago_cancha:
+        messages.warning(request, "Este partido ya está pagado.")
+        return redirect("dashboard")
+        
+    monto_total = partido.total_cancha
+    if monto_total <= 0:
+        messages.warning(request, "El partido no tiene costo de cancha o no se ha calculado.")
+        return redirect("dashboard")
+        
+    sdk = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
+    
+    preference_data = {
+        "items": [
+            {
+                "id": str(partido.pk),
+                "title": f"Cancha para Partido #{partido.pk}",
+                "quantity": 1,
+                "currency_id": "COP",
+                "unit_price": float(monto_total)
+            }
+        ],
+        "back_urls": {
+            "success": request.build_absolute_uri(reverse('tejobar_app:pago_exitoso')),
+            "failure": request.build_absolute_uri(reverse('tejobar_app:pago_fallido')),
+            "pending": request.build_absolute_uri(reverse('tejobar_app:pago_pendiente'))
+        },
+        "external_reference": f"cancha_{partido.pk}"
+    }
+
+    preference_response = sdk.preference().create(preference_data)
+    preference = preference_response["response"]
+    
+    return redirect(preference["init_point"])
+
+@login_required
+def pago_exitoso(request):
+    payment_id = request.GET.get("payment_id")
+    status = request.GET.get("status")
+    external_reference = request.GET.get("external_reference")
+    
+    if status == "approved" and external_reference:
+        if external_reference.startswith("apartado_"):
+            apartado_id = external_reference.split("_")[1]
+            apartado = get_object_or_404(Apartado, pk=apartado_id)
+            if apartado.estado != Apartado.ESTADO_COMPRADO:
+                apartado.estado = Apartado.ESTADO_COMPRADO
+                apartado.save()
+                
+                Historial.objects.create(
+                    persona=apartado.persona,
+                    producto=apartado.producto,
+                    cantidad=apartado.cantidad,
+                    precio=apartado.producto.precio,
+                    total=apartado.cantidad * apartado.producto.precio,
+                    estado="entregado"
+                )
+                
+                Novedad.objects.create(
+                    producto=apartado.producto,
+                    tipo_novedad=Novedad.TIPO_VENDIDO,
+                    cantidad=apartado.cantidad,
+                    descripcion=f"Pago exitoso MercadoPago (ID: {payment_id})"
+                )
+                messages.success(request, f"Pago de apartado exitoso. Se ha registrado en el sistema.")
+                
+        elif external_reference.startswith("carrito_"):
+            persona_id = external_reference.split("_")[1]
+            apartados_pendientes = Apartado.objects.filter(persona_id=persona_id, estado=Apartado.ESTADO_PENDIENTE)
+            
+            for apartado in apartados_pendientes:
+                apartado.estado = Apartado.ESTADO_COMPRADO
+                apartado.save()
+                
+                Historial.objects.create(
+                    persona=apartado.persona,
+                    producto=apartado.producto,
+                    cantidad=apartado.cantidad,
+                    precio=apartado.producto.precio,
+                    total=apartado.cantidad * apartado.producto.precio,
+                    estado="entregado"
+                )
+                
+                Novedad.objects.create(
+                    producto=apartado.producto,
+                    tipo_novedad=Novedad.TIPO_VENDIDO,
+                    cantidad=apartado.cantidad,
+                    descripcion=f"Pago carrito MP (ID: {payment_id})"
+                )
+            
+            messages.success(request, f"Pago de carrito exitoso. ¡Gracias por tu compra!")
+                
+        elif external_reference.startswith("cancha_"):
+            partido_id = external_reference.split("_")[1]
+            partido = get_object_or_404(Partido, pk=partido_id)
+            if not partido.pago_cancha:
+                partido.pago_cancha = True
+                partido.save()
+                
+                Novedad.objects.create(
+                    producto=None,
+                    tipo_novedad=Novedad.TIPO_CANCHA,
+                    cantidad=1,
+                    descripcion=f"Pago Cancha MercadoPago (ID: {payment_id}) - Partido #{partido.pk}"
+                )
+                messages.success(request, "Pago de cancha exitoso. Se ha registrado en novedades.")
+                
+    return redirect("dashboard")
+
+@login_required
+def pago_fallido(request):
+    messages.error(request, "El pago a través de MercadoPago ha fallado o fue cancelado.")
+    return redirect("dashboard")
+
+@login_required
+def pago_pendiente(request):
+    messages.info(request, "El pago se encuentra pendiente. Te notificaremos cuando se apruebe.")
+    return redirect("dashboard")
+
+
+@login_required
+def editar_item_carrito(request: HttpRequest, pk: int) -> HttpResponse:
+    if request.method == "POST":
+        persona = getattr(request.user, "persona", None)
+        apartado = get_object_or_404(Apartado, pk=pk, persona=persona, estado=Apartado.ESTADO_PENDIENTE)
+        nueva_cantidad = int(request.POST.get("cantidad", 1))
+        
+        if nueva_cantidad <= 0:
+            messages.error(request, "La cantidad debe ser mayor a cero.")
+            return redirect("tejobar_app:dashboard")
+            
+        diferencia = nueva_cantidad - apartado.cantidad
+        if diferencia > 0 and apartado.producto.stock < diferencia:
+            messages.error(request, f"Stock insuficiente. Disponible adicional: {apartado.producto.stock}")
+            return redirect("tejobar_app:dashboard")
+            
+        # Update stock and Apartado
+        apartado.producto.stock -= diferencia
+        apartado.producto.save()
+        apartado.cantidad = nueva_cantidad
+        apartado.save()
+        
+        messages.success(request, "Cantidad del carrito actualizada.")
+        
+    return redirect("tejobar_app:dashboard")
+
+
+@login_required
+def eliminar_item_carrito(request: HttpRequest, pk: int) -> HttpResponse:
+    if request.method == "POST":
+        persona = getattr(request.user, "persona", None)
+        apartado = get_object_or_404(Apartado, pk=pk, persona=persona, estado=Apartado.ESTADO_PENDIENTE)
+        
+        # Restore stock
+        apartado.producto.stock += apartado.cantidad
+        apartado.producto.save()
+        
+        apartado.delete()
+        messages.success(request, "Producto eliminado del carrito.")
+        
+    return redirect("tejobar_app:dashboard")

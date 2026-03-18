@@ -54,6 +54,18 @@ urlpatterns = [
     path("partidos/", views.partido_list, name="partidos_index"),
     path("api/disponibilidad-partido/", views.api_disponibilidad_partido, name="api_disponibilidad_partido"),
 
+    # Carrito
+    path("carrito/editar/<int:pk>/", views.editar_item_carrito, name="carrito_editar"),
+    path("carrito/eliminar/<int:pk>/", views.eliminar_item_carrito, name="carrito_eliminar"),
+
+    # MercadoPago Pagos
+    path("pago/crear/carrito/", views.crear_preferencia_carrito, name="pago_crear_carrito"),
+    path("pago/crear/apartado/<int:pk>/", views.crear_preferencia_apartado, name="pago_crear_apartado"),
+    path("pago/crear/cancha/<int:pk>/", views.crear_preferencia_cancha, name="pago_crear_cancha"),
+    path("pago/exitoso/", views.pago_exitoso, name="pago_exitoso"),
+    path("pago/fallido/", views.pago_fallido, name="pago_fallido"),
+    path("pago/pendiente/", views.pago_pendiente, name="pago_pendiente"),
+
     # Categorías
     path("administracion/categorias/", views.admin_categorias_index, name="admin_categorias_index"),
     path("administracion/categorias/crear/", views.admin_categorias_create, name="admin_categorias_create"),
