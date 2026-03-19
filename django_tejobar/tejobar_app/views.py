@@ -492,14 +492,6 @@ def equipo_create(request: HttpRequest) -> HttpResponse:
         if form.is_valid():
             equipo = form.save()
             JugadorEquipo.objects.create(jugador=persona.jugador, equipo=equipo, es_capitan=True)
-            
-            usuarios = form.cleaned_data.get('usuarios_registrados', [])
-            for j in usuarios:
-                if j != persona.jugador and equipo.equipo_jugadores.count() < 5:
-                    JugadorEquipo.objects.get_or_create(
-                        equipo=equipo, jugador=j, defaults={'tipo_usuario': JugadorEquipo.TIPO_REGISTRADO}
-                    )
-            
             persona.rol = Persona.ROL_CAPITAN
             persona.save()
             messages.success(request, "Equipo creado correctamente. Ahora eres el capitán.")
@@ -516,24 +508,6 @@ def equipo_update(request: HttpRequest, pk: int) -> HttpResponse:
         form = EquipoForm(request.POST, instance=equipo)
         if form.is_valid():
             form.save()
-            
-            selected_jugadores = form.cleaned_data.get('usuarios_registrados', [])
-            current_registrados = equipo.equipo_jugadores.filter(tipo_usuario=JugadorEquipo.TIPO_REGISTRADO, jugador__isnull=False)
-            
-            for m in current_registrados:
-                if m.jugador not in selected_jugadores and not m.es_capitan:
-                    m.delete()
-            
-            for j in selected_jugadores:
-                if equipo.equipo_jugadores.filter(jugador=j).exists():
-                    continue
-                if equipo.equipo_jugadores.count() >= 5:
-                    messages.warning(request, "Límite de 5 jugadores alcanzado. Algunos usuarios no fueron añadidos.")
-                    break
-                JugadorEquipo.objects.get_or_create(
-                    equipo=equipo, jugador=j, defaults={'tipo_usuario': JugadorEquipo.TIPO_REGISTRADO}
-                )
-                
             messages.success(request, "Equipo actualizado correctamente")
             return redirect("tejobar_app:equipos_show", pk=equipo.pk)
     else:

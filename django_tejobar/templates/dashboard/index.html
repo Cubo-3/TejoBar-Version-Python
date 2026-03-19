@@ -224,8 +224,7 @@
                         <td><span class="badge badge-light border text-dark px-2 py-1"><i
                                     class="fas fa-box-open text-primary mr-1"></i> {{ a.producto.nombre }}</span></td>
                         <td><span class="font-weight-bold h5 mb-0 text-secondary">{{ a.cantidad }}</span></td>
-                        <td class="text-muted"><i class="far fa-clock small mr-1"></i> {{ a.fecha_apartado|date:"d M Y"
-                            }}</td>
+                        <td class="text-muted"><i class="far fa-clock small mr-1"></i> {{ a.fecha_apartado|date:"d M Y" }}</td>
                         <td>
                             {% if a.estado == 'pendiente' %}
                             <span class="badge badge-warning text-dark px-2 py-1 rounded-pill"><i
@@ -342,8 +341,8 @@
             <div class="col-12 col-sm-auto mb-3 mb-sm-0 flex-grow-1 flex-md-grow-0">
                 <label for="fecha_inicio" class="form-label text-light small font-weight-bold text-uppercase mb-1"><i
                         class="far fa-calendar-alt mr-1"></i> Desde:</label>
-                <input type="date" class="form-control bg-secondary text-white border-0" id="fecha_inicio" name="fecha_inicio"
-                    value="{{ fecha_inicio }}">
+                <input type="date" class="form-control bg-secondary text-white border-0" id="fecha_inicio"
+                    name="fecha_inicio" value="{{ fecha_inicio }}">
             </div>
             <div class="col-12 col-sm-auto mb-3 mb-sm-0 flex-grow-1 flex-md-grow-0">
                 <label for="fecha_fin" class="form-label text-light small font-weight-bold text-uppercase mb-1"><i
@@ -352,7 +351,8 @@
                     value="{{ fecha_fin }}">
             </div>
             <div class="col-12 col-sm-auto mt-2 mt-sm-0 d-flex gap-2">
-                <button type="submit" class="btn btn-warning font-weight-bold text-dark px-4"><i class="fas fa-filter mr-2"></i>
+                <button type="submit" class="btn btn-warning font-weight-bold text-dark px-4"><i
+                        class="fas fa-filter mr-2"></i>
                     Filtrar</button>
                 <a href="?" class="btn btn-outline-light text-white px-3" title="Limpiar"><i
                         class="fas fa-eraser"></i></a>
@@ -378,7 +378,8 @@
                 <tbody class="border-top-0">
                     {% for a in mis_apartados %}
                     <tr>
-                        <td><span class="badge badge-light text-dark px-2 py-1"><i class="fas fa-box-open text-warning mr-1"></i> {{ a.producto.nombre }}</span></td>
+                        <td><span class="badge badge-light text-dark px-2 py-1"><i
+                                    class="fas fa-box-open text-warning mr-1"></i> {{ a.producto.nombre }}</span></td>
                         <td class="text-info font-weight-bold">$ {{ a.producto.precio|floatformat:0 }}</td>
                         <td><span class="font-weight-bold h5 mb-0 text-white">{{ a.cantidad }}</span></td>
                         <td class="text-warning font-weight-bold">$ {% widthratio a.cantidad 1 a.producto.precio %}</td>
@@ -495,7 +496,8 @@
                 {% if mis_apartados %}
                 <tfoot>
                     <tr class="border-top border-secondary">
-                        <td colspan="3" class="text-right py-3 text-light font-weight-bold">Total a pagar (pendientes):</td>
+                        <td colspan="3" class="text-right py-3 text-light font-weight-bold">Total a pagar (pendientes):
+                        </td>
                         <td class="py-3 text-warning font-weight-bold h5 mb-0">$ {{ total_carrito|floatformat:0 }}</td>
                         <td colspan="3"></td>
                     </tr>

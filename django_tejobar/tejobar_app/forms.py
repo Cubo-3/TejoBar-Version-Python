@@ -75,30 +75,10 @@ class ProductoForm(forms.ModelForm):
 
 
 class EquipoForm(forms.ModelForm):
-    usuarios_registrados = forms.ModelMultipleChoiceField(
-        queryset=None,
-        widget=forms.SelectMultiple(attrs={'class': 'form-control'}),
-        required=False,
-        label="Jugadores Registrados (Opcional)",
-        help_text="Mantén presionada la tecla Ctrl (o Command en Mac) para seleccionar múltiples usuarios"
-    )
-
     class Meta:
         model = Equipo
-        fields = ["nombre_equipo", "usuarios_registrados"]
+        fields = ["nombre_equipo"]
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        from .models import Jugador, JugadorEquipo
-        # Include active users
-        self.fields['usuarios_registrados'].queryset = Jugador.objects.filter(
-            estado=True, persona__user__is_active=True
-        )
-        # If editing an existing team, prepopulate the field
-        if self.instance and self.instance.pk:
-            self.initial['usuarios_registrados'] = self.instance.equipo_jugadores.filter(
-                tipo_usuario=JugadorEquipo.TIPO_REGISTRADO, jugador__isnull=False
-            ).values_list('jugador', flat=True)
 
 class PartidoForm(forms.ModelForm):
     class Meta:
