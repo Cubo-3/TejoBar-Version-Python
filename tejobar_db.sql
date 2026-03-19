@@ -3,8 +3,8 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 13-03-2026 a las 03:22:09
--- Versión del servidor: 12.2.2-MariaDB
+-- Tiempo de generación: 19-03-2026 a las 13:39:49
+-- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Base de datos: `tejobar`
+-- Base de datos: `tejobar_db`
 --
 
 -- --------------------------------------------------------
@@ -30,7 +30,7 @@ SET time_zone = "+00:00";
 CREATE TABLE `auth_group` (
   `id` int(11) NOT NULL,
   `name` varchar(150) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -42,7 +42,7 @@ CREATE TABLE `auth_group_permissions` (
   `id` bigint(20) NOT NULL,
   `group_id` int(11) NOT NULL,
   `permission_id` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -55,7 +55,7 @@ CREATE TABLE `auth_permission` (
   `name` varchar(255) NOT NULL,
   `content_type_id` int(11) NOT NULL,
   `codename` varchar(100) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `auth_permission`
@@ -66,14 +66,14 @@ INSERT INTO `auth_permission` (`id`, `name`, `content_type_id`, `codename`) VALU
 (2, 'Can change log entry', 1, 'change_logentry'),
 (3, 'Can delete log entry', 1, 'delete_logentry'),
 (4, 'Can view log entry', 1, 'view_logentry'),
-(5, 'Can add permission', 3, 'add_permission'),
-(6, 'Can change permission', 3, 'change_permission'),
-(7, 'Can delete permission', 3, 'delete_permission'),
-(8, 'Can view permission', 3, 'view_permission'),
-(9, 'Can add group', 2, 'add_group'),
-(10, 'Can change group', 2, 'change_group'),
-(11, 'Can delete group', 2, 'delete_group'),
-(12, 'Can view group', 2, 'view_group'),
+(5, 'Can add permission', 2, 'add_permission'),
+(6, 'Can change permission', 2, 'change_permission'),
+(7, 'Can delete permission', 2, 'delete_permission'),
+(8, 'Can view permission', 2, 'view_permission'),
+(9, 'Can add group', 3, 'add_group'),
+(10, 'Can change group', 3, 'change_group'),
+(11, 'Can delete group', 3, 'delete_group'),
+(12, 'Can view group', 3, 'view_group'),
 (13, 'Can add user', 4, 'add_user'),
 (14, 'Can change user', 4, 'change_user'),
 (15, 'Can delete user', 4, 'delete_user'),
@@ -86,50 +86,58 @@ INSERT INTO `auth_permission` (`id`, `name`, `content_type_id`, `codename`) VALU
 (22, 'Can change session', 6, 'change_session'),
 (23, 'Can delete session', 6, 'delete_session'),
 (24, 'Can view session', 6, 'view_session'),
-(25, 'Can add persona', 15, 'add_persona'),
-(26, 'Can change persona', 15, 'change_persona'),
-(27, 'Can delete persona', 15, 'delete_persona'),
-(28, 'Can view persona', 15, 'view_persona'),
-(29, 'Can add jugador', 12, 'add_jugador'),
-(30, 'Can change jugador', 12, 'change_jugador'),
-(31, 'Can delete jugador', 12, 'delete_jugador'),
-(32, 'Can view jugador', 12, 'view_jugador'),
-(33, 'Can add equipo', 10, 'add_equipo'),
-(34, 'Can change equipo', 10, 'change_equipo'),
-(35, 'Can delete equipo', 10, 'delete_equipo'),
-(36, 'Can view equipo', 10, 'view_equipo'),
-(37, 'Can add cancha', 8, 'add_cancha'),
-(38, 'Can change cancha', 8, 'change_cancha'),
-(39, 'Can delete cancha', 8, 'delete_cancha'),
-(40, 'Can view cancha', 8, 'view_cancha'),
-(41, 'Can add producto', 16, 'add_producto'),
-(42, 'Can change producto', 16, 'change_producto'),
-(43, 'Can delete producto', 16, 'delete_producto'),
-(44, 'Can view producto', 16, 'view_producto'),
-(45, 'Can add apartado', 7, 'add_apartado'),
-(46, 'Can change apartado', 7, 'change_apartado'),
-(47, 'Can delete apartado', 7, 'delete_apartado'),
-(48, 'Can view apartado', 7, 'view_apartado'),
-(49, 'Can add historial', 11, 'add_historial'),
-(50, 'Can change historial', 11, 'change_historial'),
-(51, 'Can delete historial', 11, 'delete_historial'),
-(52, 'Can view historial', 11, 'view_historial'),
-(53, 'Can add jugador equipo', 13, 'add_jugadorequipo'),
-(54, 'Can change jugador equipo', 13, 'change_jugadorequipo'),
-(55, 'Can delete jugador equipo', 13, 'delete_jugadorequipo'),
-(56, 'Can view jugador equipo', 13, 'view_jugadorequipo'),
-(57, 'Can add partido', 14, 'add_partido'),
-(58, 'Can change partido', 14, 'change_partido'),
-(59, 'Can delete partido', 14, 'delete_partido'),
-(60, 'Can view partido', 14, 'view_partido'),
-(61, 'Can add torneo', 17, 'add_torneo'),
-(62, 'Can change torneo', 17, 'change_torneo'),
-(63, 'Can delete torneo', 17, 'delete_torneo'),
-(64, 'Can view torneo', 17, 'view_torneo'),
-(65, 'Can add compra', 9, 'add_compra'),
-(66, 'Can change compra', 9, 'change_compra'),
-(67, 'Can delete compra', 9, 'delete_compra'),
-(68, 'Can view compra', 9, 'view_compra');
+(25, 'Can add cancha', 7, 'add_cancha'),
+(26, 'Can change cancha', 7, 'change_cancha'),
+(27, 'Can delete cancha', 7, 'delete_cancha'),
+(28, 'Can view cancha', 7, 'view_cancha'),
+(29, 'Can add equipo', 8, 'add_equipo'),
+(30, 'Can change equipo', 8, 'change_equipo'),
+(31, 'Can delete equipo', 8, 'delete_equipo'),
+(32, 'Can view equipo', 8, 'view_equipo'),
+(33, 'Can add persona', 9, 'add_persona'),
+(34, 'Can change persona', 9, 'change_persona'),
+(35, 'Can delete persona', 9, 'delete_persona'),
+(36, 'Can view persona', 9, 'view_persona'),
+(37, 'Can add producto', 10, 'add_producto'),
+(38, 'Can change producto', 10, 'change_producto'),
+(39, 'Can delete producto', 10, 'delete_producto'),
+(40, 'Can view producto', 10, 'view_producto'),
+(41, 'Can add jugador', 11, 'add_jugador'),
+(42, 'Can change jugador', 11, 'change_jugador'),
+(43, 'Can delete jugador', 11, 'delete_jugador'),
+(44, 'Can view jugador', 11, 'view_jugador'),
+(45, 'Can add partido', 12, 'add_partido'),
+(46, 'Can change partido', 12, 'change_partido'),
+(47, 'Can delete partido', 12, 'delete_partido'),
+(48, 'Can view partido', 12, 'view_partido'),
+(49, 'Can add historial', 13, 'add_historial'),
+(50, 'Can change historial', 13, 'change_historial'),
+(51, 'Can delete historial', 13, 'delete_historial'),
+(52, 'Can view historial', 13, 'view_historial'),
+(53, 'Can add apartado', 14, 'add_apartado'),
+(54, 'Can change apartado', 14, 'change_apartado'),
+(55, 'Can delete apartado', 14, 'delete_apartado'),
+(56, 'Can view apartado', 14, 'view_apartado'),
+(57, 'Can add torneo', 15, 'add_torneo'),
+(58, 'Can change torneo', 15, 'change_torneo'),
+(59, 'Can delete torneo', 15, 'delete_torneo'),
+(60, 'Can view torneo', 15, 'view_torneo'),
+(61, 'Can add compra', 16, 'add_compra'),
+(62, 'Can change compra', 16, 'change_compra'),
+(63, 'Can delete compra', 16, 'delete_compra'),
+(64, 'Can view compra', 16, 'view_compra'),
+(65, 'Can add jugador equipo', 17, 'add_jugadorequipo'),
+(66, 'Can change jugador equipo', 17, 'change_jugadorequipo'),
+(67, 'Can delete jugador equipo', 17, 'delete_jugadorequipo'),
+(68, 'Can view jugador equipo', 17, 'view_jugadorequipo'),
+(69, 'Can add novedad', 18, 'add_novedad'),
+(70, 'Can change novedad', 18, 'change_novedad'),
+(71, 'Can delete novedad', 18, 'delete_novedad'),
+(72, 'Can view novedad', 18, 'view_novedad'),
+(73, 'Can add categoria', 19, 'add_categoria'),
+(74, 'Can change categoria', 19, 'change_categoria'),
+(75, 'Can delete categoria', 19, 'delete_categoria'),
+(76, 'Can view categoria', 19, 'view_categoria');
 
 -- --------------------------------------------------------
 
@@ -149,15 +157,17 @@ CREATE TABLE `auth_user` (
   `is_staff` tinyint(1) NOT NULL,
   `is_active` tinyint(1) NOT NULL,
   `date_joined` datetime(6) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `auth_user`
 --
 
 INSERT INTO `auth_user` (`id`, `password`, `last_login`, `is_superuser`, `username`, `first_name`, `last_name`, `email`, `is_staff`, `is_active`, `date_joined`) VALUES
-(1, 'pbkdf2_sha256$1000000$vnEZbVoQf2dhKqB6R1kmvJ$utfOa8qdLgSVp4Z5xBHe8eL3+vJDxP259fYf9TQba4E=', '2026-03-05 12:15:32.027052', 0, 'pipe@gmail.com', 'felipe', '', 'pipe@gmail.com', 0, 1, '2026-03-05 12:15:17.007786'),
-(2, 'pbkdf2_sha256$1000000$vvtThvajrIzfJ3gUuTnAfq$zRj3Yl7Ij+sqSrMHoGQC0EjvR4PuTPPMSrUp1QYoRDg=', '2026-03-05 13:39:57.939992', 0, 'cardozo@gmail.com', 'cardozo', '', 'cardozo@gmail.com', 0, 1, '2026-03-05 13:39:47.342012');
+(1, 'pbkdf2_sha256$600000$xofY9O79ZUpZRfgHc9IaAs$Ivkygk+FiosZOnX1FW7FUvIAiKz6zg9rlDcsQtfz9ec=', '2026-03-19 12:18:20.854556', 1, 'admin', '', '', 'admin@gmail.com', 1, 1, '2026-03-19 11:35:24.594818'),
+(2, 'pbkdf2_sha256$600000$6QgswGQ414QhZsC1miVcJ4$pR1vlmDyEleqipi5L0V+KrmljdfE7j28KmKf7uFK4F8=', '2026-03-19 12:16:28.221573', 0, 'jugador@gmail.com', 'jugador', '', 'jugador@gmail.com', 0, 1, '2026-03-19 11:39:09.075462'),
+(3, 'pbkdf2_sha256$600000$nSgBjLiZMzNkzahAJY0CgE$49FrLovbnSraFO1QTRnK6+H65vDJ9phHJHaV4P/sd3s=', NULL, 0, 'jugador1@gmail.com', 'jugador 1', '', 'jugador1@gmail.com', 0, 1, '2026-03-19 11:44:44.650730'),
+(5, 'pbkdf2_sha256$600000$NPBLc0o7LKoe9nH8JsAi2I$87eEMj8gWyc5xJNPlXC71J/POeLBBG+c0r9Q9FBLkIU=', '2026-03-19 12:17:48.204251', 0, 'jugador4@gmail.com', 'jugador 4', '', 'jugador4@gmail.com', 0, 1, '2026-03-19 12:01:47.639982');
 
 -- --------------------------------------------------------
 
@@ -169,7 +179,7 @@ CREATE TABLE `auth_user_groups` (
   `id` bigint(20) NOT NULL,
   `user_id` int(11) NOT NULL,
   `group_id` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -181,7 +191,7 @@ CREATE TABLE `auth_user_user_permissions` (
   `id` bigint(20) NOT NULL,
   `user_id` int(11) NOT NULL,
   `permission_id` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -198,7 +208,7 @@ CREATE TABLE `django_admin_log` (
   `change_message` longtext NOT NULL,
   `content_type_id` int(11) DEFAULT NULL,
   `user_id` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -210,7 +220,7 @@ CREATE TABLE `django_content_type` (
   `id` int(11) NOT NULL,
   `app_label` varchar(100) NOT NULL,
   `model` varchar(100) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `django_content_type`
@@ -218,22 +228,24 @@ CREATE TABLE `django_content_type` (
 
 INSERT INTO `django_content_type` (`id`, `app_label`, `model`) VALUES
 (1, 'admin', 'logentry'),
-(2, 'auth', 'group'),
-(3, 'auth', 'permission'),
+(3, 'auth', 'group'),
+(2, 'auth', 'permission'),
 (4, 'auth', 'user'),
 (5, 'contenttypes', 'contenttype'),
 (6, 'sessions', 'session'),
-(7, 'tejobar_app', 'apartado'),
-(8, 'tejobar_app', 'cancha'),
-(9, 'tejobar_app', 'compra'),
-(10, 'tejobar_app', 'equipo'),
-(11, 'tejobar_app', 'historial'),
-(12, 'tejobar_app', 'jugador'),
-(13, 'tejobar_app', 'jugadorequipo'),
-(14, 'tejobar_app', 'partido'),
-(15, 'tejobar_app', 'persona'),
-(16, 'tejobar_app', 'producto'),
-(17, 'tejobar_app', 'torneo');
+(14, 'tejobar_app', 'apartado'),
+(7, 'tejobar_app', 'cancha'),
+(19, 'tejobar_app', 'categoria'),
+(16, 'tejobar_app', 'compra'),
+(8, 'tejobar_app', 'equipo'),
+(13, 'tejobar_app', 'historial'),
+(11, 'tejobar_app', 'jugador'),
+(17, 'tejobar_app', 'jugadorequipo'),
+(18, 'tejobar_app', 'novedad'),
+(12, 'tejobar_app', 'partido'),
+(9, 'tejobar_app', 'persona'),
+(10, 'tejobar_app', 'producto'),
+(15, 'tejobar_app', 'torneo');
 
 -- --------------------------------------------------------
 
@@ -246,32 +258,43 @@ CREATE TABLE `django_migrations` (
   `app` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
   `applied` datetime(6) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `django_migrations`
 --
 
 INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES
-(1, 'contenttypes', '0001_initial', '2026-03-05 11:52:12.264280'),
-(2, 'auth', '0001_initial', '2026-03-05 11:52:12.467039'),
-(3, 'admin', '0001_initial', '2026-03-05 11:52:12.510580'),
-(4, 'admin', '0002_logentry_remove_auto_add', '2026-03-05 11:52:12.516990'),
-(5, 'admin', '0003_logentry_add_action_flag_choices', '2026-03-05 11:52:12.522388'),
-(6, 'contenttypes', '0002_remove_content_type_name', '2026-03-05 11:52:12.564687'),
-(7, 'auth', '0002_alter_permission_name_max_length', '2026-03-05 11:52:12.586273'),
-(8, 'auth', '0003_alter_user_email_max_length', '2026-03-05 11:52:12.602346'),
-(9, 'auth', '0004_alter_user_username_opts', '2026-03-05 11:52:12.611046'),
-(10, 'auth', '0005_alter_user_last_login_null', '2026-03-05 11:52:12.633273'),
-(11, 'auth', '0006_require_contenttypes_0002', '2026-03-05 11:52:12.634506'),
-(12, 'auth', '0007_alter_validators_add_error_messages', '2026-03-05 11:52:12.643595'),
-(13, 'auth', '0008_alter_user_username_max_length', '2026-03-05 11:52:12.661299'),
-(14, 'auth', '0009_alter_user_last_name_max_length', '2026-03-05 11:52:12.679183'),
-(15, 'auth', '0010_alter_group_name_max_length', '2026-03-05 11:52:12.696242'),
-(16, 'auth', '0011_update_proxy_permissions', '2026-03-05 11:52:12.710088'),
-(17, 'auth', '0012_alter_user_first_name_max_length', '2026-03-05 11:52:12.733219'),
-(18, 'sessions', '0001_initial', '2026-03-05 11:52:12.754744'),
-(19, 'tejobar_app', '0001_initial', '2026-03-05 12:14:02.182721');
+(1, 'contenttypes', '0001_initial', '2026-03-19 11:32:47.015714'),
+(2, 'auth', '0001_initial', '2026-03-19 11:32:47.281568'),
+(3, 'admin', '0001_initial', '2026-03-19 11:32:47.358956'),
+(4, 'admin', '0002_logentry_remove_auto_add', '2026-03-19 11:32:47.364411'),
+(5, 'admin', '0003_logentry_add_action_flag_choices', '2026-03-19 11:32:47.370571'),
+(6, 'contenttypes', '0002_remove_content_type_name', '2026-03-19 11:32:47.415423'),
+(7, 'auth', '0002_alter_permission_name_max_length', '2026-03-19 11:32:47.446924'),
+(8, 'auth', '0003_alter_user_email_max_length', '2026-03-19 11:32:47.456726'),
+(9, 'auth', '0004_alter_user_username_opts', '2026-03-19 11:32:47.462267'),
+(10, 'auth', '0005_alter_user_last_login_null', '2026-03-19 11:32:47.494407'),
+(11, 'auth', '0006_require_contenttypes_0002', '2026-03-19 11:32:47.496283'),
+(12, 'auth', '0007_alter_validators_add_error_messages', '2026-03-19 11:32:47.501912'),
+(13, 'auth', '0008_alter_user_username_max_length', '2026-03-19 11:32:47.516559'),
+(14, 'auth', '0009_alter_user_last_name_max_length', '2026-03-19 11:32:47.525449'),
+(15, 'auth', '0010_alter_group_name_max_length', '2026-03-19 11:32:47.535920'),
+(16, 'auth', '0011_update_proxy_permissions', '2026-03-19 11:32:47.542069'),
+(17, 'auth', '0012_alter_user_first_name_max_length', '2026-03-19 11:32:47.550546'),
+(18, 'sessions', '0001_initial', '2026-03-19 11:32:47.570204'),
+(19, 'tejobar_app', '0001_initial', '2026-03-19 11:32:48.091254'),
+(20, 'tejobar_app', '0002_novedad', '2026-03-19 11:32:48.135275'),
+(21, 'tejobar_app', '0003_partido_equipo1_partido_equipo2', '2026-03-19 11:32:48.212018'),
+(22, 'tejobar_app', '0004_remove_partido_capitan', '2026-03-19 11:32:48.220044'),
+(23, 'tejobar_app', '0005_cancha_precio_por_hora_partido_hora_fin_and_more', '2026-03-19 11:32:48.249515'),
+(24, 'tejobar_app', '0006_partido_unique_cancha_horario', '2026-03-19 11:32:48.259212'),
+(25, 'tejobar_app', '0007_remove_partido_unique_cancha_horario_and_more', '2026-03-19 11:32:48.274828'),
+(26, 'tejobar_app', '0008_categoria', '2026-03-19 11:32:48.294918'),
+(27, 'tejobar_app', '0009_producto_categoria', '2026-03-19 11:32:48.349580'),
+(28, 'tejobar_app', '0010_alter_jugadorequipo_unique_together_and_more', '2026-03-19 11:32:48.726402'),
+(29, 'tejobar_app', '0011_alter_novedad_cantidad_alter_novedad_producto_and_more', '2026-03-19 11:32:48.830208'),
+(30, 'tejobar_app', '0012_alter_cancha_precio_por_hora', '2026-03-19 11:32:48.834199');
 
 -- --------------------------------------------------------
 
@@ -283,7 +306,14 @@ CREATE TABLE `django_session` (
   `session_key` varchar(40) NOT NULL,
   `session_data` longtext NOT NULL,
   `expire_date` datetime(6) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `django_session`
+--
+
+INSERT INTO `django_session` (`session_key`, `session_data`, `expire_date`) VALUES
+('dcyk7gy4582htnm5zkwxfohlvja2s1b8', '.eJxVzMsOgjAQheF3mbVpOkwvwNK9z0Cm7dSiBhIKK-O7myYsdHv-L-cNEx97mY4q2zQnGAHh8rsFjk9ZWkgPXu6riuuyb3NQjaizVnVbk7yup_07KFwLjOCYsjYdOZ09GjI26uyHTJYsJzPYSBxQxGbsMPdGUo9OMDpJnpqGzxfFtDdu:1w3CKS:BjfavTgPb6nP5ikaO9LjmjLQlBx4Jlj9I4m47IhVneg', '2026-04-02 12:18:20.856781');
 
 -- --------------------------------------------------------
 
@@ -298,7 +328,14 @@ CREATE TABLE `tejobar_app_apartado` (
   `estado` varchar(20) NOT NULL,
   `persona_id` bigint(20) NOT NULL,
   `producto_id` bigint(20) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `tejobar_app_apartado`
+--
+
+INSERT INTO `tejobar_app_apartado` (`id`, `cantidad`, `fecha_apartado`, `estado`, `persona_id`, `producto_id`) VALUES
+(1, 2, '2026-03-19 11:39:59.122642', 'pendiente', 2, 1);
 
 -- --------------------------------------------------------
 
@@ -309,8 +346,22 @@ CREATE TABLE `tejobar_app_apartado` (
 CREATE TABLE `tejobar_app_cancha` (
   `id` bigint(20) NOT NULL,
   `estado` tinyint(1) DEFAULT NULL,
-  `disponibilidad` varchar(100) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `disponibilidad` varchar(100) DEFAULT NULL,
+  `precio_por_hora` double NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `tejobar_app_categoria`
+--
+
+CREATE TABLE `tejobar_app_categoria` (
+  `id` bigint(20) NOT NULL,
+  `nombre` varchar(100) NOT NULL,
+  `descripcion` longtext DEFAULT NULL,
+  `estado` tinyint(1) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -323,7 +374,7 @@ CREATE TABLE `tejobar_app_compra` (
   `fecha` date NOT NULL,
   `total` double NOT NULL,
   `jugador_id` bigint(20) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -334,7 +385,14 @@ CREATE TABLE `tejobar_app_compra` (
 CREATE TABLE `tejobar_app_equipo` (
   `id` bigint(20) NOT NULL,
   `nombre_equipo` varchar(100) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `tejobar_app_equipo`
+--
+
+INSERT INTO `tejobar_app_equipo` (`id`, `nombre_equipo`) VALUES
+(2, 'Equipo prueba');
 
 -- --------------------------------------------------------
 
@@ -353,7 +411,7 @@ CREATE TABLE `tejobar_app_historial` (
   `updated_at` datetime(6) DEFAULT NULL,
   `persona_id` bigint(20) NOT NULL,
   `producto_id` bigint(20) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -365,15 +423,16 @@ CREATE TABLE `tejobar_app_jugador` (
   `persona_id` bigint(20) NOT NULL,
   `estado` tinyint(1) NOT NULL,
   `rut` varchar(50) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `tejobar_app_jugador`
 --
 
 INSERT INTO `tejobar_app_jugador` (`persona_id`, `estado`, `rut`) VALUES
-(1, 1, 'RUT1'),
-(2, 1, 'RUT2');
+(2, 1, 'RUT2'),
+(3, 1, 'RUT3'),
+(6, 1, 'RUT6');
 
 -- --------------------------------------------------------
 
@@ -385,8 +444,43 @@ CREATE TABLE `tejobar_app_jugadorequipo` (
   `id` bigint(20) NOT NULL,
   `es_capitan` tinyint(1) NOT NULL,
   `equipo_id` bigint(20) NOT NULL,
-  `jugador_id` bigint(20) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `jugador_id` bigint(20) DEFAULT NULL,
+  `correo_invitado` varchar(254) DEFAULT NULL,
+  `nombre_invitado` varchar(100) DEFAULT NULL,
+  `telefono_invitado` varchar(20) DEFAULT NULL,
+  `tipo_usuario` varchar(20) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `tejobar_app_jugadorequipo`
+--
+
+INSERT INTO `tejobar_app_jugadorequipo` (`id`, `es_capitan`, `equipo_id`, `jugador_id`, `correo_invitado`, `nombre_invitado`, `telefono_invitado`, `tipo_usuario`) VALUES
+(2, 1, 2, 6, NULL, NULL, NULL, 'registrado'),
+(3, 0, 2, 3, NULL, NULL, NULL, 'registrado');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `tejobar_app_novedad`
+--
+
+CREATE TABLE `tejobar_app_novedad` (
+  `id` bigint(20) NOT NULL,
+  `tipo_novedad` varchar(20) NOT NULL,
+  `cantidad` int(11) NOT NULL,
+  `fecha` datetime(6) NOT NULL,
+  `descripcion` varchar(255) DEFAULT NULL,
+  `producto_id` bigint(20) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `tejobar_app_novedad`
+--
+
+INSERT INTO `tejobar_app_novedad` (`id`, `tipo_novedad`, `cantidad`, `fecha`, `descripcion`, `producto_id`) VALUES
+(1, 'agregado', 50, '2026-03-19 11:38:36.679068', 'Nuevo producto o lote agregado', 1),
+(2, 'vendido', 2, '2026-03-19 11:39:59.123872', 'Separado/Vendido por sistema', 1);
 
 -- --------------------------------------------------------
 
@@ -398,10 +492,15 @@ CREATE TABLE `tejobar_app_partido` (
   `id` bigint(20) NOT NULL,
   `fecha` date NOT NULL,
   `hora` varchar(20) NOT NULL,
-  `capitan` varchar(100) NOT NULL,
   `estado` varchar(20) NOT NULL,
-  `cancha_id` bigint(20) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `cancha_id` bigint(20) NOT NULL,
+  `equipo1_id` bigint(20) DEFAULT NULL,
+  `equipo2_id` bigint(20) DEFAULT NULL,
+  `hora_fin` datetime(6) DEFAULT NULL,
+  `hora_inicio` datetime(6) DEFAULT NULL,
+  `pago_cancha` tinyint(1) NOT NULL,
+  `hora_reserva_fin` varchar(20) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -416,15 +515,19 @@ CREATE TABLE `tejobar_app_persona` (
   `numero` varchar(20) NOT NULL,
   `rol` varchar(10) NOT NULL,
   `user_id` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `tejobar_app_persona`
 --
 
 INSERT INTO `tejobar_app_persona` (`id`, `nombre`, `correo`, `numero`, `rol`, `user_id`) VALUES
-(1, 'felipe', 'pipe@gmail.com', '3214623965', 'capitan', 1),
-(2, 'cardozo', 'cardozo@gmail.com', '2836123213', 'jugador', 2);
+(1, 'Admin', 'admin@gmail.com', '000', 'admin', 1),
+(2, 'jugador', 'jugador@gmail.com', 'jugador@gmail.com', 'jugador', 2),
+(3, 'jugador 1', 'jugador1@gmail.com', '123456789', 'jugador', 3),
+(4, 'jugador 2', 'jugador2@gmail.com', '1234567890', 'jugador', NULL),
+(5, 'jugador 3', 'jugador3@gmail.com', '1234567891', 'jugador', NULL),
+(6, 'jugador 4', 'jugador4@gmail.com', '1234567892', 'capitan', 5);
 
 -- --------------------------------------------------------
 
@@ -438,20 +541,16 @@ CREATE TABLE `tejobar_app_producto` (
   `precio` double NOT NULL,
   `stock` int(11) NOT NULL,
   `fecha_vencimiento` date DEFAULT NULL,
-  `imagen` varchar(100) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `imagen` varchar(100) DEFAULT NULL,
+  `categoria_id` bigint(20) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `tejobar_app_producto`
 --
 
-INSERT INTO `tejobar_app_producto` (`id`, `nombre`, `precio`, `stock`, `fecha_vencimiento`, `imagen`) VALUES
-(1, 'Cerveza Artesanal', 9680, 50, '2025-12-31', 'productos/cerveza.jpg'),
-(2, 'Salchipapa', 12000, 40, '2025-12-31', 'productos/salchipapa.jpg'),
-(3, 'Picada', 25000, 30, '2025-12-31', 'productos/picada.jpg'),
-(4, 'Empanadas x5', 7000, 60, '2025-12-31', 'productos/empanadas.png'),
-(5, 'Refresco', 2500, 100, '2025-12-31', 'productos/refrescos.jpg'),
-(6, 'Aguardiente Antioqueño', 35000, 25, '2025-12-31', 'productos/aguardiente.jpg');
+INSERT INTO `tejobar_app_producto` (`id`, `nombre`, `precio`, `stock`, `fecha_vencimiento`, `imagen`, `categoria_id`) VALUES
+(1, 'prueba', 5000, 48, '2026-03-21', 'productos/3626795.png', NULL);
 
 -- --------------------------------------------------------
 
@@ -466,7 +565,7 @@ CREATE TABLE `tejobar_app_torneo` (
   `equipo1_id` bigint(20) NOT NULL,
   `equipo2_id` bigint(20) NOT NULL,
   `partido_id` bigint(20) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Índices para tablas volcadas
@@ -560,6 +659,13 @@ ALTER TABLE `tejobar_app_cancha`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indices de la tabla `tejobar_app_categoria`
+--
+ALTER TABLE `tejobar_app_categoria`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `nombre` (`nombre`);
+
+--
 -- Indices de la tabla `tejobar_app_compra`
 --
 ALTER TABLE `tejobar_app_compra`
@@ -592,15 +698,24 @@ ALTER TABLE `tejobar_app_jugador`
 --
 ALTER TABLE `tejobar_app_jugadorequipo`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `tejobar_app_jugadorequipo_jugador_id_equipo_id_7efc32c1_uniq` (`jugador_id`,`equipo_id`),
-  ADD KEY `tejobar_app_jugadore_equipo_id_54bd2712_fk_tejobar_a` (`equipo_id`);
+  ADD KEY `tejobar_app_jugadore_equipo_id_54bd2712_fk_tejobar_a` (`equipo_id`),
+  ADD KEY `tejobar_app_jugadorequipo_jugador_id_f0e794f1` (`jugador_id`);
+
+--
+-- Indices de la tabla `tejobar_app_novedad`
+--
+ALTER TABLE `tejobar_app_novedad`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `tejobar_app_novedad_producto_id_ee81f2e6_fk_tejobar_a` (`producto_id`);
 
 --
 -- Indices de la tabla `tejobar_app_partido`
 --
 ALTER TABLE `tejobar_app_partido`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `tejobar_app_partido_cancha_id_6e918378_fk_tejobar_app_cancha_id` (`cancha_id`);
+  ADD KEY `tejobar_app_partido_cancha_id_6e918378_fk_tejobar_app_cancha_id` (`cancha_id`),
+  ADD KEY `tejobar_app_partido_equipo1_id_453ef3b4_fk_tejobar_app_equipo_id` (`equipo1_id`),
+  ADD KEY `tejobar_app_partido_equipo2_id_8942cc6d_fk_tejobar_app_equipo_id` (`equipo2_id`);
 
 --
 -- Indices de la tabla `tejobar_app_persona`
@@ -614,7 +729,8 @@ ALTER TABLE `tejobar_app_persona`
 -- Indices de la tabla `tejobar_app_producto`
 --
 ALTER TABLE `tejobar_app_producto`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `tejobar_app_producto_categoria_id_4fa5dd79_fk_tejobar_a` (`categoria_id`);
 
 --
 -- Indices de la tabla `tejobar_app_torneo`
@@ -646,13 +762,13 @@ ALTER TABLE `auth_group_permissions`
 -- AUTO_INCREMENT de la tabla `auth_permission`
 --
 ALTER TABLE `auth_permission`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=69;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=77;
 
 --
 -- AUTO_INCREMENT de la tabla `auth_user`
 --
 ALTER TABLE `auth_user`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT de la tabla `auth_user_groups`
@@ -676,24 +792,30 @@ ALTER TABLE `django_admin_log`
 -- AUTO_INCREMENT de la tabla `django_content_type`
 --
 ALTER TABLE `django_content_type`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT de la tabla `django_migrations`
 --
 ALTER TABLE `django_migrations`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
 -- AUTO_INCREMENT de la tabla `tejobar_app_apartado`
 --
 ALTER TABLE `tejobar_app_apartado`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de la tabla `tejobar_app_cancha`
 --
 ALTER TABLE `tejobar_app_cancha`
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `tejobar_app_categoria`
+--
+ALTER TABLE `tejobar_app_categoria`
   MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
 
 --
@@ -706,7 +828,7 @@ ALTER TABLE `tejobar_app_compra`
 -- AUTO_INCREMENT de la tabla `tejobar_app_equipo`
 --
 ALTER TABLE `tejobar_app_equipo`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT de la tabla `tejobar_app_historial`
@@ -718,7 +840,13 @@ ALTER TABLE `tejobar_app_historial`
 -- AUTO_INCREMENT de la tabla `tejobar_app_jugadorequipo`
 --
 ALTER TABLE `tejobar_app_jugadorequipo`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT de la tabla `tejobar_app_novedad`
+--
+ALTER TABLE `tejobar_app_novedad`
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT de la tabla `tejobar_app_partido`
@@ -730,13 +858,13 @@ ALTER TABLE `tejobar_app_partido`
 -- AUTO_INCREMENT de la tabla `tejobar_app_persona`
 --
 ALTER TABLE `tejobar_app_persona`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `tejobar_app_producto`
 --
 ALTER TABLE `tejobar_app_producto`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de la tabla `tejobar_app_torneo`
@@ -816,16 +944,30 @@ ALTER TABLE `tejobar_app_jugadorequipo`
   ADD CONSTRAINT `tejobar_app_jugadore_jugador_id_f0e794f1_fk_tejobar_a` FOREIGN KEY (`jugador_id`) REFERENCES `tejobar_app_jugador` (`persona_id`);
 
 --
+-- Filtros para la tabla `tejobar_app_novedad`
+--
+ALTER TABLE `tejobar_app_novedad`
+  ADD CONSTRAINT `tejobar_app_novedad_producto_id_ee81f2e6_fk_tejobar_a` FOREIGN KEY (`producto_id`) REFERENCES `tejobar_app_producto` (`id`);
+
+--
 -- Filtros para la tabla `tejobar_app_partido`
 --
 ALTER TABLE `tejobar_app_partido`
-  ADD CONSTRAINT `tejobar_app_partido_cancha_id_6e918378_fk_tejobar_app_cancha_id` FOREIGN KEY (`cancha_id`) REFERENCES `tejobar_app_cancha` (`id`);
+  ADD CONSTRAINT `tejobar_app_partido_cancha_id_6e918378_fk_tejobar_app_cancha_id` FOREIGN KEY (`cancha_id`) REFERENCES `tejobar_app_cancha` (`id`),
+  ADD CONSTRAINT `tejobar_app_partido_equipo1_id_453ef3b4_fk_tejobar_app_equipo_id` FOREIGN KEY (`equipo1_id`) REFERENCES `tejobar_app_equipo` (`id`),
+  ADD CONSTRAINT `tejobar_app_partido_equipo2_id_8942cc6d_fk_tejobar_app_equipo_id` FOREIGN KEY (`equipo2_id`) REFERENCES `tejobar_app_equipo` (`id`);
 
 --
 -- Filtros para la tabla `tejobar_app_persona`
 --
 ALTER TABLE `tejobar_app_persona`
   ADD CONSTRAINT `tejobar_app_persona_user_id_20abbeff_fk_auth_user_id` FOREIGN KEY (`user_id`) REFERENCES `auth_user` (`id`);
+
+--
+-- Filtros para la tabla `tejobar_app_producto`
+--
+ALTER TABLE `tejobar_app_producto`
+  ADD CONSTRAINT `tejobar_app_producto_categoria_id_4fa5dd79_fk_tejobar_a` FOREIGN KEY (`categoria_id`) REFERENCES `tejobar_app_categoria` (`id`);
 
 --
 -- Filtros para la tabla `tejobar_app_torneo`
