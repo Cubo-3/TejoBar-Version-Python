@@ -1,8 +1,8 @@
 body {
   margin: 0;
   font-family: 'Segoe UI', sans-serif;
-  background-color: #fdf6e3;
-  color: #333;
+  background-color: #141414;
+  color: #ffffff;
   transition: 1.5s;
 }
 
@@ -112,7 +112,7 @@ nav a {
 .product-card:hover {
   transform: scale(1.01);
   box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-  color: #e8e8e8;
+  color: #ffffff;
 }
 
 /* Zona de la foto (izquierda) */
@@ -153,7 +153,7 @@ nav a {
   color: #e8e8e8;
 }
 
-.card {
+.home-card {
   display: flex;
   flex-direction: row;
   background-color: #1d1c19;
@@ -167,7 +167,7 @@ nav a {
   min-height: 160px;
 }
 
-.card:hover {
+.home-card:hover {
   transform: scale(1.01);
   box-shadow: 0 4px 16px rgba(0,0,0,0.15);
 }
@@ -205,6 +205,20 @@ nav a {
   color: #e0e0e0;
 }
 
+/* Global override for product names in catalog cards */
+.catalog-card .card-body h5, 
+.catalog-card .card-body a,
+.catalog-card a h5 {
+    color: #ffffff !important;
+    text-decoration: none !important;
+}
+
+.light-mode .catalog-card .card-body h5,
+.light-mode .catalog-card .card-body a,
+.light-mode .catalog-card a h5 {
+    color: #333 !important;
+}
+
 footer {
   background-color: #333;
   color: white;
@@ -238,8 +252,8 @@ footer {
 
 /* Modo Claro */
 .light-mode {
-  background-color: #ffffff;
-  color: #000;
+  background-color: #fdf6e3;
+  color: #333;
 }
 
 .light-mode header {
@@ -264,7 +278,7 @@ footer {
   transition: 1.5s;
 }
 
-.light-mode .card {
+.light-mode .home-card {
   background-color: #ffffff;
   color: #000;
   border: 1px solid #ccc;

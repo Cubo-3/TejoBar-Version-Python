@@ -53,7 +53,18 @@
                             <td class="text-muted"><i class="far fa-clock small mr-1"></i> {{ a.fecha_apartado|date:"d M Y" }}</td>
                             <td><span class="badge badge-warning text-dark px-2 py-1 rounded-pill"><i class="fas fa-hourglass-half mr-1"></i> Pendiente</span></td>
                             <td>
-                                <a href="{% url 'tejobar_app:pago_crear_apartado' a.pk %}" class="btn btn-sm btn-primary rounded-pill"><i class="fas fa-credit-card mr-1"></i> Pagar</a>
+                                <form method="POST" action="{% url 'tejobar_app:admin_apartado_pagar_efectivo' a.pk %}" class="d-inline" onsubmit="return confirm('¿Está seguro de marcar este pedido como PAGADO EN EFECTIVO?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 shadow-sm mb-1" title="Marcar Pagado (Efectivo)">
+                                        <i class="fas fa-money-bill-wave mr-1"></i> Efectivo
+                                    </button>
+                                </form>
+                                <form method="POST" action="{% url 'tejobar_app:admin_apartado_cancelar' a.pk %}" class="d-inline" onsubmit="return confirm('¿Está seguro de CANCELAR este pedido y devolver el inventario? Esta acción no se puede deshacer.');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger rounded-pill px-3 shadow-sm" title="Cancelar Pedido (Devolver Stock)">
+                                        <i class="fas fa-ban mr-1"></i> Cancelar
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                     {% empty %}
@@ -80,6 +91,7 @@
                         <th class="py-3 border-0">Cantidad</th>
                         <th class="py-3 border-0">Fecha Entrega</th>
                         <th class="py-3 border-0">Estado</th>
+                        <th class="py-3 border-0">Acciones</th>
                     </tr>
                 </thead>
                 <tbody class="border-top-0">
@@ -89,13 +101,26 @@
                             <td><span class="badge badge-light border text-dark px-2 py-1"><i class="fas fa-box text-primary mr-1"></i> {{ h.producto.nombre }}</span></td>
                             <td><span class="font-weight-bold h5 mb-0 text-secondary">{{ h.cantidad }}</span></td>
                             <td class="text-muted"><i class="far fa-calendar-check small mr-1"></i> {{ h.fecha_entrega|date:"d M Y, h:i a" }}</td>
-                            <td><span class="badge badge-success px-2 py-1 rounded-pill"><i class="fas fa-check-circle mr-1"></i> Entregado</span></td>
+                            {% if h.estado == 'por_entregar' %}
+                                <td><span class="badge badge-warning text-dark px-2 py-1 rounded-pill"><i class="fas fa-truck-loading mr-1"></i> Por Entregar</span></td>
+                                <td>
+                                    <form method="POST" action="{% url 'tejobar_app:admin_despachar_pedido' h.pk %}" class="d-inline" onsubmit="return confirm('¿Confirmas que ya entregaste físicamente este pedido al cliente?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm" title="Marcar como Entregado">
+                                            <i class="fas fa-check-circle mr-1"></i> Despachar
+                                        </button>
+                                    </form>
+                                </td>
+                            {% else %}
+                                <td><span class="badge badge-success px-2 py-1 rounded-pill"><i class="fas fa-check-double mr-1"></i> Entregado</span></td>
+                                <td><span class="text-muted small">-</span></td>
+                            {% endif %}
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="5" class="text-center py-5">
+                            <td colspan="6" class="text-center py-5">
                                 <i class="fas fa-box-open fa-3x text-muted mb-3 opacity-50"></i>
-                                <h5 class="text-muted">No hay historial de entregas todavía.</h5>
+                                <h5 class="text-muted">No hay historial todavía.</h5>
                             </td>
                         </tr>
                     {% endfor %}

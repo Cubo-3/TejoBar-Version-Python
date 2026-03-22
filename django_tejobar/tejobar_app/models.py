@@ -148,10 +148,12 @@ class ApartadoQuerySet(models.QuerySet):
 class Apartado(models.Model):
     ESTADO_PENDIENTE = "pendiente"
     ESTADO_COMPRADO = "comprado"
+    ESTADO_CANCELADO = "cancelado"
 
     ESTADO_CHOICES = [
         (ESTADO_PENDIENTE, "Pendiente"),
         (ESTADO_COMPRADO, "Comprado"),
+        (ESTADO_CANCELADO, "Cancelado / Abandonado"),
     ]
 
     persona = models.ForeignKey(
@@ -170,6 +172,33 @@ class Apartado(models.Model):
 
     def __str__(self) -> str:
         return f"Apartado #{self.pk} - {self.persona} - {self.producto}"
+
+    @classmethod
+    def liberar_carritos_abandonados(cls, horas_limite=2):
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        tiempo_limite = timezone.now() - timedelta(hours=horas_limite)
+        abandonados = cls.objects.filter(
+            estado=cls.ESTADO_PENDIENTE,
+            fecha_apartado__lt=tiempo_limite
+        )
+        
+        from .models import Novedad # Prevent circular import
+        for apartado in abandonados:
+            if apartado.producto:
+                apartado.producto.stock += apartado.cantidad
+                apartado.producto.save()
+                
+                Novedad.objects.create(
+                    producto=apartado.producto,
+                    tipo_novedad=Novedad.TIPO_AGREGADO,
+                    cantidad=apartado.cantidad,
+                    descripcion="Stock devuelto: Carrito abandonado."
+                )
+        
+        # Finally, mark all abandoned as cancelled
+        abandonados.update(estado=cls.ESTADO_CANCELADO)
 
 
 class Historial(models.Model):
@@ -212,6 +241,15 @@ class JugadorEquipo(models.Model):
     nombre_invitado = models.CharField(max_length=100, blank=True, null=True)
     telefono_invitado = models.CharField(max_length=20, blank=True, null=True)
     correo_invitado = models.EmailField(blank=True, null=True)
+
+    def clean(self):
+        super().clean()
+        from django.core.exceptions import ValidationError
+        if self.tipo_usuario == self.TIPO_REGISTRADO and self.jugador:
+            # Check if player is already in another team
+            equipos_previos = JugadorEquipo.objects.filter(jugador=self.jugador).exclude(pk=self.pk)
+            if equipos_previos.exists():
+                raise ValidationError({"jugador": "Este jugador ya pertenece a otro equipo. Un jugador no puede estar en dos equipos a la vez."})
 
     def __str__(self) -> str:
         return f"{self.get_nombre()} en {self.equipo.nombre_equipo}"
@@ -273,16 +311,16 @@ class Partido(models.Model):
 
         if other.estado == Partido.ESTADO_CANCELADA:
             return False
-            
-        start_a = self.hora
-        end_a = self.hora_reserva_fin
-        start_b = other.hora
-        end_b = other.hora_reserva_fin
 
-        # Si terminan o empiezan a la misma hora literal (formato 24h asumiendo)
-        # o se asume fin de día "23:59" si no hay fin
-        end_a = end_a if end_a else "23:59"
-        end_b = end_b if end_b else ("23:59" if other.estado != Partido.ESTADO_CONFIRMADA else "23:59") # Simplification for active
+        def parse_time(time_str, is_end=False):
+            if not time_str:
+                return "23:59" if is_end else "00:00"
+            return time_str.zfill(5)  # Ensure "9:00" becomes "09:00"
+
+        start_a = parse_time(self.hora)
+        end_a = parse_time(self.hora_reserva_fin, is_end=True)
+        start_b = parse_time(other.hora)
+        end_b = parse_time(other.hora_reserva_fin, is_end=True)
 
         if start_a < end_b and start_b < end_a:
             return True
@@ -296,8 +334,15 @@ class Partido(models.Model):
         errors = {}
 
         if self.fecha and self.hora:
-            start_time = self.hora
-            end_time = self.hora_reserva_fin if self.hora_reserva_fin else "23:59"
+            start_time = self.hora.zfill(5)
+            end_time = self.hora_reserva_fin.zfill(5) if self.hora_reserva_fin else "23:59"
+
+            if start_time < "10:00" or start_time > "23:00":
+                errors["hora"] = "El horario de atención es de 10:00 a 23:00. No se pueden programar partidos fuera de este horario."
+
+            if end_time < "10:00" or end_time > "23:59":
+                if "hora_reserva_fin" not in errors:
+                    errors["hora_reserva_fin"] = "El horario de finalización debe estar entre las 10:00 y las 23:59."
 
             if start_time >= end_time:
                 errors["hora_reserva_fin"] = "La hora final debe ser mayor que la inicial."

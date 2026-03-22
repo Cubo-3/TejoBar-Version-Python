@@ -23,8 +23,21 @@ from .forms import (
 from .models import Apartado, Equipo, Historial, Jugador, Persona, Producto, JugadorEquipo, Novedad, Partido, Cancha, Categoria
 
 
+def admin_required(view_func):
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect("tejobar_app:login")
+        persona = getattr(request.user, "persona", None)
+        if not persona or persona.rol != Persona.ROL_ADMIN:
+            messages.error(request, "No tienes permisos para acceder a esta área.")
+            return redirect("tejobar_app:home")
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
 def home(request: HttpRequest) -> HttpResponse:
     Producto.actualizar_stock_vencidos()
+    Apartado.liberar_carritos_abandonados(horas_limite=2)
     productos = Producto.objects.disponibles()
     
     categoria_id = request.GET.get('categoria_id')
@@ -107,6 +120,7 @@ def register_view(request: HttpRequest) -> HttpResponse:
 
 def product_list(request: HttpRequest) -> HttpResponse:
     Producto.actualizar_stock_vencidos()
+    Apartado.liberar_carritos_abandonados(horas_limite=2)
     productos = Producto.objects.disponibles()
     
     categoria_id = request.GET.get('categoria_id')
@@ -193,6 +207,7 @@ def apartar_producto(request: HttpRequest, pk: int) -> HttpResponse:
 @login_required
 def dashboard(request: HttpRequest) -> HttpResponse:
     Producto.actualizar_stock_vencidos()
+    Apartado.liberar_carritos_abandonados(horas_limite=2)
     persona = getattr(request.user, "persona", None)
     if not persona:
         messages.error(request, "No tienes un perfil de persona asociado.")
@@ -212,6 +227,8 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         if fecha_fin:
             apartados = apartados.filter(fecha_apartado__lte=fecha_fin)
             
+        pedidos_por_entregar = Historial.objects.filter(estado="por_entregar").select_related("persona", "producto").order_by("fecha_entrega")
+
         context.update(
             {
                 "total_productos": Producto.objects.count(),
@@ -223,6 +240,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
                 "total_canchas": Cancha.objects.count(),
                 "total_usuarios": User.objects.filter(is_active=True).count(),
                 "apartados": apartados,
+                "pedidos_por_entregar": pedidos_por_entregar,
             }
         )
     else:
@@ -378,12 +396,44 @@ def persona_list(request: HttpRequest) -> HttpResponse:
 
 
 @login_required
+@admin_required
 def persona_create(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         form = PersonaForm(request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(request, "Persona creada correctamente")
+            # 1. Create Persona (initially without user to avoid integrity issues)
+            persona = form.save()
+            
+            # 2. Check if a User with this email already exists
+            user_exists = User.objects.filter(email=persona.correo).first()
+            
+            if not user_exists:
+                # 3. Create Django User
+                from django.utils.crypto import get_random_string
+                # Generate a consistent but secure-ish initial username from name
+                base_username = persona.nombre.lower().replace(" ", "")[:15]
+                username = f"{base_username}_{get_random_string(4)}"
+                
+                # Create the user
+                new_user = User.objects.create_user(
+                    username=username,
+                    email=persona.correo,
+                    password="TejoBarUser123!" # Default initial password
+                )
+                persona.user = new_user
+                persona.save()
+                messages.info(request, f"Se ha creado una cuenta de acceso para {persona.nombre}. Usuario: {username}, Pass: TejoBarUser123!")
+            else:
+                persona.user = user_exists
+                persona.save()
+                messages.info(request, f"Se ha vinculado la Persona al usuario preexistente: {user_exists.username}")
+
+            # 4. If role is player or captain, create Jugador record
+            if persona.rol in (Persona.ROL_JUGADOR, Persona.ROL_CAPITAN):
+                from .models import Jugador
+                Jugador.objects.get_or_create(persona=persona)
+
+            messages.success(request, "Persona y perfil configurados correctamente.")
             return redirect("tejobar_app:personas_index")
     else:
         form = PersonaForm()
@@ -391,12 +441,19 @@ def persona_create(request: HttpRequest) -> HttpResponse:
 
 
 @login_required
+@admin_required
 def persona_update(request: HttpRequest, pk: int) -> HttpResponse:
     persona = get_object_or_404(Persona, pk=pk)
     if request.method == "POST":
         form = PersonaForm(request.POST, instance=persona)
         if form.is_valid():
-            form.save()
+            persona = form.save()
+            
+            # Sync role with Jugador existence
+            if persona.rol in (Persona.ROL_JUGADOR, Persona.ROL_CAPITAN):
+                from .models import Jugador
+                Jugador.objects.get_or_create(persona=persona)
+            
             messages.success(request, "Persona actualizada correctamente")
             return redirect("tejobar_app:personas_index")
     else:
@@ -459,7 +516,7 @@ def equipo_detail(request: HttpRequest, pk: int) -> HttpResponse:
             es_capitan = miembro.es_capitan
         else:
             if not JugadorEquipo.objects.filter(jugador=persona.jugador).exists():
-                if equipo.equipo_jugadores.count() < 10:
+                if equipo.equipo_jugadores.count() < 5:
                     puede_unirse = True
 
     jugadores_equipo = equipo.equipo_jugadores.select_related("jugador__persona").all()
@@ -660,16 +717,6 @@ def equipo_remove_member(request: HttpRequest, pk: int, jugador_pk: int) -> Http
     return redirect("tejobar_app:equipos_show", pk=equipo.pk)
 
 
-def admin_required(view_func):
-    def wrapper(request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return redirect("tejobar_app:login")
-        persona = getattr(request.user, "persona", None)
-        if not persona or persona.rol != Persona.ROL_ADMIN:
-            messages.error(request, "No tienes permisos para acceder a esta área.")
-            return redirect("tejobar_app:home")
-        return view_func(request, *args, **kwargs)
-    return wrapper
 
 
 @admin_required
@@ -1169,7 +1216,7 @@ def pago_exitoso(request):
                     cantidad=apartado.cantidad,
                     precio=apartado.producto.precio,
                     total=apartado.cantidad * apartado.producto.precio,
-                    estado="entregado"
+                    estado="por_entregar"
                 )
                 
                 Novedad.objects.create(
@@ -1194,7 +1241,7 @@ def pago_exitoso(request):
                     cantidad=apartado.cantidad,
                     precio=apartado.producto.precio,
                     total=apartado.cantidad * apartado.producto.precio,
-                    estado="entregado"
+                    estado="por_entregar"
                 )
                 
                 Novedad.objects.create(
@@ -1232,6 +1279,67 @@ def pago_fallido(request):
 def pago_pendiente(request):
     messages.info(request, "El pago se encuentra pendiente. Te notificaremos cuando se apruebe.")
     return redirect("dashboard")
+
+
+@admin_required
+def admin_apartado_pagar_efectivo(request: HttpRequest, pk: int) -> HttpResponse:
+    if request.method == "POST":
+        apartado = get_object_or_404(Apartado, pk=pk, estado=Apartado.ESTADO_PENDIENTE)
+        
+        apartado.estado = Apartado.ESTADO_COMPRADO
+        apartado.save()
+        
+        Historial.objects.create(
+            persona=apartado.persona,
+            producto=apartado.producto,
+            cantidad=apartado.cantidad,
+            precio=apartado.producto.precio,
+            total=apartado.cantidad * apartado.producto.precio,
+            estado="por_entregar"
+        )
+        
+        Novedad.objects.create(
+            producto=apartado.producto,
+            tipo_novedad=Novedad.TIPO_VENDIDO,
+            cantidad=apartado.cantidad,
+            descripcion=f"Pago en efectivo procesado por Admin: {request.user.username}"
+        )
+        messages.success(request, f"Pago en efectivo de {apartado.producto.nombre} registrado correctamente.")
+        
+    return redirect(request.META.get('HTTP_REFERER', 'tejobar_app:dashboard'))
+
+
+@admin_required
+def admin_apartado_cancelar(request: HttpRequest, pk: int) -> HttpResponse:
+    if request.method == "POST":
+        apartado = get_object_or_404(Apartado, pk=pk, estado=Apartado.ESTADO_PENDIENTE)
+        
+        # Restore stock
+        apartado.producto.stock += apartado.cantidad
+        apartado.producto.save()
+        
+        apartado.estado = Apartado.ESTADO_CANCELADO
+        apartado.save()
+
+        Novedad.objects.create(
+            producto=apartado.producto,
+            tipo_novedad=Novedad.TIPO_AGREGADO,
+            cantidad=apartado.cantidad,
+            descripcion=f"Cancelación administrativa y devolución de stock. Admin: {request.user.username}"
+        )
+        messages.success(request, f"Apartado cancelado. Se devolvieron {apartado.cantidad} cajas al inventario.")
+        
+    return redirect(request.META.get('HTTP_REFERER', 'tejobar_app:dashboard'))
+
+
+@admin_required
+def admin_despachar_pedido(request: HttpRequest, pk: int) -> HttpResponse:
+    if request.method == "POST":
+        historial = get_object_or_404(Historial, pk=pk, estado="por_entregar")
+        historial.estado = "entregado"
+        historial.save()
+        messages.success(request, f"¡Pedido de {historial.producto.nombre} despachado con éxito!")
+    return redirect(request.META.get('HTTP_REFERER', 'tejobar_app:dashboard'))
 
 
 @login_required

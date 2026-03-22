@@ -15,7 +15,7 @@
                     {% if producto.imagen %}
                         <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="img-fluid rounded shadow" style="max-height: 350px; object-fit: contain;">
                     {% else %}
-                        <img src="{% static 'img/productos/default.png' %}" alt="{{ producto.nombre }}" class="img-fluid rounded shadow" style="max-height: 350px; object-fit: contain;">
+                        <img src="{% static 'img/productos/no-image.png' %}" alt="{{ producto.nombre }}" class="img-fluid rounded shadow" style="max-height: 350px; object-fit: contain;">
                     {% endif %}
                 </div>
                 <div class="col-md-7 p-4">

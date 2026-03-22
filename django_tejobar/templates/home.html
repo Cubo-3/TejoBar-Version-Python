@@ -5,9 +5,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TejoBar Puente Aranda</title>
-  <link rel="stylesheet" href="{% static 'css/newstyle.css' %}"/>
+  <link rel="stylesheet" href="{% static 'css/newstyle.css' %}?v=1.2"/>
   <link href="https://fonts.googleapis.com/css2?family=Segoe+UI&display=swap" rel="stylesheet" />
-  <script src="{% static 'js/newjs.js' %}"></script>
+  <script src="{% static 'js/newjs.js' %}?v=1.2"></script>
 </head>
 
 <body>
@@ -74,7 +74,7 @@
         <h3>{{ producto.nombre }}</h3>
         <p>${{ producto.precio|floatformat:0 }}</p>
       </div>
-      <div class="card-image" style="{% if producto.imagen %}background-image: url('{{ producto.imagen.url }}');{% else %}background-color: #333;{% endif %}"></div>
+      <div class="card-image" style="{% if producto.imagen %}background-image: url('{{ producto.imagen.url }}');{% else %}background-image: url('{% static 'img/productos/no-image.png' %}');{% endif %}"></div>
     </a>
     {% empty %}
     <p>No hay productos disponibles por ahora.</p>

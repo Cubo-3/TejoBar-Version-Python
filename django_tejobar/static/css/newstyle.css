@@ -108,8 +108,8 @@ nav a {
   padding: 60px 20px;
   text-align: center;
   background-color: #412501d8;
-  color: orange;
-  transition: background-color 1.5s, color 0.5s
+  color: #fff;
+  transition: background-color 1.5s, color 0.5s;
 }
 
 .grid {
@@ -156,8 +156,8 @@ footer {
 
     /* Modo Claro */
 .light-mode {
-  background-color: #fdf6e3 !important;
-  color: #333 !important;
+  background-color: #fdf6e3;
+  color: #333;
 }
 
 .light-mode header {
@@ -178,13 +178,13 @@ footer {
 
 
 .light-mode .section {
-  background-color: #b3b3b3;
-  color: #222;
+  background-color: #f4f4f4;
+  color: #333;
 }
 
 .light-mode .card {
-  background-color: #141414;
-  color: #ffffff;
+  background-color: #ffffff;
+  color: #333;
 }
 
 .light-mode footer {
@@ -213,7 +213,7 @@ footer {
   border-radius: 12px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
   text-decoration: none;
-  color: inherit;
+  color: #333;
   height: 220px;
   transition: transform 0.3s ease;
 }
@@ -343,48 +343,3 @@ footer {
   margin-top: 30px;
 }
 
-.card {
-  display: flex;
-  background-color: #fffefc;
-  border: 1px solid #e0e0e0;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  overflow: hidden;
-  text-decoration: none;
-  color: inherit;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  min-height: 160px;
-}
-
-.card:hover {
-  transform: scale(1.01);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-}
-
-.card-image {
-  width: 140px;
-  height: 100%;
-  background-size: cover;
-  background-position: center;
-  flex-shrink: 0;
-}
-
-.card-content {
-  padding: 20px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.card-content h3 {
-  font-size: 18px;
-  font-weight: bold;
-  margin-bottom: 8px;
-  color: #141414;
-}
-
-.card-content p {
-  font-size: 16px;
-  color: #555;
-}

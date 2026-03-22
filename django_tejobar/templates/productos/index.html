@@ -63,8 +63,8 @@
     {% for producto in productos %}
         <div class="col-6 col-md-4 col-lg-3 mb-4">
             <div class="card h-100 catalog-card shadow-sm border-0">
-                <a href="{% url 'tejobar_app:productos_show' producto.pk %}" class="text-decoration-none text-dark d-flex flex-column h-100">
-                    <img src="{% if producto.imagen %}{{ producto.imagen.url }}{% else %}{% static 'img/productos/default.png' %}{% endif %}" 
+                <a href="{% url 'tejobar_app:productos_show' producto.pk %}" class="text-decoration-none d-flex flex-column h-100">
+                    <img src="{% if producto.imagen %}{{ producto.imagen.url }}{% else %}{% static 'img/productos/no-image.png' %}{% endif %}" 
                          class="card-img-top catalog-img" 
                          alt="{{ producto.nombre }}">
                     
@@ -73,7 +73,7 @@
                             <span class="badge badge-light text-muted mb-2 align-self-center border">{{ producto.categoria.nombre }}</span>
                         {% endif %}
                         
-                        <h5 class="card-title font-weight-bold text-dark mb-1" style="font-size: 1.1rem;">{{ producto.nombre }}</h5>
+                        <h5 class="card-title font-weight-bold mb-1" style="font-size: 1.1rem;">{{ producto.nombre }}</h5>
                         
                         <h4 class="text-success font-weight-bold mt-2 mb-3">${{ producto.precio|floatformat:0 }}</h4>
                         

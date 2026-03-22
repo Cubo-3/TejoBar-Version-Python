@@ -58,6 +58,11 @@ urlpatterns = [
     path("carrito/editar/<int:pk>/", views.editar_item_carrito, name="carrito_editar"),
     path("carrito/eliminar/<int:pk>/", views.eliminar_item_carrito, name="carrito_eliminar"),
 
+    # Admin Apartados Manual
+    path("administracion/apartados/<int:pk>/pagar-efectivo/", views.admin_apartado_pagar_efectivo, name="admin_apartado_pagar_efectivo"),
+    path("administracion/apartados/<int:pk>/cancelar/", views.admin_apartado_cancelar, name="admin_apartado_cancelar"),
+    path("administracion/historial/<int:pk>/despachar/", views.admin_despachar_pedido, name="admin_despachar_pedido"),
+
     # MercadoPago Pagos
     path("pago/crear/carrito/", views.crear_preferencia_carrito, name="pago_crear_carrito"),
     path("pago/crear/apartado/<int:pk>/", views.crear_preferencia_apartado, name="pago_crear_apartado"),
