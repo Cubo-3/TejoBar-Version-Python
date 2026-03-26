@@ -12,19 +12,48 @@ def procesar_archivo_productos(archivo):
 
     try:
         if archivo.name.endswith('.csv'):
-            df = pd.read_csv(archivo, encoding='utf-8')
+            import io
+            # Leemos el contenido a memoria para no tener problemas con el .seek(0)
+            contenido = archivo.read()
+            # utf-8-sig maneja el BOM que Excel a veces añade al guardar como UTF-8
+            encodings_a_probar = ['utf-8', 'utf-8-sig', 'latin-1', 'iso-8859-1', 'cp1252']
+            df = None
+            ultimo_error = ""
+
+            for encoding in encodings_a_probar:
+                try:
+                    df = pd.read_csv(io.BytesIO(contenido), encoding=encoding)
+                    break  # Si lee exitosamente, salimos del ciclo
+                except Exception as e:
+                    # Capturamos el primer error (que suele ser el de UTF-8) para mostrarlo si todos fallan
+                    if not ultimo_error:
+                        ultimo_error = str(e)
+                    continue
+            
+            if df is None:
+                resumen['errores'].append(
+                    f"No se pudo descifrar la codificación del archivo CSV. Fallaron UTF-8 y Latin-1. "
+                    f"Abre tu archivo en Excel y guárdalo usando 'Guardar como' -> 'CSV UTF-8 (delimitado por comas)'. "
+                    f"Detalle interno: {ultimo_error[:100]}"
+                )
+                return resumen
         else:
             df = pd.read_excel(archivo)
     except Exception as e:
         resumen['errores'].append(f"Error crítico al leer el archivo. Verifica el formato. Detalle: {str(e)}")
         return resumen
 
-    # Validar que existan las columnas mínimas esperadas (case-insensitive)
-    df.columns = df.columns.str.lower()
-    columnas_requeridas = {'nombre', 'precio', 'stock', 'categoria'}
+    # 1. Estandarizar nombres de columnas (minúsculas y sin espacios)
+    df.columns = [str(c).lower().strip() for c in df.columns]
+
+    # 2. Definir las columnas obligatorias usando un Set
+    columnas_requeridas = {'nombre', 'categoria', 'stock', 'precio'}
+    columnas_csv = set(df.columns)
     
-    if not columnas_requeridas.issubset(set(df.columns)):
-        resumen['errores'].append(f"Faltan columnas requeridas. El archivo debe contener exactamente: {', '.join(columnas_requeridas)}")
+    # 3. Validar usando issubset (permite orden aleatorio y columnas extra)
+    if not columnas_requeridas.issubset(columnas_csv):
+        faltantes = columnas_requeridas - columnas_csv
+        resumen['errores'].append(f"Faltan las siguientes columnas obligatorias: {', '.join(faltantes)}")
         return resumen
 
     # OBTENER CAMPOS DEL MODELO DE FORMA DINÁMICA
