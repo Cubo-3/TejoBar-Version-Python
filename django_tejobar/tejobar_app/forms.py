@@ -46,7 +46,7 @@ class RegistroForm(forms.Form):
 class PersonaForm(forms.ModelForm):
     class Meta:
         model = Persona
-        fields = ["nombre", "correo", "numero", "rol"]
+        fields = ["nombre", "correo", "numero"]
 
 
 class CategoriaForm(forms.ModelForm):
@@ -72,6 +72,18 @@ class ProductoForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Solo mostrar categorías activas en el dropdown
         self.fields['categoria'].queryset = Categoria.objects.filter(estado=True)
+
+    def clean_precio(self):
+        precio = self.cleaned_data.get("precio")
+        if precio is not None and precio <= 0:
+            raise forms.ValidationError("El precio debe ser estrictamente mayor a 0.")
+        return precio
+
+    def clean_stock(self):
+        stock = self.cleaned_data.get("stock")
+        if stock is not None and stock < 0:
+            raise forms.ValidationError("No puedes registrar inventario negativo.")
+        return stock
 
 
 class EquipoForm(forms.ModelForm):
@@ -177,4 +189,15 @@ class JugadorEquipoForm(forms.ModelForm):
             self.add_error('nombre_invitado', 'Debe ingresar el nombre del invitado.')
         
         return cleaned_data
+
+
+from django.core.validators import FileExtensionValidator
+
+class CargaMasivaProductosForm(forms.Form):
+    archivo = forms.FileField(
+        label="Archivo de Productos (Excel o CSV)",
+        help_text="Formatos soportados: .xlsx, .xls, .csv",
+        validators=[FileExtensionValidator(allowed_extensions=['xlsx', 'xls', 'csv'])],
+        widget=forms.FileInput(attrs={'class': 'form-control', 'accept': '.xlsx,.xls,.csv'})
+    )
 

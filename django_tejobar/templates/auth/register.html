@@ -5,17 +5,7 @@
 
 {% block extra_styles %}
 <style>
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-image: url("{% static 'img/fondo.jpg' %}");
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-    color: #333;
-}
+
 .login-container {
     display: flex;
     justify-content: center;
@@ -23,7 +13,10 @@ body {
     min-height: 80vh;
 }
 .login-box {
-    background: linear-gradient(to bottom, #ffa500, #131313, #141414);
+    background: rgba(13,13,13,0.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,123,0,0.2);
     padding: 40px;
     border-radius: 20px;
     width: 340px;
@@ -33,14 +26,15 @@ body {
 .avatar {
     width: 80px;
     height: 80px;
-    background-color: white;
+    background-color: transparent;
+    border: 2px solid #ff7b00;
     border-radius: 50%;
     margin: 0 auto 20px;
     display: flex;
     justify-content: center;
     align-items: center;
     font-size: 36px;
-    color: #ffa500;
+    color: #ff7b00;
 }
 h2 {
     color: white;
@@ -74,17 +68,17 @@ h2 {
 .btn-login {
     width: 100%;
     padding: 12px;
-    background-color: white;
-    color: #131313;
+    background: linear-gradient(90deg, #ff7b00 0%, #e65c00 100%);
+    color: #fff;
     font-weight: bold;
-    border: 2px solid #ffa500;
+    border: none;
     border-radius: 25px;
     cursor: pointer;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 .btn-login:hover {
-    background-color: #ffa500;
-    color: white;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(255, 123, 0, 0.5);
 }
 .forgot {
     display: block;

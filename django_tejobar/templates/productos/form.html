@@ -1,90 +1,210 @@
-{% extends "layouts/public.html" %}
+{% extends "dashboard/base.html" %}
 
 {% block title %}
 {% if producto %}Editar Producto{% else %}Nuevo Producto{% endif %} - TejoBar
 {% endblock %}
 
 {% block content %}
-<div class="row justify-content-center mt-4">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">{% if producto %}Editar Producto{% else %}Nuevo Producto{% endif %}</h4>
-            </div>
-            <div class="card-body bg-dark text-white p-4">
-                <form method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
+<style>
+    /* Estilos Premium Formulario */
+    .premium-input {
+        background-color: #212529 !important;
+        border: 1px solid #495057 !important;
+        color: #f8f9fa !important;
+        transition: all 0.3s ease-in-out;
+    }
+    .premium-input:focus {
+        border-color: #0d6efd !important;
+        box-shadow: 0 0 8px rgba(13, 110, 253, 0.5) !important;
+        background-color: #2b3035 !important;
+    }
+    .premium-input:hover {
+        border-color: #6c757d !important;
+    }
+    
+    /* Input type file override */
+    .custom-file-label {
+        background-color: #212529 !important;
+        border: 1px solid #495057 !important;
+        color: #adb5bd !important;
+        border-radius: 50rem !important;
+    }
+    .custom-file-label::after {
+        background-color: #343a40 !important;
+        color: #fff !important;
+        border-radius: 0 50rem 50rem 0 !important;
+        content: "Buscar" !important;
+    }
+    
+    /* Select Categoria */
+    select.form-control {
+        background-color: #212529 !important;
+        border: 1px solid #495057 !important;
+        color: #f8f9fa !important;
+        border-radius: 50rem 0 0 50rem !important;
+        height: 44px !important;
+    }
+    .btn-categoria {
+        border-radius: 0 50rem 50rem 0 !important;
+    }
 
-                    {% for field in form %}
-                    <div class="mb-3">
-                        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+    .img-preview {
+        max-width: 100%;
+        max-height: 250px;
+        border-radius: 12px;
+        display: none;
+        margin-top: 15px;
+        border: 2px dashed #495057;
+        padding: 5px;
+        object-fit: cover;
+    }
+</style>
 
-                        {% if field.name == 'imagen' %}
-                        {{ field }}
-                        {% elif field.name == 'fecha_vencimiento' %}
-                        <input type="date" name="{{ field.name }}" id="{{ field.id_for_label }}"
-                            class="form-control {% if field.errors %}is-invalid{% endif %}"
-                            value="{{ field.value|date:'Y-m-d'|default:'' }}">
-                        {% elif field.name == 'categoria' %}
-                        <div class="d-flex align-items-center">
-                            {{ field }}
-                            <button type="button" class="btn btn-success ml-2" data-toggle="modal" data-target="#categoriaModal" title="Nueva Categoría">
-                                <i class="fas fa-plus"></i>
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10 col-lg-8">
+            <div class="card bg-dark text-white shadow-lg border-secondary rounded-lg" style="border-radius: 1rem !important;">
+                <div class="card-header border-bottom border-secondary py-4 text-center" style="background-color: rgba(255,255,255,0.02); border-radius: 1rem 1rem 0 0;">
+                    <h4 class="mb-0 text-success font-weight-bold">
+                        {% if producto %}
+                            <i class="fas fa-edit mr-2"></i> Editar Producto
+                        {% else %}
+                            <i class="fas fa-box-open mr-2"></i> Registrar Nuevo Producto
+                        {% endif %}
+                    </h4>
+                    <p class="text-muted small mt-2 mb-0">Completa los datos del formulario para actualizar el inventario.</p>
+                </div>
+
+                <div class="card-body p-4 p-md-5">
+                    <form method="post" enctype="multipart/form-data" id="productoForm" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <!-- Nombre -->
+                            <div class="col-12 mb-4">
+                                <label for="{{ form.nombre.id_for_label }}" class="form-label font-weight-bold text-light small text-uppercase">
+                                    <i class="fas fa-tag text-info mr-1"></i> Nombre del Producto <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" name="{{ form.nombre.name }}" id="{{ form.nombre.id_for_label }}" class="form-control premium-input rounded-pill px-4 py-2 {% if form.nombre.errors %}is-invalid border-danger{% endif %}" value="{{ form.nombre.value|default_if_none:'' }}" required placeholder="Ej. Cerveza Poker Retornable">
+                                {% for error in form.nombre.errors %}
+                                <div class="invalid-feedback d-block ml-3 font-weight-bold">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <!-- Precio y Stock -->
+                            <div class="col-md-6 mb-4">
+                                <label for="{{ form.precio.id_for_label }}" class="form-label font-weight-bold text-light small text-uppercase">
+                                    <i class="fas fa-dollar-sign text-success mr-1"></i> Precio Unitario <span class="text-danger">*</span>
+                                </label>
+                                <input type="number" step="100" name="{{ form.precio.name }}" id="{{ form.precio.id_for_label }}" class="form-control premium-input rounded-pill px-4 py-2 {% if form.precio.errors %}is-invalid border-danger{% endif %}" value="{{ form.precio.value|default_if_none:'' }}" required placeholder="Ej. 3500">
+                                {% for error in form.precio.errors %}
+                                <div class="invalid-feedback d-block ml-3 font-weight-bold">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="col-md-6 mb-4">
+                                <label for="{{ form.stock.id_for_label }}" class="form-label font-weight-bold text-light small text-uppercase">
+                                    <i class="fas fa-boxes text-warning mr-1"></i> Stock Inicial <span class="text-danger">*</span>
+                                </label>
+                                <input type="number" name="{{ form.stock.name }}" id="{{ form.stock.id_for_label }}" class="form-control premium-input rounded-pill px-4 py-2 {% if form.stock.errors %}is-invalid border-danger{% endif %}" value="{{ form.stock.value|default_if_none:'0' }}" required min="0">
+                                {% for error in form.stock.errors %}
+                                <div class="invalid-feedback d-block ml-3 font-weight-bold">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <!-- Categoría y Fecha de Vencimiento -->
+                            <div class="col-md-6 mb-4">
+                                <label for="{{ form.categoria.id_for_label }}" class="form-label font-weight-bold text-light small text-uppercase">
+                                    <i class="fas fa-layer-group text-primary mr-1"></i> Categoría
+                                </label>
+                                <div class="input-group">
+                                    {{ form.categoria }}
+                                    <div class="input-group-append">
+                                        <button type="button" class="btn btn-outline-success btn-categoria px-3" data-toggle="modal" data-target="#categoriaModal" title="Crear Nueva Categoría">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                {% for error in form.categoria.errors %}
+                                <div class="invalid-feedback d-block ml-3 font-weight-bold">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="col-md-6 mb-4">
+                                <label for="{{ form.fecha_vencimiento.id_for_label }}" class="form-label font-weight-bold text-light small text-uppercase">
+                                    <i class="fas fa-calendar-alt text-danger mr-1"></i> Fecha de Vencimiento
+                                </label>
+                                <input type="date" name="{{ form.fecha_vencimiento.name }}" id="{{ form.fecha_vencimiento.id_for_label }}" class="form-control premium-input rounded-pill px-4 py-2 {% if form.fecha_vencimiento.errors %}is-invalid border-danger{% endif %}" value="{{ form.fecha_vencimiento.value|date:'Y-m-d'|default:'' }}">
+                                <small class="form-text text-muted ml-3 mt-1">Opcional para productos no perecederos.</small>
+                                {% for error in form.fecha_vencimiento.errors %}
+                                <div class="invalid-feedback d-block ml-3 font-weight-bold">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <!-- Imagen -->
+                            <div class="col-12 mb-2">
+                                <label for="{{ form.imagen.id_for_label }}" class="form-label font-weight-bold text-light small text-uppercase">
+                                    <i class="fas fa-image text-info mr-1"></i> Fotografía del Producto
+                                </label>
+                                <div class="custom-file mt-1">
+                                    <input type="file" name="{{ form.imagen.name }}" id="{{ form.imagen.id_for_label }}" class="custom-file-input" accept="image/*">
+                                    <label class="custom-file-label px-4 py-2" for="{{ form.imagen.id_for_label }}" id="imagen-label">Cargar imagen (JPG, PNG)...</label>
+                                </div>
+                                
+                                <div class="text-center w-100">
+                                    <img id="imagen-preview" class="img-preview shadow-lg mt-4" src="{% if form.imagen.value and form.imagen.value.url %}{{ form.imagen.value.url }}{% endif %}" alt="Vista previa del producto" {% if form.imagen.value and form.imagen.value.url %}style="display: inline-block;"{% endif %}>
+                                </div>
+                                
+                                {% for error in form.imagen.errors %}
+                                <div class="invalid-feedback d-block ml-3 font-weight-bold mt-2">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Botones de Acción -->
+                        <div class="d-flex justify-content-between align-items-center mt-5 pt-4 border-top border-secondary">
+                            <a href="{% url 'tejobar_app:admin_productos_index' %}" class="btn btn-secondary font-weight-bold rounded-pill shadow-sm px-4 py-2">
+                                <i class="fas fa-times mr-2"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-success font-weight-bold rounded-pill shadow-lg px-5 py-2">
+                                <i class="fas fa-save mr-2"></i> Guardar Producto
                             </button>
                         </div>
-                        {% else %}
-                        <input type="{{ field.field.widget.input_type|default:'text' }}" name="{{ field.name }}"
-                            id="{{ field.id_for_label }}"
-                            class="form-control {% if field.errors %}is-invalid{% endif %}"
-                            value="{{ field.value|default_if_none:'' }}">
-                        {% endif %}
-
-                        {% if field.help_text %}
-                        <div class="form-text">{{ field.help_text }}</div>
-                        {% endif %}
-
-                        {% for error in field.errors %}
-                        <div class="invalid-feedback d-block">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    {% endfor %}
-
-                    <div class="d-flex justify-content-between mt-4">
-                        <a href="{% url 'tejobar_app:admin_productos_index' %}" class="btn btn-secondary">Cancelar</a>
-                        <button type="submit" class="btn btn-success">Guardar Producto</button>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal para crear categoría -->
+<!-- Modal Oscuro para crear categoría -->
 <div class="modal fade" id="categoriaModal" tabindex="-1" aria-labelledby="categoriaModalLabel" aria-hidden="true">
-  <div class="modal-dialog text-dark">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="categoriaModalLabel">Crear Nueva Categoría</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-dark border-secondary shadow-lg text-white" style="border-radius: 1rem;">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title font-weight-bold text-success" id="categoriaModalLabel"><i class="fas fa-plus-circle mr-2"></i>Nueva Categoría</h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body p-4">
         <form id="formNuevaCategoria" onsubmit="return false;">
-          <div class="form-group">
-            <label for="nombreCategoria">Nombre de la Categoría</label>
-            <input type="text" class="form-control" id="nombreCategoria" required>
+          <div class="form-group mb-4">
+            <label for="nombreCategoria" class="small text-uppercase font-weight-bold text-light">Nombre <span class="text-danger">*</span></label>
+            <input type="text" class="form-control premium-input rounded-pill px-3" id="nombreCategoria" required placeholder="Ej. Licores">
           </div>
-          <div class="form-group mt-2">
-            <label for="descCategoria">Descripción (Opcional)</label>
-            <textarea class="form-control" id="descCategoria" rows="2"></textarea>
+          <div class="form-group mb-2">
+            <label for="descCategoria" class="small text-uppercase font-weight-bold text-light">Descripción (Opcional)</label>
+            <textarea class="form-control premium-input border-secondary text-white" style="border-radius: 1rem; padding: 10px 15px;" id="descCategoria" rows="3" placeholder="Descripción breve..."></textarea>
           </div>
         </form>
-        <div id="categoriaError" class="text-danger d-none mt-2 font-weight-bold"></div>
+        <div id="categoriaError" class="alert alert-danger d-none mt-3 mb-0 font-weight-bold rounded-pill text-center py-2"></div>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-primary" id="btnGuardarCategoria">Guardar Categoría</button>
+      <div class="modal-footer border-secondary justify-content-between">
+        <button type="button" class="btn btn-secondary rounded-pill px-4" data-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-success rounded-pill px-4" id="btnGuardarCategoria">
+            <i class="fas fa-check mr-1"></i> Guardar
+        </button>
       </div>
     </div>
   </div>
@@ -92,6 +212,56 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // 1. Image Preview Logic
+    const imagenInput = document.getElementById('{{ form.imagen.id_for_label }}');
+    const imagenPreview = document.getElementById('imagen-preview');
+    const imagenLabel = document.getElementById('imagen-label');
+
+    if (imagenInput) {
+        imagenInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                // Actualizar el label con el nombre del archivo
+                imagenLabel.textContent = file.name;
+                
+                // Cargar vista previa
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagenPreview.src = e.target.result;
+                    imagenPreview.style.display = 'inline-block';
+                }
+                reader.readAsDataURL(file);
+            } else {
+                imagenLabel.textContent = 'Cargar imagen (JPG, PNG)...';
+                imagenPreview.style.display = 'none';
+                imagenPreview.src = '';
+            }
+        });
+    }
+
+    // 2. Client-side Validation Highlights
+    const forms = document.querySelectorAll('form');
+    Array.from(forms).forEach(form => {
+        form.addEventListener('submit', event => {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+            
+            // Highlight empty required premium inputs
+            const requiredInputs = form.querySelectorAll('input[required]');
+            requiredInputs.forEach(input => {
+                if (!input.value) {
+                    input.classList.add('border-danger');
+                } else {
+                    input.classList.remove('border-danger');
+                }
+            });
+        }, false);
+    });
+
+    // 3. Category Modal Logic
     const btnGuardar = document.getElementById('btnGuardarCategoria');
     if (!btnGuardar) return;
     
@@ -122,9 +292,12 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                const select = document.getElementById('id_categoria');
-                const option = new Option(data.categoria.nombre, data.categoria.id, true, true);
-                select.add(option);
+                // Find select and add new option dynamically
+                const selectElement = document.querySelector('select[name="{{ form.categoria.name }}"]');
+                if(selectElement) {
+                    const option = new Option(data.categoria.nombre, data.categoria.id, true, true);
+                    selectElement.add(option);
+                }
                 $('#categoriaModal').modal('hide');
                 document.getElementById('formNuevaCategoria').reset();
             } else {

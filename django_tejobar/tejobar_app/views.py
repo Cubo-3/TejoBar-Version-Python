@@ -146,7 +146,7 @@ def product_detail(request: HttpRequest, pk: int) -> HttpResponse:
 
 @login_required
 def apartar_producto(request: HttpRequest, pk: int) -> HttpResponse:
-    producto = get_object_or_404(Producto, pk=pk)
+    from django.db import transaction
 
     if request.method == "POST":
         try:
@@ -156,55 +156,57 @@ def apartar_producto(request: HttpRequest, pk: int) -> HttpResponse:
 
         if cantidad <= 0:
             messages.error(request, "La cantidad debe ser mayor que cero.")
-            return redirect("tejobar_app:productos_show", pk=producto.pk)
-
-        if producto.stock < cantidad:
-            messages.error(
-                request,
-                f"Stock insuficiente. Disponible: {producto.stock}",
-            )
-            return redirect("tejobar_app:productos_show", pk=producto.pk)
-
-        from django.utils import timezone
-        if producto.fecha_vencimiento and producto.fecha_vencimiento < timezone.now().date():
-            messages.error(request, "Este producto está expirado y no puede ser apartado.")
-            return redirect("tejobar_app:productos_show", pk=producto.pk)
+            return redirect("tejobar_app:productos_show", pk=pk)
 
         persona = getattr(request.user, "persona", None)
         if not persona:
             messages.error(request, "No tienes un perfil de persona asociado.")
+            return redirect("tejobar_app:productos_show", pk=pk)
+
+        try:
+            with transaction.atomic():
+                producto = get_object_or_404(Producto.objects.select_for_update(), pk=pk)
+
+                if producto.stock < cantidad:
+                    messages.error(request, f"Lo sentimos, stock insuficiente. Disponible: {producto.stock} unidades.")
+                    return redirect("tejobar_app:productos_show", pk=producto.pk)
+
+                from django.utils import timezone
+                if producto.fecha_vencimiento and producto.fecha_vencimiento < timezone.now().date():
+                    messages.error(request, "Este producto está expirado y no puede ser apartado.")
+                    return redirect("tejobar_app:productos_show", pk=producto.pk)
+
+                apartado = Apartado.objects.filter(persona=persona, producto=producto, estado='pendiente').first()
+                if apartado:
+                    apartado.cantidad += cantidad
+                    apartado.save()
+                else:
+                    Apartado.objects.create(
+                        persona=persona,
+                        producto=producto,
+                        cantidad=cantidad,
+                        estado="pendiente",
+                    )
+                
+                Novedad.objects.create(
+                    producto=producto,
+                    tipo_novedad=Novedad.TIPO_VENDIDO,
+                    cantidad=cantidad,
+                    descripcion="Separado/Vendido por sistema"
+                )
+                
+                producto.stock -= cantidad
+                producto.save()
+
+            messages.success(request, f"¡{cantidad}x {producto.nombre} añadido al carrito con éxito!")
+            next_url = request.POST.get("next")
+            if next_url:
+                return redirect(next_url)
             return redirect("tejobar_app:productos_show", pk=producto.pk)
-
-        apartado = Apartado.objects.filter(persona=persona, producto=producto, estado='pendiente').first()
-        if apartado:
-            apartado.cantidad += cantidad
-            apartado.save()
-        else:
-            Apartado.objects.create(
-                persona=persona,
-                producto=producto,
-                cantidad=cantidad,
-                estado="pendiente",
-            )
-        
-        Novedad.objects.create(
-            producto=producto,
-            tipo_novedad=Novedad.TIPO_VENDIDO,
-            cantidad=cantidad,
-            descripcion="Separado/Vendido por sistema"
-        )
-        
-        producto.stock -= cantidad
-        producto.save()
-
-        messages.success(
-            request,
-            "Producto añadido al carrito con éxito. Puedes verlo en tu dashboard.",
-        )
-        next_url = request.POST.get("next")
-        if next_url:
-            return redirect(next_url)
-        return redirect("tejobar_app:productos_show", pk=producto.pk)
+            
+        except Exception as e:
+            messages.error(request, "Ocurrió un error de concurrencia al agregar el producto. Inténtalo nuevamente.")
+            return redirect("tejobar_app:productos_show", pk=pk)
 
     next_url = request.GET.get("next")
     if next_url:
@@ -663,6 +665,37 @@ def equipo_leave(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 @login_required
+def equipo_reactivate(request: HttpRequest, pk: int) -> HttpResponse:
+    from django.core.exceptions import ValidationError
+    
+    if request.method == "POST":
+        persona = getattr(request.user, "persona", None)
+        
+        if not persona or getattr(persona, "rol", "") != Persona.ROL_JUGADOR or not hasattr(persona, "jugador"):
+            messages.error(request, "Solo los jugadores pueden unirse a equipos.")
+            return redirect("tejobar_app:equipos_index")
+
+        try:
+            nuevo_vinculo = JugadorEquipo.reactivar_jugador_en_equipo(
+                jugador=persona.jugador, 
+                equipo_destino_id=pk
+            )
+            if nuevo_vinculo.es_capitan:
+                msg = f"¡Te has reintegrado a {nuevo_vinculo.equipo.nombre_equipo} asumiendo la capitanía!"
+            else:
+                msg = f"¡Te has reintegrado a {nuevo_vinculo.equipo.nombre_equipo} como jugador!"
+            messages.success(request, msg)
+            return redirect("tejobar_app:equipos_show", pk=pk)
+            
+        except ValidationError as e:
+            error_msg = str(list(e.message_dict.values())[0][0] if hasattr(e, 'message_dict') else e.messages[0] if hasattr(e, 'messages') else e)
+            messages.error(request, error_msg)
+        except Exception as e:
+            messages.error(request, "Ha ocurrido un error inesperado al reactivar el equipo.")
+
+    return redirect("tejobar_app:equipos_index")
+
+@login_required
 def equipo_add_member(request: HttpRequest, pk: int) -> HttpResponse:
     equipo = get_object_or_404(Equipo, pk=pk)
     persona = getattr(request.user, "persona", None)
@@ -729,50 +762,63 @@ def equipo_remove_member(request: HttpRequest, pk: int, jugador_pk: int) -> Http
 
 @admin_required
 def admin_venta_directa(request: HttpRequest) -> HttpResponse:
-    productos = Producto.objects.filter(stock__gt=0).order_by("nombre")
+    from django.db import transaction
+
+    productos = Producto.objects.filter(stock__gt=0).select_related("categoria").order_by("categoria__nombre", "nombre")
     error = None
     success = None
 
     if request.method == "POST":
-        producto_id = request.POST.get("producto_id")
-        cantidad_str = request.POST.get("cantidad", "1")
+        producto_ids = request.POST.getlist("producto_id[]")
+        cantidades = request.POST.getlist("cantidad[]")
         cliente_nombre = request.POST.get("cliente_nombre", "").strip()
-        cliente_telefono = request.POST.get("cliente_telefono", "").strip()
 
-        try:
-            cantidad = int(cantidad_str)
-            if cantidad <= 0:
-                raise ValueError("Cantidad inválida")
+        if not producto_ids or not cantidades or len(producto_ids) != len(cantidades):
+            error = "No agregaste ningún producto al carrito."
+        else:
+            try:
+                with transaction.atomic():
+                    total_productos = 0
+                    nombres_vendidos = []
 
-            producto = get_object_or_404(Producto, pk=producto_id)
+                    for pid, cant_str in zip(producto_ids, cantidades):
+                        cantidad = int(cant_str)
+                        if cantidad <= 0:
+                            raise ValueError(f"Cantidad inválida para el producto.")
 
-            if producto.stock < cantidad:
-                error = f"Stock insuficiente. Disponible: {producto.stock} unidades."
-            else:
-                producto.stock -= cantidad
-                producto.save()
+                        producto = get_object_or_404(Producto.objects.select_for_update(), pk=pid)
 
-                Novedad.objects.create(
-                    producto=producto,
-                    tipo_novedad=Novedad.TIPO_VENDIDO,
-                    cantidad=cantidad,
-                    descripcion=f"Venta física a cliente: {cliente_nombre or 'Anónimo'}"
-                )
+                        if producto.stock < cantidad:
+                            raise ValueError(f"Stock insuficiente para {producto.nombre}. Disponible: {producto.stock} unidades.")
 
-                Apartado.objects.create(
-                    persona=None,
-                    producto=producto,
-                    cantidad=cantidad,
-                    estado=Apartado.ESTADO_COMPRADO,
-                    cliente_nombre=cliente_nombre or None,
-                    cliente_telefono=cliente_telefono or None,
-                )
+                        producto.stock -= cantidad
+                        producto.save()
 
-                success = f"✅ Venta registrada: {cantidad} × {producto.nombre} a {cliente_nombre or 'Cliente Anónimo'}."
-                productos = Producto.objects.filter(stock__gt=0).order_by("nombre")
+                        Novedad.objects.create(
+                            producto=producto,
+                            tipo_novedad=Novedad.TIPO_VENDIDO,
+                            cantidad=cantidad,
+                            descripcion=f"Venta física (POS): {cliente_nombre or 'Anónimo'}"
+                        )
 
-        except (ValueError, TypeError):
-            error = "Cantidad inválida."
+                        Apartado.objects.create(
+                            persona=None,
+                            producto=producto,
+                            cantidad=cantidad,
+                            estado=Apartado.ESTADO_COMPRADO,
+                            cliente_nombre=cliente_nombre or None,
+                        )
+
+                        total_productos += cantidad
+                        nombres_vendidos.append(f"{cantidad}x {producto.nombre}")
+
+                    success = f"✅ Venta registrada con éxito: {total_productos} artículos. ({', '.join(nombres_vendidos)}) a {cliente_nombre or 'Cliente Anónimo'}"
+                    productos = Producto.objects.filter(stock__gt=0).select_related("categoria").order_by("categoria__nombre", "nombre")
+
+            except ValueError as e:
+                error = str(e)
+            except Exception as e:
+                error = "Ocurrió un error al procesar la venta. Revisa los datos."
 
     return render(request, "ventas/directa.html", {
         "productos": productos,
@@ -1508,3 +1554,30 @@ def eliminar_item_carrito(request: HttpRequest, pk: int) -> HttpResponse:
         messages.success(request, "Producto eliminado del carrito.")
         
     return redirect("tejobar_app:dashboard")
+
+
+@login_required
+@admin_required
+def admin_carga_masiva(request: HttpRequest) -> HttpResponse:
+    from tejobar_app.forms import CargaMasivaProductosForm
+    from tejobar_app.services import procesar_archivo_productos
+    
+    if request.method == 'POST':
+        form = CargaMasivaProductosForm(request.POST, request.FILES)
+        if form.is_valid():
+            archivo = request.FILES['archivo']
+            resumen = procesar_archivo_productos(archivo)
+            
+            if resumen['creados'] > 0:
+                messages.success(request, f"{resumen['creados']} productos creados exitosamente.")
+            if resumen['actualizados'] > 0:
+                messages.info(request, f"{resumen['actualizados']} productos actualizados.")
+            
+            for error in resumen['errores']:
+                messages.error(request, error)
+                
+            return redirect('tejobar_app:admin_productos_index')
+    else:
+        form = CargaMasivaProductosForm()
+
+    return render(request, 'productos/carga_masiva.html', {'form': form})

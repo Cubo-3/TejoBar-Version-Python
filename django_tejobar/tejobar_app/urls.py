@@ -23,6 +23,7 @@ urlpatterns = [
     # CRUD básico personas / equipos
     path("personas/", views.persona_list, name="personas_index"),
     path("administracion/productos/", views.admin_product_list, name="admin_productos_index"),
+    path("administracion/productos/carga-masiva/", views.admin_carga_masiva, name="admin_carga_masiva"),
     path("administracion/productos/crear/", views.admin_product_create, name="admin_productos_create"),
     path("administracion/productos/<int:pk>/editar/", views.admin_product_update, name="admin_productos_update"),
     path("administracion/productos/<int:pk>/eliminar/", views.admin_product_delete, name="admin_productos_delete"),
@@ -48,6 +49,7 @@ urlpatterns = [
     path("equipos/<int:pk>/eliminar/", views.equipo_delete, name="equipos_delete"),
     path("equipos/<int:pk>/unirse/", views.equipo_join, name="equipos_join"),
     path("equipos/<int:pk>/salir/", views.equipo_leave, name="equipos_leave"),
+    path("equipos/<int:pk>/reactivar/", views.equipo_reactivate, name="equipos_reactivate"),
     path("equipos/<int:pk>/agregar-miembro/", views.equipo_add_member, name="equipos_add_member"),
     path("equipos/<int:pk>/expulsar/<int:jugador_pk>/", views.equipo_remove_member, name="equipos_remove_member"),
     # Partidos

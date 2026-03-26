@@ -13,13 +13,9 @@
         display: flex;
         flex-direction: column !important;
     }
-    .match-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 15px 30px rgba(0,0,0,0.2) !important;
-    }
-    
     .match-header {
-        background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+        background: linear-gradient(135deg, rgba(255,123,0,0.2) 0%, rgba(13,13,13,0.8) 100%);
+        border-bottom: 1px solid rgba(255,123,0,0.1);
         color: white;
         text-align: center;
         padding: 20px 15px;
@@ -27,7 +23,7 @@
     }
 
     .vs-badge {
-        background-color: #e74c3c;
+        background-color: #ff7b00;
         color: white;
         border-radius: 50%;
         width: 40px;
@@ -38,8 +34,8 @@
         font-weight: bold;
         font-size: 14px;
         margin: -10px auto 10px auto;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        border: 3px solid #fff;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+        border: 2px solid #0d0d0d;
     }
     
     .team-name {
@@ -50,7 +46,7 @@
     }
     
     .match-body {
-        background-color: #f8f9fa;
+        background-color: transparent;
         padding: 20px;
     }
     
@@ -59,7 +55,7 @@
         justify-content: space-between;
         margin-bottom: 12px;
         align-items: center;
-        border-bottom: 1px solid #e9ecef;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
         padding-bottom: 8px;
     }
     .info-row:last-child {
@@ -69,7 +65,7 @@
     }
     
     .info-icon {
-        color: #e67e22;
+        color: #ff7b00;
         width: 25px;
         text-align: center;
         margin-right: 10px;
@@ -85,7 +81,7 @@
         </h1>
         <p class="text-muted lead mb-4">Descubre los próximos partidos de tejo y únete a la emoción.</p>
         
-        <a href="{% url 'tejobar_app:equipos_index' %}" class="btn btn-warning btn-lg rounded-pill shadow-sm text-white font-weight-bold px-4 py-2" style="background-color: #e67e22; border: none; font-size: 1.1rem;">
+        <a href="{% url 'tejobar_app:equipos_index' %}" class="boton" style="font-size: 1.1rem;">
             <i class="fas fa-users mr-2"></i> Forma un Equipo o Únete a uno
         </a>
     </div>
@@ -96,7 +92,7 @@
 <div class="row">
     {% for partido in partidos %}
         <div class="col-12 col-md-6 col-lg-4 mb-4">
-            <div class="card h-100 match-card shadow-sm">
+            <div class="card h-100 match-card">
                 
                 <div class="match-header">
                     <div class="row align-items-center">
@@ -125,17 +121,17 @@
                 <div class="match-body flex-grow-1">
                     <div class="info-row">
                         <div class="text-secondary"><i class="far fa-calendar-alt info-icon"></i> <strong>Fecha</strong></div>
-                        <div class="font-weight-bold text-dark">{{ partido.fecha|date:"d M Y" }}</div>
+                        <div class="font-weight-bold text-white">{{ partido.fecha|date:"d M Y" }}</div>
                     </div>
                     
                     <div class="info-row">
                         <div class="text-secondary"><i class="far fa-clock info-icon"></i> <strong>Hora</strong></div>
-                        <div class="font-weight-bold text-dark">{{ partido.hora|time:"h:i A" }}</div>
+                        <div class="font-weight-bold text-white">{{ partido.hora|time:"h:i A" }}</div>
                     </div>
                     
                     <div class="info-row">
                         <div class="text-secondary"><i class="fas fa-map-marker-alt info-icon"></i> <strong>Cancha</strong></div>
-                        <div class="font-weight-bold text-dark text-truncate ml-3" style="max-width: 150px;" title="{{ partido.cancha.disponibilidad|default:partido.cancha|default:'--' }}">
+                        <div class="font-weight-bold text-white text-truncate ml-3" style="max-width: 150px;" title="{{ partido.cancha.disponibilidad|default:partido.cancha|default:'--' }}">
                             {{ partido.cancha.disponibilidad|default:partido.cancha|default:"--" }}
                         </div>
                     </div>
@@ -174,9 +170,9 @@
         </div>
     {% empty %}
         <div class="col-12 text-center my-5">
-            <div class="alert alert-light border-0 shadow-sm py-5" role="alert">
+            <div class="alert border-0 shadow-sm py-5" style="background: rgba(255,255,255,0.05);" role="alert">
                 <i class="fas fa-calendar-times fa-4x text-muted mb-4"></i>
-                <h3 class="text-dark font-weight-bold">No hay partidos programados</h3>
+                <h3 class="font-weight-bold" style="color:#ff7b00;">No hay partidos programados</h3>
                 <p class="text-muted lead mb-0">¡Reúne a tu equipo y sé el primero en organizar un partido!</p>
             </div>
         </div>

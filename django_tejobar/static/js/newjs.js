@@ -1,27 +1,5 @@
 console.log("TejoBar Theme Engine Loaded v1.2");
 
-  function toggleMode() {
-    const isLight = document.body.classList.toggle('light-mode');
-    localStorage.setItem('theme', isLight ? 'light' : 'dark');
-    updateToggleButton();
-  }
-
-  function updateToggleButton() {
-    const btn = document.getElementById('toggle-btn');
-    if (btn) {
-      btn.textContent = document.body.classList.contains('light-mode') ? '🌙' : '☀️';
-    }
-  }
-
-  // Apply saved theme on load
-  document.addEventListener("DOMContentLoaded", () => {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'light') {
-      document.body.classList.add('light-mode');
-    }
-    updateToggleButton();
-  });
-
 
 document.addEventListener("DOMContentLoaded", () => {
   const imagenes = [

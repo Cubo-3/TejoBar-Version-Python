@@ -5,60 +5,138 @@
 {% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">
-        <i class="fas fa-tag mr-2"></i>
-        {% if categoria %}Editar Categoría: {{ categoria.nombre }}{% else %}Nueva Categoría{% endif %}
-    </h1>
-</div>
+<style>
+    /* Estilos Premium Formulario */
+    .premium-input {
+        background-color: #212529 !important;
+        border: 1px solid #495057 !important;
+        color: #f8f9fa !important;
+        transition: all 0.3s ease-in-out;
+    }
+    .premium-input:focus {
+        border-color: #0d6efd !important;
+        box-shadow: 0 0 8px rgba(13, 110, 253, 0.5) !important;
+        background-color: #2b3035 !important;
+    }
+    .premium-input:hover {
+        border-color: #6c757d !important;
+    }
+    
+    /* Toggle Checkbox oscuro */
+    .custom-switch .custom-control-label::before {
+        background-color: #343a40;
+        border: 1px solid #6c757d;
+        height: 1.5rem;
+        width: 2.5rem;
+        border-radius: 2rem;
+    }
+    .custom-switch .custom-control-label::after {
+        height: calc(1.5rem - 4px);
+        width: calc(1.5rem - 4px);
+        border-radius: 50%;
+        background-color: #fff;
+    }
+    .custom-switch .custom-control-input:checked ~ .custom-control-label::before {
+        background-color: #198754;
+        border-color: #198754;
+    }
+</style>
 
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-white border-bottom">
-                <h5 class="mb-0 text-muted">Datos de la categoría</h5>
-            </div>
-            <div class="card-body p-4">
-                <form method="post">
-                    {% csrf_token %}
-
-                    <div class="form-group mb-3">
-                        <label for="{{ form.nombre.id_for_label }}" class="font-weight-bold">Nombre de la Categoría</label>
-                        {{ form.nombre }}
-                        {% if form.nombre.errors %}
-                        <div class="text-danger small mt-1">{{ form.nombre.errors|striptags }}</div>
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-9 col-lg-7">
+            <div class="card bg-dark text-white shadow-lg border-secondary rounded-lg" style="border-radius: 1rem !important;">
+                <div class="card-header border-bottom border-secondary py-4 text-center" style="background-color: rgba(255,255,255,0.02); border-radius: 1rem 1rem 0 0;">
+                    <h4 class="mb-0 text-success font-weight-bold">
+                        {% if categoria %}
+                            <i class="fas fa-edit mr-2"></i> Editar Categoría
+                        {% else %}
+                            <i class="fas fa-layer-group mr-2"></i> Nueva Categoría
                         {% endif %}
-                    </div>
+                    </h4>
+                    <p class="text-muted small mt-2 mb-0">{% if categoria %}Modifica los datos de la categoría: <span class="text-light">{{ categoria.nombre }}</span>{% else %}Agrega una nueva agrupación para el catálogo de productos.{% endif %}</p>
+                </div>
 
-                    <div class="form-group mb-3">
-                        <label for="{{ form.descripcion.id_for_label }}" class="font-weight-bold">Descripción (Opcional)</label>
-                        {{ form.descripcion }}
-                        {% if form.descripcion.errors %}
-                        <div class="text-danger small mt-1">{{ form.descripcion.errors|striptags }}</div>
-                        {% endif %}
-                    </div>
+                <div class="card-body p-4 p-md-5">
+                    <form method="post" id="categoriaForm" novalidate>
+                        {% csrf_token %}
 
-                    <div class="form-group form-check mb-4 mt-2">
-                        {{ form.estado }}
-                        <label class="form-check-label font-weight-bold ml-1" for="{{ form.estado.id_for_label }}">
-                            Categoría Activa (Visible en catálogo)
-                        </label>
-                        {% if form.estado.errors %}
-                        <div class="text-danger small mt-1">{{ form.estado.errors|striptags }}</div>
-                        {% endif %}
-                    </div>
+                        <div class="row">
+                            <!-- Nombre de Categoría -->
+                            <div class="col-12 mb-4">
+                                <label for="{{ form.nombre.id_for_label }}" class="form-label font-weight-bold text-light small text-uppercase">
+                                    <i class="fas fa-tag text-info mr-1"></i> Nombre de la Categoría <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" name="{{ form.nombre.name }}" id="{{ form.nombre.id_for_label }}" class="form-control premium-input rounded-pill px-4 py-2 {% if form.nombre.errors %}is-invalid border-danger{% endif %}" value="{{ form.nombre.value|default_if_none:'' }}" required placeholder="Ej. Licores Nacionales">
+                                {% if form.nombre.errors %}
+                                    <div class="invalid-feedback d-block ml-3 font-weight-bold">{{ form.nombre.errors|striptags }}</div>
+                                {% endif %}
+                            </div>
 
-                    <div class="d-flex justify-content-end mt-4 pt-3 border-top">
-                        <a href="{% url 'tejobar_app:admin_categorias_index' %}" class="btn btn-outline-secondary mr-2">
-                            Cancelar
-                        </a>
-                        <button type="submit" class="btn btn-primary px-4">
-                            <i class="fas fa-save mr-1"></i> Guardar
-                        </button>
-                    </div>
-                </form>
+                            <!-- Descripción -->
+                            <div class="col-12 mb-4">
+                                <label for="{{ form.descripcion.id_for_label }}" class="form-label font-weight-bold text-light small text-uppercase">
+                                    <i class="fas fa-align-left text-warning mr-1"></i> Descripción (Opcional)
+                                </label>
+                                <textarea name="{{ form.descripcion.name }}" id="{{ form.descripcion.id_for_label }}" class="form-control premium-input text-white {% if form.descripcion.errors %}is-invalid border-danger{% endif %}" rows="3" style="border-radius: 1rem; padding: 12px 20px;" placeholder="Descripción breve de los productos que abarca..._">{{ form.descripcion.value|default_if_none:'' }}</textarea>
+                                {% if form.descripcion.errors %}
+                                    <div class="invalid-feedback d-block ml-3 font-weight-bold">{{ form.descripcion.errors|striptags }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Estado (Activa/Inactiva) -->
+                            <div class="col-12 mb-2">
+                                <div class="custom-control custom-switch d-flex align-items-center mt-3">
+                                    <input type="checkbox" name="{{ form.estado.name }}" class="custom-control-input" id="{{ form.estado.id_for_label }}" {% if form.estado.value %}checked{% endif %}>
+                                    <label class="custom-control-label font-weight-bold text-light ml-2 d-flex align-items-center" for="{{ form.estado.id_for_label }}" style="cursor: pointer; padding-left: 10px; padding-top: 2px;">
+                                        Categoría Activa <span class="text-muted small ml-2 font-weight-normal">(Visible en catálogo y compras)</span>
+                                    </label>
+                                </div>
+                                {% if form.estado.errors %}
+                                    <div class="text-danger small mt-2 font-weight-bold">{{ form.estado.errors|striptags }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Botones de Acción -->
+                        <div class="d-flex justify-content-between align-items-center mt-5 pt-4 border-top border-secondary">
+                            <a href="{% url 'tejobar_app:admin_categorias_index' %}" class="btn btn-outline-secondary font-weight-bold rounded-pill shadow-sm px-4 py-2">
+                                <i class="fas fa-arrow-left mr-2"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-success font-weight-bold rounded-pill shadow-lg px-5 py-2">
+                                <i class="fas fa-save mr-2"></i> Guardar Categoría
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Client-side Validation Highlights
+    const forms = document.querySelectorAll('form');
+    Array.from(forms).forEach(form => {
+        form.addEventListener('submit', event => {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+            
+            // Highlight empty required premium inputs
+            const requiredInputs = form.querySelectorAll('input[required]');
+            requiredInputs.forEach(input => {
+                if (!input.value) {
+                    input.classList.add('border-danger');
+                } else {
+                    input.classList.remove('border-danger');
+                }
+            });
+        }, false);
+    });
+});
+</script>
 {% endblock %}

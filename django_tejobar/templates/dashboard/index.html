@@ -80,11 +80,26 @@
 
 {% if rol == "admin" %}
 <h4 class="mt-4 mb-3 text-muted"><i class="fas fa-chart-line mr-2"></i> Resumen del Sistema</h4>
-<div class="row mb-5">
-    <div class="col-12">
-        <div class="card bg-dark text-white shadow-lg border-secondary rounded-lg">
-            <div class="card-body p-4">
-                <canvas id="systemSummaryChart" height="100"></canvas>
+<div class="row mb-4">
+    <!-- Chart 1: Ecosistema (Doughnut) -->
+    <div class="col-lg-4 mb-4 mb-lg-0">
+        <div class="card bg-dark text-white shadow-lg border-secondary rounded-lg" style="min-height: 100%; height: auto !important; overflow: visible !important;">
+            <div class="card-body p-3 d-flex flex-column align-items-center justify-content-center">
+                <h6 class="text-center mb-3 font-weight-bold" style="color: #ff7b00;"><i class="fas fa-users mr-2"></i> Comunidad TejoBar</h6>
+                <div style="position: relative; height: 160px; width: 100%;">
+                    <canvas id="communityChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Chart 2: Operaciones (Bar) -->
+    <div class="col-lg-8">
+        <div class="card bg-dark text-white shadow-lg border-secondary rounded-lg" style="min-height: 100%; height: auto !important; overflow: visible !important;">
+            <div class="card-body p-3 d-flex flex-column">
+                <h6 class="text-center text-info mb-3 font-weight-bold"><i class="fas fa-cogs mr-2"></i> Métricas de Operación</h6>
+                <div style="position: relative; height: 160px; width: 100%; flex-grow: 1;">
+                    <canvas id="operationsChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -94,73 +109,106 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        const ctx = document.getElementById('systemSummaryChart').getContext('2d');
-        const summaryChart = new Chart(ctx, {
-            type: 'bar',
+        // Datos capturados de Django
+        const totalUsuarios = parseInt('{{ total_usuarios }}') || 0;
+        const totalJugadores = parseInt('{{ total_jugadores }}') || 0;
+        const totalEquipos = parseInt('{{ total_equipos }}') || 0;
+
+        const totalProductos = parseInt('{{ total_productos }}') || 0;
+        const productosBajoStock = parseInt('{{ productos_bajo_stock }}') || 0;
+        const totalCategorias = parseInt('{{ total_categorias }}') || 0;
+        const pedidosPorEntregar = parseInt('{{ pedidos_por_entregar|length }}') || 0;
+        const totalPartidos = parseInt('{{ total_partidos }}') || 0;
+        const totalCanchas = parseInt('{{ total_canchas }}') || 0;
+
+        // Configuración general Chart.js para tema oscuro
+        Chart.defaults.color = 'rgba(255, 255, 255, 0.7)';
+        Chart.defaults.font.family = "'Outfit', 'Segoe UI', sans-serif";
+
+        // Gráfico 1: Comunidad (Doughnut)
+        const ctxComm = document.getElementById('communityChart').getContext('2d');
+        new Chart(ctxComm, {
+            type: 'doughnut',
             data: {
-                labels: ['Productos', 'Usuarios Activos', 'Partidos', 'Equipos', 'Categorías', 'Canchas'],
+                labels: ['Cuentas Activas', 'Jugadores', 'Equipos Formados'],
                 datasets: [{
-                    label: 'Cantidad Registrada',
-                    data: [
-                        parseInt('{{ total_productos }}'),
-                        parseInt('{{ total_usuarios }}'),
-                        parseInt('{{ total_partidos }}'),
-                        parseInt('{{ total_equipos }}'),
-                        parseInt('{{ total_categorias }}'),
-                        parseInt('{{ total_canchas }}')
-                    ],
+                    data: [totalUsuarios, totalJugadores, totalEquipos],
                     backgroundColor: [
-                        'rgba(13, 110, 253, 0.7)',  /* primary */
-                        'rgba(25, 135, 84, 0.7)',   /* success */
-                        'rgba(255, 193, 7, 0.7)',   /* warning */
-                        'rgba(13, 202, 240, 0.7)',  /* info */
-                        'rgba(220, 53, 69, 0.7)',   /* danger */
-                        'rgba(32, 201, 151, 0.7)'   /* teal/success alternate */
+                        'rgba(13, 110, 253, 0.8)', // Primary
+                        'rgba(255, 123, 0, 0.8)',  // Hover Orange
+                        'rgba(25, 135, 84, 0.8)'   // Success
                     ],
-                    borderColor: [
-                        'rgb(13, 110, 253)',
-                        'rgb(25, 135, 84)',
-                        'rgb(255, 193, 7)',
-                        'rgb(13, 202, 240)',
-                        'rgb(220, 53, 69)',
-                        'rgb(32, 201, 151)'
-                    ],
-                    borderWidth: 2,
-                    borderRadius: 5,
-                    borderSkipped: false,
+                    borderColor: '#212529',
+                    borderWidth: 3,
+                    hoverOffset: 8
                 }]
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        display: false
-                    },
-                    title: {
-                        display: true,
-                        text: 'Métricas Actuales del Sistema',
-                        color: 'white',
-                        font: { size: 16 }
+                        position: 'right',
+                        labels: { 
+                            color: 'white',
+                            padding: 10,
+                            font: { size: 12 }
+                        }
+                    }
+                },
+                cutout: '65%'
+            }
+        });
+
+        // Gráfico 2: Operación (Bar)
+        const ctxOps = document.getElementById('operationsChart').getContext('2d');
+        new Chart(ctxOps, {
+            type: 'bar',
+            data: {
+                labels: ['Total Productos', 'Stock Bajo', 'Para Entregar', 'Categorías', 'Partidos', 'Canchas'],
+                datasets: [{
+                    label: 'Cantidad',
+                    data: [totalProductos, productosBajoStock, pedidosPorEntregar, totalCategorias, totalPartidos, totalCanchas],
+                    backgroundColor: [
+                        'rgba(13, 202, 240, 0.7)', // Info
+                        'rgba(220, 53, 69, 0.8)',  // Danger (Stock Bajo)
+                        'rgba(255, 193, 7, 0.8)',  // Warning (Ped. Pendientes)
+                        'rgba(111, 66, 193, 0.7)', // Purple
+                        'rgba(32, 201, 151, 0.7)', // Teal
+                        'rgba(25, 135, 84, 0.7)'   // Success
+                    ],
+                    borderColor: [
+                        'rgba(13, 202, 240, 1)',
+                        'rgba(220, 53, 69, 1)',
+                        'rgba(255, 193, 7, 1)',
+                        'rgba(111, 66, 193, 1)',
+                        'rgba(32, 201, 151, 1)',
+                        'rgba(25, 135, 84, 1)'
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 8,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        titleColor: '#ff7b00',
+                        padding: 12
                     }
                 },
                 scales: {
                     y: {
                         beginAtZero: true,
-                        ticks: {
-                            color: 'rgba(255,255,255,0.7)',
-                            stepSize: 1
-                        },
-                        grid: {
-                            color: 'rgba(255,255,255,0.1)'
-                        }
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: { stepSize: 1 }
                     },
                     x: {
-                        ticks: {
-                            color: 'rgba(255,255,255,0.9)'
-                        },
-                        grid: {
-                            display: false
-                        }
+                        grid: { display: false },
+                        ticks: { font: { size: 12 } }
                     }
                 }
             }
@@ -279,7 +327,7 @@
                         <td><span class="badge bg-white text-dark border px-2 py-1"><i
                                     class="fas fa-box-open text-primary mr-1"></i> {{ a.producto.nombre }}</span></td>
                         <td><span class="font-weight-bold h5 mb-0 text-light">{{ a.cantidad }}</span></td>
-                        <td class="text-muted"><i class="far fa-clock small mr-1"></i> {{ a.fecha_apartado|date:"d M Y" }}</td>
+                        <td class="text-muted"><i class="far fa-clock small mr-1"></i> {{ a.fecha_apartado|date:"d M Y, h:i A" }}</td>
                         <td>
                             {% if a.estado == 'pendiente' %}
                             <span class="badge badge-warning text-dark px-2 py-1 rounded-pill"><i
@@ -453,8 +501,7 @@
                         <td class="text-info font-weight-bold">$ {{ a.producto.precio|floatformat:0 }}</td>
                         <td><span class="font-weight-bold h5 mb-0 text-white">{{ a.cantidad }}</span></td>
                         <td class="text-warning font-weight-bold">$ {% widthratio a.cantidad 1 a.producto.precio %}</td>
-                        <td class="text-light"><i class="far fa-clock small mr-1"></i> {{ a.fecha_apartado|date:"d M Y"
-                            }}</td>
+                        <td class="text-light"><i class="far fa-clock small mr-1"></i> {{ a.fecha_apartado|date:"d M Y, h:i A" }}</td>
                         <td>
                             {% if a.estado == 'pendiente' %}
                             <span class="badge badge-warning text-dark px-2 py-1 rounded-pill"><i

@@ -1,44 +1,131 @@
 {% extends "dashboard/base.html" %}
 
-{% block title %}Persona - TejoBar{% endblock %}
+{% block title %}
+    {% if persona %}Editar Usuario{% else %}Nuevo Usuario{% endif %} - TejoBar
+{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center mt-4">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">{% if persona %}Editar Usuario{% else %}Nuevo Usuario{% endif %}</h4>
-            </div>
-            <div class="card-body bg-dark text-white p-4">
-                <form method="post">
-                    {% csrf_token %}
-                    {% for field in form %}
-                    <div class="mb-3">
-                        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                        <input type="{{ field.field.widget.input_type|default:'text' }}" name="{{ field.name }}"
-                            id="{{ field.id_for_label }}"
-                            class="form-control {% if field.errors %}is-invalid{% endif %}"
-                            value="{{ field.value|default_if_none:'' }}"
-                            {% if field.field.required %}required{% endif %}>
-                        
-                        {% if field.help_text %}
-                        <div class="form-text">{{ field.help_text }}</div>
+<style>
+    /* Estilos Premium Formulario */
+    .premium-input {
+        background-color: #212529 !important;
+        border: 1px solid #495057 !important;
+        color: #f8f9fa !important;
+        transition: all 0.3s ease-in-out;
+    }
+    .premium-input:focus {
+        border-color: #0d6efd !important;
+        box-shadow: 0 0 8px rgba(13, 110, 253, 0.5) !important;
+        background-color: #2b3035 !important;
+    }
+    .premium-input:hover {
+        border-color: #6c757d !important;
+    }
+    select.premium-input {
+        border-radius: 50rem !important;
+        height: 44px !important;
+    }
+</style>
+
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-9 col-lg-7">
+            <div class="card bg-dark text-white shadow-lg border-secondary rounded-lg" style="border-radius: 1rem !important;">
+                <div class="card-header border-bottom border-secondary py-4 text-center" style="background-color: rgba(255,255,255,0.02); border-radius: 1rem 1rem 0 0;">
+                    <h4 class="mb-0 text-success font-weight-bold">
+                        {% if persona %}
+                            <i class="fas fa-user-edit mr-2"></i> Editar Usuario
+                        {% else %}
+                            <i class="fas fa-user-plus mr-2"></i> Nuevo Usuario
                         {% endif %}
-                        
-                        {% for error in field.errors %}
-                        <div class="invalid-feedback d-block">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    {% endfor %}
-                    
-                    <div class="d-flex justify-content-between mt-4">
-                        <a href="{% url 'tejobar_app:personas_index' %}" class="btn btn-secondary">Cancelar</a>
-                        <button type="submit" class="btn btn-success">Guardar Usuario</button>
-                    </div>
-                </form>
+                    </h4>
+                    <p class="text-muted small mt-2 mb-0">{% if persona %}Actualiza la información del usuario en el sistema.{% else %}Registra un nuevo usuario o administrador.{% endif %}</p>
+                </div>
+
+                <div class="card-body p-4 p-md-5">
+                    <form method="post" id="personaForm" novalidate>
+                        {% csrf_token %}
+
+                        <div class="row">
+                            <!-- Nombre -->
+                            <div class="col-12 mb-4">
+                                <label for="{{ form.nombre.id_for_label }}" class="form-label font-weight-bold text-light small text-uppercase">
+                                    <i class="fas fa-id-card text-info mr-1"></i> Nombre Completo <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" name="{{ form.nombre.name }}" id="{{ form.nombre.id_for_label }}" class="form-control premium-input rounded-pill px-4 py-2 {% if form.nombre.errors %}is-invalid border-danger{% endif %}" value="{{ form.nombre.value|default_if_none:'' }}" required placeholder="Ej. Carlos Mendoza">
+                                {% if form.nombre.errors %}
+                                    <div class="invalid-feedback d-block ml-3 font-weight-bold">{{ form.nombre.errors|striptags }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Correo y Teléfono -->
+                            <div class="col-md-6 mb-4">
+                                <label for="{{ form.correo.id_for_label }}" class="form-label font-weight-bold text-light small text-uppercase">
+                                    <i class="fas fa-envelope text-warning mr-1"></i> Correo Electrónico <span class="text-danger">*</span>
+                                </label>
+                                <input type="email" name="{{ form.correo.name }}" id="{{ form.correo.id_for_label }}" class="form-control premium-input rounded-pill px-4 py-2 {% if form.correo.errors %}is-invalid border-danger{% endif %}" value="{{ form.correo.value|default_if_none:'' }}" required placeholder="correo@ejemplo.com">
+                                {% if form.correo.errors %}
+                                    <div class="invalid-feedback d-block ml-3 font-weight-bold">{{ form.correo.errors|striptags }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-4">
+                                <label for="{{ form.numero.id_for_label }}" class="form-label font-weight-bold text-light small text-uppercase">
+                                    <i class="fas fa-phone text-success mr-1"></i> Teléfono <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" name="{{ form.numero.name }}" id="{{ form.numero.id_for_label }}" class="form-control premium-input rounded-pill px-4 py-2 {% if form.numero.errors %}is-invalid border-danger{% endif %}" value="{{ form.numero.value|default_if_none:'' }}" required placeholder="Ej. 300 123 4567">
+                                {% if form.numero.errors %}
+                                    <div class="invalid-feedback d-block ml-3 font-weight-bold">{{ form.numero.errors|striptags }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Eliminado campo Rol a peticion del usuario -->
+                        </div>
+
+                        <!-- Botones de Acción -->
+                        <div class="d-flex justify-content-between align-items-center mt-5 pt-4 border-top border-secondary">
+                            <a href="{% url 'tejobar_app:personas_index' %}" class="btn btn-outline-secondary font-weight-bold rounded-pill shadow-sm px-4 py-2">
+                                <i class="fas fa-arrow-left mr-2"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-success font-weight-bold rounded-pill shadow-lg px-5 py-2">
+                                <i class="fas fa-save mr-2"></i> Guardar Usuario
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Aplicar clase premium al select de django
+    const formSelects = document.querySelectorAll('select');
+    formSelects.forEach(select => {
+        select.classList.add('form-control', 'premium-input', 'px-3');
+    });
+
+    // Validacion visual interactiva
+    const forms = document.querySelectorAll('form');
+    Array.from(forms).forEach(form => {
+        form.addEventListener('submit', event => {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+            
+            const requiredInputs = form.querySelectorAll('input[required], select[required]');
+            requiredInputs.forEach(input => {
+                if (!input.value) {
+                    input.classList.add('border-danger');
+                } else {
+                    input.classList.remove('border-danger');
+                }
+            });
+        }, false);
+    });
+});
+</script>
+{% endblock %}

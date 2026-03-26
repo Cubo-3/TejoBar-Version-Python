@@ -1,0 +1,121 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Carga Masiva de Productos | TejoBar{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 min-vh-100 d-flex flex-column" style="background: linear-gradient(135deg, #121212 0%, #1e1e1e 100%);">
+    
+    <!-- HEADER SECTION -->
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom border-secondary">
+        <div>
+            <h2 class="text-white fw-bold mb-0">
+                <i class="fas fa-file-upload text-info me-2"></i>Carga Masiva de Productos
+            </h2>
+            <p class="text-muted mb-0 mt-1">Sube un archivo de Excel o CSV para crear y/o actualizar el inventario automáticamente.</p>
+        </div>
+        <div>
+            <a href="{% url 'tejobar_app:admin_productos_index' %}" class="btn btn-outline-light rounded-pill px-4 transition-all">
+                <i class="fas fa-arrow-left me-1"></i> Volver a Productos
+            </a>
+        </div>
+    </div>
+
+    <!-- MAIN FORM CARD -->
+    <div class="row justify-content-center flex-grow-1 align-items-start mt-3">
+        <div class="col-lg-7 col-md-9 col-sm-12">
+            
+            <div class="card border-0 shadow-lg text-white" 
+                 style="background: rgba(35, 35, 35, 0.7); backdrop-filter: blur(15px); border-radius: 1.25rem;">
+                
+                <div class="card-header border-bottom border-light border-opacity-10 py-3 bg-transparent">
+                    <h5 class="mb-0 text-center fw-semibold text-info" style="letter-spacing: 0.5px;">
+                        Selecciona el archivo para importar
+                    </h5>
+                </div>
+
+                <div class="card-body p-4 p-md-5">
+                    
+                    <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="mb-5 text-center px-4 py-5 border rounded" style="background: rgba(0,0,0,0.2); border-color: #333 !important; border-style: dashed !important; border-width: 2px !important;">
+                            <i class="fas fa-cloud-upload-alt text-info mb-3" style="font-size: 3rem;"></i>
+                            <h5 class="text-white">Sube tu archivo .xlsx o .csv</h5>
+                            <p class="text-muted small mb-4">Asegúrate de tener las columnas: nombre, precio, stock, categoria, descripcion</p>
+                            
+                            {{ form.archivo }}
+                            
+                            {% if form.archivo.errors %}
+                                <div class="text-danger mt-2 small fw-bold">
+                                    {{ form.archivo.errors|join:", " }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-info btn-lg fw-bold rounded-pill shadow-sm" style="transition: all 0.3s ease;">
+                                <i class="fas fa-magic me-2"></i> Procesar Inventario
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+
+            <!-- INSTRUCTIONS CARD -->
+            <div class="card border-0 shadow text-white mt-4" style="background: rgba(25, 25, 25, 0.9); border-radius: 1rem;">
+                <div class="card-body p-4">
+                    <h6 class="text-warning fw-bold mb-3"><i class="fas fa-info-circle me-2"></i>Requisitos del Archivo</h6>
+                    <ul class="text-muted small mb-0" style="list-style-type: square; padding-left: 1rem;">
+                        <li class="mb-1">El archivo debe contener la primera fila de <strong>encabezados</strong> exactamente en minúsculas.</li>
+                        <li class="mb-1">Columnas obligatorias: <code>nombre</code>, <code>precio</code>, <code>stock</code>, <code>categoria</code>.</li>
+                        <li class="mb-1">Columna opcional permitida: <code>descripcion</code>.</li>
+                        <li class="mb-1">Si insertas categorías que no existen, <strong>se crearán automáticamente</strong>.</li>
+                        <li>Si el nombre del producto ya existe, <strong>se actualizará su precio y stock.</strong></li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Premium Hover & Focus Effects */
+    .btn-info {
+        background: linear-gradient(45deg, #0dcaf0, #09a5c4);
+        border: none;
+    }
+    .btn-info:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 15px rgba(13, 202, 240, 0.4);
+        background: linear-gradient(45deg, #09a5c4, #0dcaf0);
+    }
+    .btn-outline-light:hover {
+        background-color: rgba(255,255,255,0.1);
+        color: #fff;
+    }
+    input[type=file]::file-selector-button {
+        background-color: #343a40 !important;
+        color: white !important;
+        border: 1px solid #495057 !important;
+        padding: 0.5rem 1rem !important;
+        border-radius: 0.5rem !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease-in-out !important;
+    }
+    input[type=file]::file-selector-button:hover {
+        background-color: #495057 !important;
+    }
+    input[type=file] {
+        background-color: #212529 !important;
+        color: #f8f9fa !important;
+        border: 1px solid #495057 !important;
+    }
+    input[type=file]:focus {
+        background-color: #2b3035 !important;
+        box-shadow: 0 0 0 0.25rem rgba(13, 202, 240, 0.25) !important;
+        border-color: #0dcaf0 !important;
+    }
+</style>
+{% endblock %}

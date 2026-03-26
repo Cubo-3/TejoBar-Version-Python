@@ -1,107 +1,172 @@
-{% extends 'dashboard/base.html' %}
+{% extends "dashboard/base.html" %}
 
 {% block title %}
-{% if partido %}Editar Partido{% else %}Nuevo Partido{% endif %} - Dashboard
+    {% if partido %}Editar Partido{% else %}Nuevo Partido{% endif %} - Dashboard
 {% endblock %}
 
 {% block content %}
-<div class="card shadow-sm mw-100" style="max-width: 600px; margin: 0 auto;">
-    <div class="card-header bg-dark text-white">
-        <h4 class="mb-0">
-            {% if partido %}
-            <i class="fas fa-edit mr-2"></i> Editar Partido #{{ partido.id }}
-            {% else %}
-            <i class="fas fa-plus-circle mr-2"></i> Crear Nuevo Partido
-            {% endif %}
-        </h4>
-    </div>
-    <div class="card-body bg-dark text-white p-4">
-        <form method="post" enctype="multipart/form-data">
-            {% csrf_token %}
+<style>
+    /* Estilos Premium Formulario */
+    .premium-input {
+        background-color: #212529 !important;
+        border: 1px solid #495057 !important;
+        color: #f8f9fa !important;
+        transition: all 0.3s ease-in-out;
+    }
+    .premium-input:focus {
+        border-color: #0d6efd !important;
+        box-shadow: 0 0 8px rgba(13, 110, 253, 0.5) !important;
+        background-color: #2b3035 !important;
+    }
+    .premium-input:hover {
+        border-color: #6c757d !important;
+    }
+    select.premium-input {
+        border-radius: 50rem !important;
+        height: 44px !important;
+    }
+</style>
 
-            {% if form.non_field_errors %}
-            <div class="alert alert-danger">
-                {% for error in form.non_field_errors %}
-                {{ error }}
-                {% endfor %}
-            </div>
-            {% endif %}
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-11 col-lg-9">
+            <div class="card bg-dark text-white shadow-lg border-secondary rounded-lg" style="border-radius: 1rem !important;">
+                <div class="card-header border-bottom border-secondary py-4 text-center" style="background-color: rgba(255,255,255,0.02); border-radius: 1rem 1rem 0 0;">
+                    <h4 class="mb-0 text-success font-weight-bold">
+                        {% if partido %}
+                            <i class="fas fa-edit mr-2"></i> Editar Partido #{{ partido.id }}
+                        {% else %}
+                            <i class="fas fa-trophy mr-2"></i> Programar Partido
+                        {% endif %}
+                    </h4>
+                    <p class="text-muted small mt-2 mb-0">{% if partido %}Modifica los detalles del juego.{% else %}Agenda un nuevo encuentro, el sistema validará automáticamente la disponibilidad.{% endif %}</p>
+                </div>
 
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label class="font-weight-bold">Equipo 1</label>
-                        {{ form.equipo1 }}
-                        {% if form.equipo1.errors %}
-                        <small class="text-danger">{{ form.equipo1.errors|striptags }}</small>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label class="font-weight-bold">Equipo 2</label>
-                        {{ form.equipo2 }}
-                        {% if form.equipo2.errors %}
-                        <small class="text-danger">{{ form.equipo2.errors|striptags }}</small>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
+                <div class="card-body p-4 p-md-5">
+                    <form method="post" enctype="multipart/form-data" id="partidoForm" novalidate>
+                        {% csrf_token %}
 
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label class="font-weight-bold">Fecha</label>
-                        {{ form.fecha }}
-                        {% if form.fecha.errors %}
-                        <small class="text-danger">{{ form.fecha.errors|striptags }}</small>
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger font-weight-bold rounded-pill text-center mb-4">
+                                {% for error in form.non_field_errors %}
+                                    <i class="fas fa-exclamation-triangle mr-1"></i> {{ error }}<br>
+                                {% endfor %}
+                            </div>
                         {% endif %}
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label class="font-weight-bold">Hora</label>
-                        {{ form.hora }}
-                        {% if form.hora.errors %}
-                        <small class="text-danger">{{ form.hora.errors|striptags }}</small>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label class="font-weight-bold">Hora Final (Opcional)</label>
-                        {{ form.hora_reserva_fin }}
-                        {% if form.hora_reserva_fin.errors %}
-                        <small class="text-danger">{{ form.hora_reserva_fin.errors|striptags }}</small>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
 
-            <div class="row">
-                <div class="col-md-12">
-                    <div class="form-group">
-                        <label class="font-weight-bold">Cancha Asignada</label>
-                        {{ form.cancha }}
-                        {% if form.cancha.errors %}
-                        <small class="text-danger">{{ form.cancha.errors|striptags }}</small>
-                        {% endif %}
-                    </div>
+                        <div class="row">
+                            <!-- Equipos -->
+                            <div class="col-md-6 mb-4">
+                                <label for="{{ form.equipo1.id_for_label }}" class="form-label font-weight-bold text-light small text-uppercase">
+                                    <i class="fas fa-users text-info mr-1"></i> Equipo 1 <span class="text-danger">*</span>
+                                </label>
+                                {{ form.equipo1 }}
+                                {% if form.equipo1.errors %}
+                                    <small class="text-danger font-weight-bold d-block mt-1">{{ form.equipo1.errors|striptags }}</small>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-4">
+                                <label for="{{ form.equipo2.id_for_label }}" class="form-label font-weight-bold text-light small text-uppercase">
+                                    <i class="fas fa-users text-danger mr-1"></i> Equipo 2 <span class="text-danger">*</span>
+                                </label>
+                                {{ form.equipo2 }}
+                                {% if form.equipo2.errors %}
+                                    <small class="text-danger font-weight-bold d-block mt-1">{{ form.equipo2.errors|striptags }}</small>
+                                {% endif %}
+                            </div>
+
+                            <!-- Horarios -->
+                            <div class="col-md-4 mb-4">
+                                <label for="{{ form.fecha.id_for_label }}" class="form-label font-weight-bold text-light small text-uppercase">
+                                    <i class="fas fa-calendar-day text-success mr-1"></i> Fecha <span class="text-danger">*</span>
+                                </label>
+                                <input type="date" name="{{ form.fecha.name }}" id="{{ form.fecha.id_for_label }}" class="form-control premium-input rounded-pill px-4 py-2 {% if form.fecha.errors %}is-invalid border-danger{% endif %}" value="{{ form.fecha.value|date:'Y-m-d'|default:'' }}" required>
+                                {% if form.fecha.errors %}
+                                    <small class="text-danger font-weight-bold d-block mt-1">{{ form.fecha.errors|striptags }}</small>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-4 mb-4">
+                                <label for="{{ form.hora.id_for_label }}" class="form-label font-weight-bold text-light small text-uppercase">
+                                    <i class="fas fa-clock text-warning mr-1"></i> Hora Inicio <span class="text-danger">*</span>
+                                </label>
+                                <input type="time" name="{{ form.hora.name }}" id="{{ form.hora.id_for_label }}" class="form-control premium-input rounded-pill px-4 py-2 {% if form.hora.errors %}is-invalid border-danger{% endif %}" value="{{ form.hora.value|default:'' }}" required>
+                                {% if form.hora.errors %}
+                                    <small class="text-danger font-weight-bold d-block mt-1">{{ form.hora.errors|striptags }}</small>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-4 mb-4">
+                                <label for="{{ form.hora_reserva_fin.id_for_label }}" class="form-label font-weight-bold text-light small text-uppercase">
+                                    <i class="fas fa-stopwatch text-secondary mr-1"></i> Hora Final <small class="text-muted">(Opcional)</small>
+                                </label>
+                                <input type="time" name="{{ form.hora_reserva_fin.name }}" id="{{ form.hora_reserva_fin.id_for_label }}" class="form-control premium-input rounded-pill px-4 py-2 {% if form.hora_reserva_fin.errors %}is-invalid border-danger{% endif %}" value="{{ form.hora_reserva_fin.value|default:'' }}">
+                                {% if form.hora_reserva_fin.errors %}
+                                    <small class="text-danger font-weight-bold d-block mt-1">{{ form.hora_reserva_fin.errors|striptags }}</small>
+                                {% endif %}
+                            </div>
+
+                            <!-- Cancha -->
+                            <div class="col-12 mb-2">
+                                <label for="{{ form.cancha.id_for_label }}" class="form-label font-weight-bold text-light small text-uppercase">
+                                    <i class="fas fa-map-marker-alt text-primary mr-1"></i> Cancha Asignada <span class="text-danger">*</span>
+                                </label>
+                                {{ form.cancha }}
+                                {% if form.cancha.errors %}
+                                    <small class="text-danger font-weight-bold d-block mt-1">{{ form.cancha.errors|striptags }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Botones de Acción -->
+                        <div class="d-flex justify-content-between align-items-center mt-5 pt-4 border-top border-secondary">
+                            <a href="{% url 'tejobar_app:admin_partidos_index' %}" class="btn btn-outline-secondary font-weight-bold rounded-pill shadow-sm px-4 py-2">
+                                <i class="fas fa-arrow-left mr-2"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-success font-weight-bold rounded-pill shadow-lg px-5 py-2">
+                                <i class="fas fa-save mr-2"></i> Guardar Partido
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
-
-            <div class="d-flex justify-content-end mt-4">
-                <a href="{% url 'tejobar_app:admin_partidos_index' %}" class="btn btn-secondary mr-2">Cancelar</a>
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save mr-1"></i> Guardar
-                </button>
-            </div>
-        </form>
+        </div>
     </div>
 </div>
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
+        // Aplicar clase premium al select de django
+        const formSelects = document.querySelectorAll('select');
+        formSelects.forEach(select => {
+            select.classList.add('form-control', 'premium-input', 'px-3');
+        });
+
+        // Client-side Validation Highlights
+        const forms = document.querySelectorAll('form');
+        Array.from(forms).forEach(form => {
+            form.addEventListener('submit', event => {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+                
+                const requiredInputs = form.querySelectorAll('input[required], select[required]');
+                requiredInputs.forEach(input => {
+                    if (!input.value) {
+                        input.classList.add('border-danger');
+                    } else {
+                        input.classList.remove('border-danger');
+                    }
+                });
+            }, false);
+        });
+
+        // -------------------------------------------------------------
+        // LOGICA DE DISPONIBILIDAD DE PARTIDO ORIGINAL PRESERVADA
+        // -------------------------------------------------------------
         const fechaInput = document.getElementById("id_fecha");
         const horaInput = document.getElementById("id_hora");
         const horaFinInput = document.getElementById("id_hora_reserva_fin");
@@ -111,6 +176,7 @@
         const partidoId = "{{ partido.id|default:'' }}";
 
         const captureOriginalOptions = (selectElement) => {
+            if(!selectElement) return;
             Array.from(selectElement.options).forEach(opt => {
                 if (!opt.dataset.originalText) {
                     opt.dataset.originalText = opt.text;
@@ -123,9 +189,10 @@
         captureOriginalOptions(canchaSelect);
 
         const checkAvailability = () => {
+            if(!fechaInput || !horaInput) return;
             const fecha = fechaInput.value;
             const hora = horaInput.value;
-            const horaFin = horaFinInput.value;
+            const horaFin = horaFinInput ? horaFinInput.value : '';
 
             if (fecha && hora) {
                 let url = `/api/disponibilidad-partido/?fecha=${fecha}&hora=${hora}`;
@@ -142,13 +209,15 @@
                         const { canchas_ocupadas, equipos_ocupados } = data;
 
                         const updateSelect = (selectElement, ocupadosDict, typeStr) => {
+                            if(!selectElement) return;
                             Array.from(selectElement.options).forEach(opt => {
                                 if (opt.value) {
-                                    const itemId = opt.value; // Keys from JSON are strings
+                                    const itemId = opt.value;
                                     if (ocupadosDict[itemId]) {
                                         opt.disabled = true;
-                                        opt.style.color = "#999";
-                                        opt.style.backgroundColor = "#e9ecef";
+                                        // Estilo oscuro para inhabilitado
+                                        opt.style.color = "#ff6b6b";
+                                        opt.style.backgroundColor = "#2b2b2b";
                                         
                                         const motivo = ocupadosDict[itemId];
                                         if (typeStr === 'equipo') {
@@ -175,6 +244,7 @@
                     .catch(err => console.error("Error fetching availability:", err));
             } else {
                 const resetSelect = (selectElement) => {
+                    if(!selectElement) return;
                     Array.from(selectElement.options).forEach(opt => {
                         opt.disabled = false;
                         opt.style.color = "";
@@ -190,9 +260,9 @@
             }
         };
 
-        fechaInput.addEventListener("change", checkAvailability);
-        horaInput.addEventListener("change", checkAvailability);
-        horaFinInput.addEventListener("change", checkAvailability);
+        if(fechaInput) fechaInput.addEventListener("change", checkAvailability);
+        if(horaInput) horaInput.addEventListener("change", checkAvailability);
+        if(horaFinInput) horaFinInput.addEventListener("change", checkAvailability);
         
         checkAvailability();
     });

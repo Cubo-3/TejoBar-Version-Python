@@ -1,115 +1,133 @@
-{% extends 'dashboard/base.html' %}
+{% extends "dashboard/base.html" %}
 
 {% block title %}
-    {% if cancha %}Editar Cancha{% else %}Nueva Cancha{% endif %} - Dashboard
-{% endblock %}
-
-{% block extra_styles %}
-<style>
-    .cancha-form-card {
-        max-width: 640px;
-        margin: 0 auto;
-        border-radius: 12px;
-        overflow: hidden;
-    }
-
-    .cancha-status-box {
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        border-radius: 10px;
-        background: rgba(255, 255, 255, 0.05);
-        padding: 0.9rem 1rem;
-        margin-top: 1.2rem;
-    }
-
-    .cancha-status-box .form-check {
-        display: flex;
-        align-items: center;
-        margin: 0;
-        padding-left: 0;
-        gap: 0.6rem;
-    }
-
-    .cancha-status-box .form-check-input {
-        position: static;
-        margin: 0;
-        width: 1.1rem;
-        height: 1.1rem;
-        flex-shrink: 0;
-    }
-
-    .cancha-status-box .form-check-label {
-        margin: 0;
-    }
-
-    .cancha-actions {
-        margin-top: 1.8rem;
-        padding-top: 1rem;
-        border-top: 1px solid rgba(255, 255, 255, 0.15);
-        display: flex;
-        justify-content: flex-end;
-        gap: 0.75rem;
-        flex-wrap: wrap;
-    }
-
-    .cancha-actions .btn {
-        min-width: 145px;
-    }
-</style>
+    {% if cancha %}Editar Cancha{% else %}Nueva Cancha{% endif %} - TejoBar
 {% endblock %}
 
 {% block content %}
-<div class="card shadow-sm mw-100 cancha-form-card">
-    <div class="card-header bg-dark text-white">
-        <h4 class="mb-0">
-            {% if cancha %}
-                <i class="fas fa-edit mr-2"></i> Editar Cancha #{{ cancha.id }}
-            {% else %}
-                <i class="fas fa-plus-circle mr-2"></i> Crear Nueva Cancha
-            {% endif %}
-        </h4>
-    </div>
-    <div class="card-body bg-dark text-white p-4">
-        <form method="post">
-            {% csrf_token %}
-            
-            {% if form.non_field_errors %}
-                <div class="alert alert-danger">
-                    {% for error in form.non_field_errors %}
-                        {{ error }}
-                    {% endfor %}
+<style>
+    /* Estilos Premium Formulario */
+    .premium-input {
+        background-color: #212529 !important;
+        border: 1px solid #495057 !important;
+        color: #f8f9fa !important;
+        transition: all 0.3s ease-in-out;
+    }
+    .premium-input:focus {
+        border-color: #0d6efd !important;
+        box-shadow: 0 0 8px rgba(13, 110, 253, 0.5) !important;
+        background-color: #2b3035 !important;
+    }
+    .premium-input:hover {
+        border-color: #6c757d !important;
+    }
+    
+    /* Toggle Checkbox oscuro */
+    .custom-switch .custom-control-label::before {
+        background-color: #343a40;
+        border: 1px solid #6c757d;
+        height: 1.5rem;
+        width: 2.5rem;
+        border-radius: 2rem;
+    }
+    .custom-switch .custom-control-label::after {
+        height: calc(1.5rem - 4px);
+        width: calc(1.5rem - 4px);
+        border-radius: 50%;
+        background-color: #fff;
+    }
+    .custom-switch .custom-control-input:checked ~ .custom-control-label::before {
+        background-color: #198754;
+        border-color: #198754;
+    }
+</style>
+
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-9 col-lg-7">
+            <div class="card bg-dark text-white shadow-lg border-secondary rounded-lg" style="border-radius: 1rem !important;">
+                <div class="card-header border-bottom border-secondary py-4 text-center" style="background-color: rgba(255,255,255,0.02); border-radius: 1rem 1rem 0 0;">
+                    <h4 class="mb-0 text-success font-weight-bold">
+                        {% if cancha %}
+                            <i class="fas fa-edit mr-2"></i> Editar Cancha
+                        {% else %}
+                            <i class="fas fa-bullseye mr-2"></i> Nueva Cancha
+                        {% endif %}
+                    </h4>
+                    <p class="text-muted small mt-2 mb-0">{% if cancha %}Modifica la disponibilidad de la Cancha #{{ cancha.id }}.{% else %}Agrega una nueva cancha o pista al sistema.{% endif %}</p>
                 </div>
-            {% endif %}
 
-            <div class="form-group mb-4">
-                <label class="font-weight-bold">{{ form.disponibilidad.label }}</label>
-                {{ form.disponibilidad }}
-                {% if form.disponibilidad.help_text %}
-                    <small class="form-text text-muted">{{ form.disponibilidad.help_text }}</small>
-                {% endif %}
-                {% if form.disponibilidad.errors %}
-                    <small class="text-danger">{{ form.disponibilidad.errors|striptags }}</small>
-                {% endif %}
-            </div>
+                <div class="card-body p-4 p-md-5">
+                    <form method="post" id="canchaForm" novalidate>
+                        {% csrf_token %}
 
-            <div class="cancha-status-box">
-                <div class="form-check">
-                    {{ form.estado }}
-                    <label class="form-check-label font-weight-bold" for="{{ form.estado.id_for_label }}">
-                        {{ form.estado.label }}
-                    </label>
+                        <div class="row">
+                            <!-- Disponibilidad / Nombre -->
+                            <div class="col-12 mb-4">
+                                <label for="{{ form.disponibilidad.id_for_label }}" class="form-label font-weight-bold text-light small text-uppercase">
+                                    <i class="fas fa-map-marker-alt text-info mr-1"></i> Nombre o Disponibilidad <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" name="{{ form.disponibilidad.name }}" id="{{ form.disponibilidad.id_for_label }}" class="form-control premium-input rounded-pill px-4 py-2 {% if form.disponibilidad.errors %}is-invalid border-danger{% endif %}" value="{{ form.disponibilidad.value|default_if_none:'' }}" required placeholder="Ej. Cancha 1">
+                                {% if form.disponibilidad.errors %}
+                                    <div class="invalid-feedback d-block ml-3 font-weight-bold">{{ form.disponibilidad.errors|striptags }}</div>
+                                {% endif %}
+                                {% if form.disponibilidad.help_text %}
+                                    <small class="form-text text-muted ml-3 mt-2">{{ form.disponibilidad.help_text }}</small>
+                                {% endif %}
+                            </div>
+
+                            <!-- Estado (Activa/Inactiva) -->
+                            <div class="col-12 mb-2">
+                                <div class="custom-control custom-switch d-flex align-items-center mt-3">
+                                    <input type="checkbox" name="{{ form.estado.name }}" class="custom-control-input" id="{{ form.estado.id_for_label }}" {% if form.estado.value %}checked{% endif %}>
+                                    <label class="custom-control-label font-weight-bold text-light ml-2 d-flex align-items-center" for="{{ form.estado.id_for_label }}" style="cursor: pointer; padding-left: 10px; padding-top: 2px;">
+                                        Cancha Funcional/Activa <span class="text-muted small ml-2 font-weight-normal">(Desactívala si está en mantenimiento)</span>
+                                    </label>
+                                </div>
+                                {% if form.estado.errors %}
+                                    <div class="text-danger small mt-2 font-weight-bold">{{ form.estado.errors|striptags }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Botones de Acción -->
+                        <div class="d-flex justify-content-between align-items-center mt-5 pt-4 border-top border-secondary">
+                            <a href="{% url 'tejobar_app:admin_canchas_index' %}" class="btn btn-outline-secondary font-weight-bold rounded-pill shadow-sm px-4 py-2">
+                                <i class="fas fa-arrow-left mr-2"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-success font-weight-bold rounded-pill shadow-lg px-5 py-2">
+                                <i class="fas fa-save mr-2"></i> Guardar Cancha
+                            </button>
+                        </div>
+                    </form>
                 </div>
-                {% if form.estado.errors %}
-                    <small class="text-danger d-block mt-2">{{ form.estado.errors|striptags }}</small>
-                {% endif %}
             </div>
-
-            <div class="cancha-actions">
-                <a href="{% url 'tejobar_app:admin_canchas_index' %}" class="btn btn-outline-light">Cancelar</a>
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save mr-1"></i> Guardar Cancha
-                </button>
-            </div>
-        </form>
+        </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Client-side Validation Highlights
+    const forms = document.querySelectorAll('form');
+    Array.from(forms).forEach(form => {
+        form.addEventListener('submit', event => {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+            
+            const requiredInputs = form.querySelectorAll('input[required]');
+            requiredInputs.forEach(input => {
+                if (!input.value) {
+                    input.classList.add('border-danger');
+                } else {
+                    input.classList.remove('border-danger');
+                }
+            });
+        }, false);
+    });
+});
+</script>
 {% endblock %}

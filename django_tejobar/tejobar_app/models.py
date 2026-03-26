@@ -1,5 +1,7 @@
 from django.contrib.auth.models import User
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.exceptions import ValidationError
 
 
 class Persona(models.Model):
@@ -98,9 +100,22 @@ class Categoria(models.Model):
 
 class Producto(models.Model):
     nombre = models.CharField(max_length=100)
-    precio = models.FloatField()
-    stock = models.IntegerField()
+    precio = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2,
+        validators=[
+            MinValueValidator(0.01, message="El precio no puede ser 0 ni negativo."),
+            MaxValueValidator(10000000.00, message="El precio excede el límite permitido (10M).")
+        ]
+    )
+    stock = models.IntegerField(
+        validators=[
+            MinValueValidator(0, message="El stock no puede ser negativo."),
+            MaxValueValidator(10000, message="Capacidad máxima de bodega excedida (10,000 u).")
+        ]
+    )
     fecha_vencimiento = models.DateField(blank=True, null=True)
+    descripcion = models.TextField("Descripción", blank=True, null=True)
     imagen = models.ImageField(upload_to="productos", blank=True, null=True)
     categoria = models.ForeignKey(
         Categoria,
@@ -114,6 +129,17 @@ class Producto(models.Model):
 
     def __str__(self) -> str:
         return self.nombre
+
+    def clean(self):
+        super().clean()
+        if self.precio is not None and self.precio <= 0:
+            raise ValidationError({'precio': 'El precio debe ser mayor a 0.'})
+        if self.stock is not None and self.stock < 0:
+            raise ValidationError({'stock': 'El stock no puede ser negativo.'})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     @property
     def is_expired(self) -> bool:
@@ -256,10 +282,44 @@ class JugadorEquipo(models.Model):
         super().clean()
         from django.core.exceptions import ValidationError
         if self.tipo_usuario == self.TIPO_REGISTRADO and self.jugador:
-            # Check if player is already in another team
             equipos_previos = JugadorEquipo.objects.filter(jugador=self.jugador).exclude(pk=self.pk)
             if equipos_previos.exists():
                 raise ValidationError({"jugador": "Este jugador ya pertenece a otro equipo. Un jugador no puede estar en dos equipos a la vez."})
+        
+        if self.es_capitan:
+            capitanes = JugadorEquipo.objects.filter(equipo=self.equipo, es_capitan=True).exclude(pk=self.pk)
+            if capitanes.exists():
+                raise ValidationError({"es_capitan": f"El equipo '{self.equipo.nombre_equipo}' ya tiene un capitán asignado."})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def reactivar_jugador_en_equipo(cls, jugador, equipo_destino_id):
+        from django.db import transaction
+        from django.core.exceptions import ValidationError
+        # Se requiere importar localmente para evitar dependencias circulares complejas
+        from tejobar_app.models import Equipo
+        
+        with transaction.atomic():
+            equipo_actual = cls.objects.filter(jugador=jugador).first()
+            if equipo_actual:
+                if equipo_actual.equipo.id == equipo_destino_id:
+                    raise ValidationError("El jugador ya está activo en este equipo.")
+                equipo_actual.delete()
+
+            equipo_destino = Equipo.objects.get(id=equipo_destino_id)
+            ya_hay_capitan = cls.objects.filter(equipo=equipo_destino, es_capitan=True).exists()
+
+            nuevo_vinculo = cls(
+                jugador=jugador,
+                equipo=equipo_destino,
+                es_capitan=not ya_hay_capitan,
+                tipo_usuario=cls.TIPO_REGISTRADO
+            )
+            nuevo_vinculo.save()
+            return nuevo_vinculo
 
     def __str__(self) -> str:
         return f"{self.get_nombre()} en {self.equipo.nombre_equipo}"
@@ -485,3 +545,50 @@ class Novedad(models.Model):
         elif self.tipo_novedad in [self.TIPO_VENDIDO, self.TIPO_VENCIDO, self.TIPO_PERDIDA]:
             return "Salida"
         return "N/A"
+
+class HistorialEquipo(models.Model):
+    jugador = models.ForeignKey(Jugador, on_delete=models.CASCADE, related_name="historial_equipos")
+    equipo = models.ForeignKey(Equipo, on_delete=models.CASCADE, related_name="historial_jugadores")
+    fecha_ingreso = models.DateTimeField(auto_now_add=True)
+    fecha_salida = models.DateTimeField(null=True, blank=True)
+    fue_capitan = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.jugador} en {self.equipo} ({self.fecha_ingreso.date()})"
+    
+    @property
+    def is_activo(self):
+        return self.fecha_salida is None
+
+# Configuración de Signals para automatizar el historial
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
+
+@receiver(post_save, sender=JugadorEquipo)
+def gestionar_historial_ingreso(sender, instance, created, **kwargs):
+    if instance.tipo_usuario == JugadorEquipo.TIPO_REGISTRADO and instance.jugador:
+        if created:
+            HistorialEquipo.objects.create(
+                jugador=instance.jugador,
+                equipo=instance.equipo,
+                fue_capitan=instance.es_capitan
+            )
+        else:
+            from django.utils import timezone
+            historial = HistorialEquipo.objects.filter(
+                jugador=instance.jugador, equipo=instance.equipo, fecha_salida__isnull=True
+            ).first()
+            if historial and historial.fue_capitan != instance.es_capitan:
+                historial.fue_capitan = instance.es_capitan
+                historial.save()
+
+@receiver(post_delete, sender=JugadorEquipo)
+def gestionar_historial_salida(sender, instance, **kwargs):
+    if instance.tipo_usuario == JugadorEquipo.TIPO_REGISTRADO and instance.jugador:
+        from django.utils import timezone
+        historial = HistorialEquipo.objects.filter(
+            jugador=instance.jugador, equipo=instance.equipo, fecha_salida__isnull=True
+        ).first()
+        if historial:
+            historial.fecha_salida = timezone.now()
+            historial.save()
