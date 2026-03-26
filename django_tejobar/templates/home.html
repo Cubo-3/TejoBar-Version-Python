@@ -56,11 +56,11 @@
     
     <!-- Category Filters -->
     <div class="category-filters-container mb-4" style="text-align: center; margin-bottom: 2rem;">
-        <a href="?categoria_id=#menu" class="btn" style="display: inline-block; padding: 8px 16px; margin: 4px; border-radius: 20px; text-decoration: none; font-weight: bold; background-color: {% if not categoria_seleccionada %}#e67e22{% else %}transparent{% endif %}; color: {% if not categoria_seleccionada %}white{% else %}#e67e22{% endif %}; border: 2px solid #e67e22;">
+        <a href="?categoria_id=#menu" class="category-btn {% if not categoria_seleccionada %}active{% endif %}">
             Todas
         </a>
         {% for cat in categorias %}
-            <a href="?categoria_id={{ cat.id }}#menu" class="btn" style="display: inline-block; padding: 8px 16px; margin: 4px; border-radius: 20px; text-decoration: none; font-weight: bold; background-color: {% if categoria_seleccionada == cat.id %}#e67e22{% else %}transparent{% endif %}; color: {% if categoria_seleccionada == cat.id %}white{% else %}#e67e22{% endif %}; border: 2px solid #e67e22;">
+            <a href="?categoria_id={{ cat.id }}#menu" class="category-btn {% if categoria_seleccionada == cat.id %}active{% endif %}">
                 {{ cat.nombre }}
             </a>
         {% endfor %}
@@ -68,13 +68,15 @@
 
     <div class="grid">
 
+    {% static 'img/productos/no-image.png' as default_img_url %}
     {% for producto in productos %}
     <a href="{% url 'tejobar_app:productos_show' producto.id %}" class="card">
       <div class="card-content">
         <h3>{{ producto.nombre }}</h3>
         <p>${{ producto.precio|floatformat:0 }}</p>
       </div>
-      <div class="card-image" style="{% if producto.imagen %}background-image: url('{{ producto.imagen.url }}');{% else %}background-image: url('{% static 'img/productos/no-image.png' %}');{% endif %}"></div>
+      
+      <div class="card-image" style="background-image: url('{% if producto.imagen %}{{ producto.imagen.url }}{% else %}{{ default_img_url }}{% endif %}');"></div>
     </a>
     {% empty %}
     <p>No hay productos disponibles por ahora.</p>
