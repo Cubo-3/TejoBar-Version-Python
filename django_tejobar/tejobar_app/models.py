@@ -77,6 +77,8 @@ class Cancha(models.Model):
     precio_por_hora = models.FloatField(default=8000.0)
 
     def __str__(self) -> str:
+        if self.disponibilidad:
+            return self.disponibilidad
         return f"Cancha {self.pk}"
 
 

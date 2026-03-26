@@ -6,159 +6,223 @@
     <style>
         @page {
             size: a4 portrait;
-            margin: 2cm;
+            margin: 1.5cm;
         }
         body {
             font-family: Helvetica, Arial, sans-serif;
-            font-size: 12pt;
+            font-size: 10pt;
             color: #333333;
         }
-        .header {
+        h1 {
+            color: #e67e22;
+            font-size: 20pt;
             text-align: center;
-            border-bottom: 2px solid #555;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
         }
-        .header h1 {
-            color: #e67e22; /* TejoBar Orange */
-            margin: 0;
-            padding: 0;
-            font-size: 24pt;
-        }
-        .meta-info {
-            font-size: 10pt;
+        .subtitle {
+            text-align: center;
             color: #666;
-            text-align: right;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e67e22;
+        }
+        .meta-table {
+            width: 100%;
             margin-bottom: 20px;
         }
-        .summary-blocks {
-            width: 100%;
-            margin-bottom: 30px;
+        .meta-table td {
+            font-size: 9pt;
+            color: #555;
         }
-        .summary-block {
-            background-color: #f8f9fa;
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: center;
-        }
-        .summary-block h3 {
-            margin: 0 0 5px 0;
-            font-size: 16pt;
+        h2 {
+            font-size: 14pt;
             color: #333;
-        }
-        .summary-block p {
-            margin: 0;
-            font-size: 10pt;
-            color: #777;
-        }
-        .section-title {
             border-bottom: 1px solid #ccc;
-            padding-bottom: 5px;
-            margin-top: 30px;
+            padding-bottom: 4px;
+            margin-top: 20px;
             margin-bottom: 15px;
-            color: #444;
         }
-        table {
+        
+        /* TABLA DE METRICAS - PURA Y SIMPLE */
+        table.metrics-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 10pt;
+            margin-bottom: 30px;
         }
-        th {
-            background-color: #f2f2f2;
-            padding: 8px;
-            border-bottom: 2px solid #ccc;
-            text-align: left;
+        table.metrics-table td {
+            width: 33.33%;
+            border: 1px solid #dddddd;
+            padding: 15px;
+            text-align: center;
+            background-color: #f9f9f9;
         }
-        td {
-            padding: 8px;
-            border-bottom: 1px solid #eee;
+        .metric-value {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #e67e22;
+            display: block;
+            margin-bottom: 5px;
         }
-        .badge {
+        .metric-label {
+            font-size: 9pt;
+            color: #333333;
             font-weight: bold;
         }
-        .badge-pendiente { color: #856404; }
-        .badge-entregado { color: #155724; }
-        .badge-cancelado { color: #721c24; }
+        .metric-sub {
+            font-size: 8pt;
+            color: #777777;
+        }
+
+        /* TABLA DE DATOS - ROBUSTA */
+        table.data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table.data-table th {
+            background-color: #eeeeee;
+            border: 1px solid #cccccc;
+            padding: 8px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 9pt;
+            vertical-align: middle;
+        }
+        table.data-table td {
+            border: 1px solid #dddddd;
+            padding: 8px;
+            font-size: 9pt;
+            vertical-align: top;
+        }
+        .td-content {
+            width: 100%;
+            word-wrap: break-word;
+        }
+        
+        /* Badges de texto simple */
+        .status-pendiente { color: #856404; font-weight: bold; }
+        .status-entregado { color: #155724; font-weight: bold; }
+        .status-cancelado { color: #721c24; font-weight: bold; }
+        .status-otro { color: #333333; font-weight: bold; }
+        
+        /* Control de paginacion */
+        tr {
+            page-break-inside: avoid;
+        }
+        .page-break-before {
+            page-break-before: always;
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Reporte del Sistema TejoBar</h1>
-    </div>
 
-    <div class="meta-info">
-        <p><strong>Generado por:</strong> {{ generado_por }}<br>
-        <strong>Rango de fechas (Apartados):</strong> {% if fecha_inicio and fecha_fin %}{{ fecha_inicio }} a {{ fecha_fin }}{% elif fecha_inicio %}Desde {{ fecha_inicio }}{% elif fecha_fin %}Hasta {{ fecha_fin }}{% else %}Histórico Total{% endif %}</p>
-    </div>
+    <h1>Reporte Ejecutivo TejoBar</h1>
+    <div class="subtitle">Resumen Integral del Ecosistema y Operaciones</div>
 
-    <h2 class="section-title">Resumen de Métricas</h2>
-    <table class="summary-blocks">
+    <table class="meta-table">
         <tr>
-            <td class="summary-block">
-                <h3>{{ total_productos }}</h3>
-                <p>Productos ({{ productos_bajo_stock }} bajo stock)</p>
+            <td style="width: 50%;">
+                <strong>Generado por:</strong> {{ generado_por }}<br>
+                <strong>Fecha Emisión:</strong> {% now "d M Y, h:i A" %}
             </td>
-            <td class="summary-block">
-                <h3>{{ total_usuarios }}</h3>
-                <p>Usuarios Activos</p>
-            </td>
-            <td class="summary-block">
-                <h3>{{ total_partidos }}</h3>
-                <p>Partidos Registrados</p>
-            </td>
-        </tr>
-        <tr>
-            <td class="summary-block">
-                <h3>{{ total_equipos }}</h3>
-                <p>Equipos ({{ total_jugadores }} Jugadores)</p>
-            </td>
-            <td class="summary-block">
-                <h3>{{ total_categorias }}</h3>
-                <p>Categorías</p>
-            </td>
-            <td class="summary-block">
-                <h3>{{ total_canchas }}</h3>
-                <p>Canchas</p>
+            <td style="width: 50%; text-align: right;">
+                <strong>Periodo Consultado:</strong><br>
+                {% if fecha_inicio and fecha_fin %}
+                    {{ fecha_inicio }} a {{ fecha_fin }}
+                {% elif fecha_inicio %}
+                    Desde {{ fecha_inicio }}
+                {% elif fecha_fin %}
+                    Hasta {{ fecha_fin }}
+                {% else %}
+                    Histórico Total
+                {% endif %}
             </td>
         </tr>
     </table>
 
-    <h2 class="section-title">Apartados {% if fecha_inicio or fecha_fin %}Filtrados{% else %}Recientes{% endif %}</h2>
+    <!-- METRICAS -->
+    <h2>1. Métricas del Sistema</h2>
+    
+    <table class="metrics-table">
+        <tr>
+            <td>
+                <span class="metric-value">{{ total_productos }}</span>
+                <span class="metric-label">PRODUCTOS</span><br>
+                <span class="metric-sub">({{ productos_bajo_stock }} bajo stock)</span>
+            </td>
+            <td>
+                <span class="metric-value">{{ total_usuarios }}</span>
+                <span class="metric-label">USUARIOS</span><br>
+                <span class="metric-sub">Activos en plataforma</span>
+            </td>
+            <td>
+                <span class="metric-value">{{ total_partidos }}</span>
+                <span class="metric-label">PARTIDOS</span><br>
+                <span class="metric-sub">Registrados históricamente</span>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="metric-value">{{ total_equipos }}</span>
+                <span class="metric-label">EQUIPOS</span><br>
+                <span class="metric-sub">({{ total_jugadores }} Jugadores)</span>
+            </td>
+            <td>
+                <span class="metric-value">{{ total_categorias }}</span>
+                <span class="metric-label">CATEGORÍAS</span><br>
+                <span class="metric-sub">Clasificaciones activas</span>
+            </td>
+            <td>
+                <span class="metric-value">{{ total_canchas }}</span>
+                <span class="metric-label">CANCHAS</span><br>
+                <span class="metric-sub">Áreas de juego disponibles</span>
+            </td>
+        </tr>
+    </table>
+
+    <!-- APARTADOS -->
+    <h2 class="page-break-before">2. Apartados {% if fecha_inicio or fecha_fin %}Filtrados{% else %}Recientes{% endif %}</h2>
+    
     {% if apartados %}
-    <table>
+    <!-- repeat="1" es la directiva especifica de xhtml2pdf para repetir thead -->
+    <table class="data-table" repeat="1">
         <thead>
             <tr>
-                <th>Persona</th>
-                <th>Producto</th>
-                <th>Cantidad</th>
-                <th>Fecha</th>
-                <th>Estado</th>
+                <th width="25%">CLIENTE</th>
+                <th width="25%">PRODUCTO</th>
+                <th width="15%" style="text-align: center;">CANTIDAD</th>
+                <th width="20%">FECHA</th>
+                <th width="15%">ESTADO</th>
             </tr>
         </thead>
         <tbody>
             {% for a in apartados %}
             <tr>
-                <td>{{ a.persona.nombre }}</td>
-                <td>{{ a.producto.nombre }}</td>
-                <td style="text-align: center;">{{ a.cantidad }}</td>
-                <td>{{ a.fecha_apartado|date:"d M Y, H:i" }}</td>
+                <td><div class="td-content">{{ a.persona.nombre }}</div></td>
+                <td><div class="td-content">{{ a.producto.nombre }}</div></td>
+                <td style="text-align: center;"><div class="td-content">{{ a.cantidad }}</div></td>
+                <td><div class="td-content">{{ a.fecha_apartado|date:"d M Y, H:i" }}</div></td>
                 <td>
-                    {% if a.estado == 'pendiente' %}
-                        <span class="badge badge-pendiente">{{ a.estado|title }}</span>
-                    {% elif a.estado == 'entregado' %}
-                        <span class="badge badge-entregado">{{ a.estado|title }}</span>
-                    {% elif a.estado == 'cancelado' %}
-                        <span class="badge badge-cancelado">{{ a.estado|title }}</span>
-                    {% else %}
-                        {{ a.estado|title }}
-                    {% endif %}
+                    <div class="td-content">
+                        {% if a.estado == 'pendiente' %}
+                            <span class="status-pendiente">{{ a.estado|upper }}</span>
+                        {% elif a.estado == 'entregado' %}
+                            <span class="status-entregado">{{ a.estado|upper }}</span>
+                        {% elif a.estado == 'cancelado' %}
+                            <span class="status-cancelado">{{ a.estado|upper }}</span>
+                        {% else %}
+                            <span class="status-otro">{{ a.estado|upper }}</span>
+                        {% endif %}
+                    </div>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
     {% else %}
-        <p>No hay apartados registrados para los filtros actuales.</p>
+    <p style="text-align: center; color: #666; padding: 20px; border: 1px solid #ccc; background-color: #f9f9f9;">
+        No se encontraron apartados registrados para los filtros actuales.
+    </p>
     {% endif %}
 
 </body>
