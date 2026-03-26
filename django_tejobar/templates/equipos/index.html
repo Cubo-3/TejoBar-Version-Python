@@ -15,6 +15,7 @@
         <thead>
             <tr>
                 <th>Nombre del Equipo</th>
+                <th>Capitán</th>
                 <th>Jugadores</th>
                 <th class="text-right">Acciones</th>
             </tr>
@@ -23,6 +24,7 @@
         {% for e in equipos %}
             <tr>
                 <td>{{ e.nombre_equipo }}</td>
+                <td><span class="badge badge-info"><i class="fas fa-crown text-warning mr-1"></i> {{ e.capitan_nombre }}</span></td>
                 <td>
                     {{ e.num_jugadores }}/5 
                     {% if e.is_completo %}

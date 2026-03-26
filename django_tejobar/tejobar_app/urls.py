@@ -72,9 +72,13 @@ urlpatterns = [
     path("pago/pendiente/", views.pago_pendiente, name="pago_pendiente"),
 
     # Categorías
+    path("api/categorias/crear/", views.api_crear_categoria, name="api_crear_categoria"),
     path("administracion/categorias/", views.admin_categorias_index, name="admin_categorias_index"),
     path("administracion/categorias/crear/", views.admin_categorias_create, name="admin_categorias_create"),
     path("administracion/categorias/<int:pk>/editar/", views.admin_categorias_update, name="admin_categorias_update"),
     path("administracion/categorias/<int:pk>/eliminar/", views.admin_categorias_delete, name="admin_categorias_delete"),
+
+    # Ventas directas (sin cuenta)
+    path("administracion/venta-directa/", views.admin_venta_directa, name="admin_venta_directa"),
 ]
 

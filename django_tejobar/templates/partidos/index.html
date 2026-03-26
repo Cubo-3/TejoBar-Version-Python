@@ -104,6 +104,9 @@
                             <div class="team-name text-truncate" title="{{ partido.equipo1.nombre_equipo|default:'Por definir' }}">
                                 {{ partido.equipo1.nombre_equipo|default:"--" }}
                             </div>
+                            {% if partido.equipo1 %}
+                            <div class="small text-white-50 text-truncate"><i class="fas fa-crown text-warning mr-1"></i>{{ partido.equipo1.capitan_nombre }}</div>
+                            {% endif %}
                         </div>
                         <div class="col-2 px-0">
                             <div class="vs-badge">VS</div>
@@ -112,6 +115,9 @@
                             <div class="team-name text-truncate" title="{{ partido.equipo2.nombre_equipo|default:'Por definir' }}">
                                 {{ partido.equipo2.nombre_equipo|default:"--" }}
                             </div>
+                            {% if partido.equipo2 %}
+                            <div class="small text-white-50 text-truncate"><i class="fas fa-crown text-warning mr-1"></i>{{ partido.equipo2.capitan_nombre }}</div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

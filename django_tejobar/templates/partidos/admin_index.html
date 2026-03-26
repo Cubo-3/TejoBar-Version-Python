@@ -36,7 +36,11 @@
                     <tr>
                         <td class="text-dark">{{ partido.id }}</td>
                         <td class="font-weight-bold text-dark">
-                            {{ partido.equipo1.nombre_equipo|default:"--" }} vs {{ partido.equipo2.nombre_equipo|default:"--" }}
+                            {{ partido.equipo1.nombre_equipo|default:"--" }}
+                            {% if partido.equipo1 %}<div class="small text-muted"><i class="fas fa-crown text-warning mr-1"></i>{{ partido.equipo1.capitan_nombre }}</div>{% endif %}
+                            <span class="font-weight-bolder text-secondary mx-1">vs</span>
+                            {{ partido.equipo2.nombre_equipo|default:"--" }}
+                            {% if partido.equipo2 %}<div class="small text-muted"><i class="fas fa-crown text-warning mr-1"></i>{{ partido.equipo2.capitan_nombre }}</div>{% endif %}
                         </td>
                         <td class="text-dark">{{ partido.fecha|date:"d/M/Y" }}</td>
                         <td class="text-dark">{{ partido.hora }}</td>

@@ -3,8 +3,8 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 19-03-2026 a las 13:39:49
--- Versión del servidor: 10.4.32-MariaDB
+-- Tiempo de generación: 24-03-2026 a las 12:34:15
+-- Versión del servidor: 12.2.2-MariaDB
 -- Versión de PHP: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -164,8 +164,8 @@ CREATE TABLE `auth_user` (
 --
 
 INSERT INTO `auth_user` (`id`, `password`, `last_login`, `is_superuser`, `username`, `first_name`, `last_name`, `email`, `is_staff`, `is_active`, `date_joined`) VALUES
-(1, 'pbkdf2_sha256$600000$xofY9O79ZUpZRfgHc9IaAs$Ivkygk+FiosZOnX1FW7FUvIAiKz6zg9rlDcsQtfz9ec=', '2026-03-19 12:18:20.854556', 1, 'admin', '', '', 'admin@gmail.com', 1, 1, '2026-03-19 11:35:24.594818'),
-(2, 'pbkdf2_sha256$600000$6QgswGQ414QhZsC1miVcJ4$pR1vlmDyEleqipi5L0V+KrmljdfE7j28KmKf7uFK4F8=', '2026-03-19 12:16:28.221573', 0, 'jugador@gmail.com', 'jugador', '', 'jugador@gmail.com', 0, 1, '2026-03-19 11:39:09.075462'),
+(1, 'pbkdf2_sha256$1000000$8Sef888XJmNg4JvfFFj3Pd$5VbCdEgymCs4PhR7gOiMoM7g5nC0b65D6BFi+xQFhTg=', '2026-03-24 11:21:00.318057', 1, 'admin', '', '', 'admin@gmail.com', 1, 1, '2026-03-19 11:35:24.594818'),
+(2, 'pbkdf2_sha256$1000000$felUZfzBfICnLN1zXKg9ci$k9D8CzRikd+oD43V4P6t8CiiLmWszF5V8f0snmVV/nI=', '2026-03-24 11:24:06.345529', 0, 'jugador@gmail.com', 'jugador', '', 'jugador@gmail.com', 0, 1, '2026-03-19 11:39:09.075462'),
 (3, 'pbkdf2_sha256$600000$nSgBjLiZMzNkzahAJY0CgE$49FrLovbnSraFO1QTRnK6+H65vDJ9phHJHaV4P/sd3s=', NULL, 0, 'jugador1@gmail.com', 'jugador 1', '', 'jugador1@gmail.com', 0, 1, '2026-03-19 11:44:44.650730'),
 (5, 'pbkdf2_sha256$600000$NPBLc0o7LKoe9nH8JsAi2I$87eEMj8gWyc5xJNPlXC71J/POeLBBG+c0r9Q9FBLkIU=', '2026-03-19 12:17:48.204251', 0, 'jugador4@gmail.com', 'jugador 4', '', 'jugador4@gmail.com', 0, 1, '2026-03-19 12:01:47.639982');
 
@@ -313,7 +313,9 @@ CREATE TABLE `django_session` (
 --
 
 INSERT INTO `django_session` (`session_key`, `session_data`, `expire_date`) VALUES
-('dcyk7gy4582htnm5zkwxfohlvja2s1b8', '.eJxVzMsOgjAQheF3mbVpOkwvwNK9z0Cm7dSiBhIKK-O7myYsdHv-L-cNEx97mY4q2zQnGAHh8rsFjk9ZWkgPXu6riuuyb3NQjaizVnVbk7yup_07KFwLjOCYsjYdOZ09GjI26uyHTJYsJzPYSBxQxGbsMPdGUo9OMDpJnpqGzxfFtDdu:1w3CKS:BjfavTgPb6nP5ikaO9LjmjLQlBx4Jlj9I4m47IhVneg', '2026-04-02 12:18:20.856781');
+('dcyk7gy4582htnm5zkwxfohlvja2s1b8', '.eJxVzMsOgjAQheF3mbVpOkwvwNK9z0Cm7dSiBhIKK-O7myYsdHv-L-cNEx97mY4q2zQnGAHh8rsFjk9ZWkgPXu6riuuyb3NQjaizVnVbk7yup_07KFwLjOCYsjYdOZ09GjI26uyHTJYsJzPYSBxQxGbsMPdGUo9OMDpJnpqGzxfFtDdu:1w3CKS:BjfavTgPb6nP5ikaO9LjmjLQlBx4Jlj9I4m47IhVneg', '2026-04-02 12:18:20.856781'),
+('eksafxo6bx79hrbiaekkk6rtr3y4oppi', '.eJxVjDsOwyAQBe9CHSG-BlKm9xnQsgvBSYQlY1dR7h5bcpG0b2bem0XY1hq3npc4EbsyyS6_WwJ85nYAekC7zxznti5T4ofCT9r5OFN-3U7376BCr3stvLcQTAYrVaCgsSQlSA8ZnbRKag9eE4oyWIU6STDZFOvMDopL5D37fAHQvjd2:1w4zoi:t6yZ8_toRp4itZxBGr5_GitgnE0R4e7f3aWjBvd_ej0', '2026-04-07 11:21:00.320080'),
+('v7z3wscitnxbqjyxnke8jx4bsutmsv50', '.eJxVjM0OwiAQhN-FsyEsPyt49O4zkAU2UjWQlPZkfHfbpAc9TTLfN_MWkdalxnXwHKciLkKL02-XKD-57aA8qN27zL0t85TkrsiDDnnrhV_Xw_07qDTqtvZnB-xLURisYsyFSbGz6LO2CdGQ1oAuOwC1BRoMwbMBDgmMc0Di8wXG3Ta0:1w4zri:M9QgI2CR6L30MBaW9g45zeRiAfY9TRTINg50pRJXRNU', '2026-04-07 11:24:06.347074');
 
 -- --------------------------------------------------------
 
@@ -335,7 +337,9 @@ CREATE TABLE `tejobar_app_apartado` (
 --
 
 INSERT INTO `tejobar_app_apartado` (`id`, `cantidad`, `fecha_apartado`, `estado`, `persona_id`, `producto_id`) VALUES
-(1, 2, '2026-03-19 11:39:59.122642', 'pendiente', 2, 1);
+(1, 2, '2026-03-19 11:39:59.122642', 'cancelado', 2, 1),
+(2, 6, '2026-03-24 11:25:36.826269', 'comprado', 2, 2),
+(3, 5, '2026-03-24 11:32:20.626100', 'comprado', 2, 2);
 
 -- --------------------------------------------------------
 
@@ -350,6 +354,14 @@ CREATE TABLE `tejobar_app_cancha` (
   `precio_por_hora` double NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Volcado de datos para la tabla `tejobar_app_cancha`
+--
+
+INSERT INTO `tejobar_app_cancha` (`id`, `estado`, `disponibilidad`, `precio_por_hora`) VALUES
+(1, 1, 'Cancha grande', 8000),
+(2, 1, 'cancha pequeña', 8000);
+
 -- --------------------------------------------------------
 
 --
@@ -362,6 +374,13 @@ CREATE TABLE `tejobar_app_categoria` (
   `descripcion` longtext DEFAULT NULL,
   `estado` tinyint(1) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `tejobar_app_categoria`
+--
+
+INSERT INTO `tejobar_app_categoria` (`id`, `nombre`, `descripcion`, `estado`) VALUES
+(1, 'Alcohol', 'bebidad alcoholicas distribuidas por bavaria', 1);
 
 -- --------------------------------------------------------
 
@@ -413,6 +432,14 @@ CREATE TABLE `tejobar_app_historial` (
   `producto_id` bigint(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Volcado de datos para la tabla `tejobar_app_historial`
+--
+
+INSERT INTO `tejobar_app_historial` (`id`, `cantidad`, `precio`, `total`, `fecha_entrega`, `estado`, `created_at`, `updated_at`, `persona_id`, `producto_id`) VALUES
+(1, 6, 3500.00, 21000.00, '2026-03-24 11:26:53.089132', 'entregado', '2026-03-24 11:26:53.089154', '2026-03-24 11:26:57.773445', 2, 2),
+(2, 5, 3500.00, 17500.00, '2026-03-24 11:32:30.419899', 'entregado', '2026-03-24 11:32:30.419918', '2026-03-24 11:32:39.889292', 2, 2);
+
 -- --------------------------------------------------------
 
 --
@@ -457,7 +484,8 @@ CREATE TABLE `tejobar_app_jugadorequipo` (
 
 INSERT INTO `tejobar_app_jugadorequipo` (`id`, `es_capitan`, `equipo_id`, `jugador_id`, `correo_invitado`, `nombre_invitado`, `telefono_invitado`, `tipo_usuario`) VALUES
 (2, 1, 2, 6, NULL, NULL, NULL, 'registrado'),
-(3, 0, 2, 3, NULL, NULL, NULL, 'registrado');
+(3, 0, 2, 3, NULL, NULL, NULL, 'registrado'),
+(6, 0, 2, NULL, NULL, 'felipe', NULL, 'invitado');
 
 -- --------------------------------------------------------
 
@@ -480,7 +508,15 @@ CREATE TABLE `tejobar_app_novedad` (
 
 INSERT INTO `tejobar_app_novedad` (`id`, `tipo_novedad`, `cantidad`, `fecha`, `descripcion`, `producto_id`) VALUES
 (1, 'agregado', 50, '2026-03-19 11:38:36.679068', 'Nuevo producto o lote agregado', 1),
-(2, 'vendido', 2, '2026-03-19 11:39:59.123872', 'Separado/Vendido por sistema', 1);
+(2, 'vendido', 2, '2026-03-19 11:39:59.123872', 'Separado/Vendido por sistema', 1),
+(3, 'vencido', 48, '2026-03-24 11:17:25.446814', 'Stock caducado automáticamente', 1),
+(4, 'agregado', 2, '2026-03-24 11:17:25.457648', 'Stock devuelto: Carrito abandonado.', 1),
+(5, 'vencido', 2, '2026-03-24 11:20:03.830775', 'Stock caducado automáticamente', 1),
+(6, 'agregado', 90, '2026-03-24 11:25:18.289449', 'Nuevo producto o lote agregado', 2),
+(7, 'vendido', 6, '2026-03-24 11:25:36.828102', 'Separado/Vendido por sistema', 2),
+(8, 'vendido', 6, '2026-03-24 11:26:53.090444', 'Pago en efectivo procesado por Admin: admin', 2),
+(9, 'vendido', 5, '2026-03-24 11:32:20.627150', 'Separado/Vendido por sistema', 2),
+(10, 'vendido', 5, '2026-03-24 11:32:30.421495', 'Pago en efectivo procesado por Admin: admin', 2);
 
 -- --------------------------------------------------------
 
@@ -550,7 +586,8 @@ CREATE TABLE `tejobar_app_producto` (
 --
 
 INSERT INTO `tejobar_app_producto` (`id`, `nombre`, `precio`, `stock`, `fecha_vencimiento`, `imagen`, `categoria_id`) VALUES
-(1, 'prueba', 5000, 48, '2026-03-21', 'productos/3626795.png', NULL);
+(1, 'prueba', 5000, 0, '2026-03-21', 'productos/3626795.png', NULL),
+(2, 'poker', 3500, 79, '2026-04-17', 'productos/aguardiente_JDdzqH9.jpg', 1);
 
 -- --------------------------------------------------------
 
@@ -804,19 +841,19 @@ ALTER TABLE `django_migrations`
 -- AUTO_INCREMENT de la tabla `tejobar_app_apartado`
 --
 ALTER TABLE `tejobar_app_apartado`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de la tabla `tejobar_app_cancha`
 --
 ALTER TABLE `tejobar_app_cancha`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT de la tabla `tejobar_app_categoria`
 --
 ALTER TABLE `tejobar_app_categoria`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de la tabla `tejobar_app_compra`
@@ -834,19 +871,19 @@ ALTER TABLE `tejobar_app_equipo`
 -- AUTO_INCREMENT de la tabla `tejobar_app_historial`
 --
 ALTER TABLE `tejobar_app_historial`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT de la tabla `tejobar_app_jugadorequipo`
 --
 ALTER TABLE `tejobar_app_jugadorequipo`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `tejobar_app_novedad`
 --
 ALTER TABLE `tejobar_app_novedad`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT de la tabla `tejobar_app_partido`
@@ -864,7 +901,7 @@ ALTER TABLE `tejobar_app_persona`
 -- AUTO_INCREMENT de la tabla `tejobar_app_producto`
 --
 ALTER TABLE `tejobar_app_producto`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT de la tabla `tejobar_app_torneo`

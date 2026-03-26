@@ -2,11 +2,13 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.conf import settings
 from django.urls import reverse
+import json
 import mercadopago
 
 from .forms import (
@@ -199,8 +201,14 @@ def apartar_producto(request: HttpRequest, pk: int) -> HttpResponse:
             request,
             "Producto añadido al carrito con éxito. Puedes verlo en tu dashboard.",
         )
+        next_url = request.POST.get("next")
+        if next_url:
+            return redirect(next_url)
         return redirect("tejobar_app:productos_show", pk=producto.pk)
 
+    next_url = request.GET.get("next")
+    if next_url:
+        return redirect(next_url)
     return redirect("tejobar_app:productos_show", pk=producto.pk)
 
 
@@ -720,6 +728,83 @@ def equipo_remove_member(request: HttpRequest, pk: int, jugador_pk: int) -> Http
 
 
 @admin_required
+def admin_venta_directa(request: HttpRequest) -> HttpResponse:
+    productos = Producto.objects.filter(stock__gt=0).order_by("nombre")
+    error = None
+    success = None
+
+    if request.method == "POST":
+        producto_id = request.POST.get("producto_id")
+        cantidad_str = request.POST.get("cantidad", "1")
+        cliente_nombre = request.POST.get("cliente_nombre", "").strip()
+        cliente_telefono = request.POST.get("cliente_telefono", "").strip()
+
+        try:
+            cantidad = int(cantidad_str)
+            if cantidad <= 0:
+                raise ValueError("Cantidad inválida")
+
+            producto = get_object_or_404(Producto, pk=producto_id)
+
+            if producto.stock < cantidad:
+                error = f"Stock insuficiente. Disponible: {producto.stock} unidades."
+            else:
+                producto.stock -= cantidad
+                producto.save()
+
+                Novedad.objects.create(
+                    producto=producto,
+                    tipo_novedad=Novedad.TIPO_VENDIDO,
+                    cantidad=cantidad,
+                    descripcion=f"Venta física a cliente: {cliente_nombre or 'Anónimo'}"
+                )
+
+                Apartado.objects.create(
+                    persona=None,
+                    producto=producto,
+                    cantidad=cantidad,
+                    estado=Apartado.ESTADO_COMPRADO,
+                    cliente_nombre=cliente_nombre or None,
+                    cliente_telefono=cliente_telefono or None,
+                )
+
+                success = f"✅ Venta registrada: {cantidad} × {producto.nombre} a {cliente_nombre or 'Cliente Anónimo'}."
+                productos = Producto.objects.filter(stock__gt=0).order_by("nombre")
+
+        except (ValueError, TypeError):
+            error = "Cantidad inválida."
+
+    return render(request, "ventas/directa.html", {
+        "productos": productos,
+        "error": error,
+        "success": success,
+    })
+
+
+@admin_required
+@require_POST
+def api_crear_categoria(request: HttpRequest) -> JsonResponse:
+    try:
+        data = json.loads(request.body)
+        nombre = data.get('nombre', '').strip()
+        desc = data.get('descripcion', '').strip()
+        
+        if not nombre:
+            return JsonResponse({'success': False, 'error': 'El nombre es obligatorio'})
+            
+        if Categoria.objects.filter(nombre__iexact=nombre).exists():
+            return JsonResponse({'success': False, 'error': 'Ya existe una categoría con este nombre'})
+            
+        categoria = Categoria.objects.create(nombre=nombre, descripcion=desc, estado=True)
+        return JsonResponse({
+            'success': True, 
+            'categoria': {'id': categoria.id, 'nombre': categoria.nombre}
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@admin_required
 def admin_product_list(request: HttpRequest) -> HttpResponse:
     Producto.actualizar_stock_vencidos()
     productos = Producto.objects.all()
@@ -761,6 +846,13 @@ def admin_product_update(request: HttpRequest, pk: int) -> HttpResponse:
                     cantidad=(prod_actualizado.stock - stock_anterior),
                     descripcion="Stock adicional agregado manualmente"
                 )
+            elif prod_actualizado.stock < stock_anterior:
+                Novedad.objects.create(
+                    producto=prod_actualizado,
+                    tipo_novedad=Novedad.TIPO_PERDIDA,
+                    cantidad=(stock_anterior - prod_actualizado.stock),
+                    descripcion="Stock reducido manualmente (accidente/pérdida)"
+                )
             messages.success(request, "Producto actualizado correctamente")
             return redirect("tejobar_app:admin_productos_index")
     else:
@@ -772,6 +864,13 @@ def admin_product_update(request: HttpRequest, pk: int) -> HttpResponse:
 def admin_product_delete(request: HttpRequest, pk: int) -> HttpResponse:
     producto = get_object_or_404(Producto, pk=pk)
     if request.method == "POST":
+        if producto.stock > 0:
+            Novedad.objects.create(
+                producto=None,
+                tipo_novedad=Novedad.TIPO_PERDIDA,
+                cantidad=producto.stock,
+                descripcion=f"Producto eliminado con stock restante: {producto.nombre}"
+            )
         producto.delete()
         messages.success(request, "Producto eliminado correctamente")
         return redirect("tejobar_app:admin_productos_index")
@@ -832,8 +931,10 @@ def admin_novedades_index(request: HttpRequest) -> HttpResponse:
     fecha_inicio = request.GET.get("fecha_inicio")
     fecha_fin = request.GET.get("fecha_fin")
     tipo_novedad = request.GET.get("tipo_novedad")
+    producto_id = request.GET.get("producto_id")
+    categoria_id = request.GET.get("categoria_id")
 
-    novedades = Novedad.objects.select_related("producto").order_by("-fecha")
+    novedades = Novedad.objects.select_related("producto", "producto__categoria").order_by("-fecha")
 
     if fecha_inicio:
         novedades = novedades.filter(fecha__gte=fecha_inicio)
@@ -850,13 +951,37 @@ def admin_novedades_index(request: HttpRequest) -> HttpResponse:
             
     if tipo_novedad:
         novedades = novedades.filter(tipo_novedad=tipo_novedad)
+    if producto_id:
+        novedades = novedades.filter(producto_id=producto_id)
+    if categoria_id:
+        novedades = novedades.filter(producto__categoria_id=categoria_id)
+
+    productos_filter = Producto.objects.all().order_by('nombre')
+    categorias_filter = Categoria.objects.filter(estado=True).order_by('nombre')
+
+    # Totales por filtros activos
+    from django.db.models import Sum
+    total_registros = novedades.count()
+    tipos_entrada = [Novedad.TIPO_AGREGADO]
+    tipos_salida = [Novedad.TIPO_VENDIDO, Novedad.TIPO_VENCIDO, Novedad.TIPO_PERDIDA]
+    total_entradas = novedades.filter(tipo_novedad__in=tipos_entrada).aggregate(t=Sum('cantidad'))['t'] or 0
+    total_salidas = novedades.filter(tipo_novedad__in=tipos_salida).aggregate(t=Sum('cantidad'))['t'] or 0
+    total_neto = total_entradas - total_salidas
 
     context = {
         "novedades": novedades,
         "fecha_inicio": fecha_inicio or "",
         "fecha_fin": fecha_fin or "",
         "tipo_novedad": tipo_novedad or "",
+        "producto_id": producto_id or "",
+        "categoria_id": categoria_id or "",
+        "productos_filter": productos_filter,
+        "categorias_filter": categorias_filter,
         "tipos_choices": Novedad.TIPO_CHOICES,
+        "total_registros": total_registros,
+        "total_entradas": total_entradas,
+        "total_salidas": total_salidas,
+        "total_neto": total_neto,
         "total_productos": Producto.objects.count(),
         "productos_bajo_stock": Producto.objects.filter(stock__lt=10).count(),
         "total_categorias": Categoria.objects.count(),

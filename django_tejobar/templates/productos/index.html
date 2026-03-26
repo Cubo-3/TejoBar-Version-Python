@@ -62,29 +62,39 @@
 <div class="row">
     {% for producto in productos %}
         <div class="col-6 col-md-4 col-lg-3 mb-4">
-            <div class="card h-100 catalog-card shadow-sm border-0">
-                <a href="{% url 'tejobar_app:productos_show' producto.pk %}" class="text-decoration-none d-flex flex-column h-100">
+            <div class="card h-100 catalog-card shadow-sm border-0 d-flex flex-column">
+                <a href="{% url 'tejobar_app:productos_show' producto.pk %}" class="text-decoration-none text-dark">
                     <img src="{% if producto.imagen %}{{ producto.imagen.url }}{% else %}{% static 'img/productos/no-image.png' %}{% endif %}" 
                          class="card-img-top catalog-img" 
                          alt="{{ producto.nombre }}">
-                    
-                    <div class="card-body d-flex flex-column text-center p-3">
-                        {% if producto.categoria %}
-                            <span class="badge badge-light text-muted mb-2 align-self-center border">{{ producto.categoria.nombre }}</span>
-                        {% endif %}
-                        
-                        <h5 class="card-title font-weight-bold mb-1" style="font-size: 1.1rem;">{{ producto.nombre }}</h5>
-                        
-                        <h4 class="text-success font-weight-bold mt-2 mb-3">${{ producto.precio|floatformat:0 }}</h4>
-                        
-                        <!-- Empujar el botón abajo si el título es corto -->
-                        <div class="mt-auto w-100">
-                            <div class="btn btn-primary w-100 rounded-pill font-weight-bold shadow-sm">
-                                <i class="fas fa-shopping-cart mr-1"></i> Ver Detalles
-                            </div>
-                        </div>
-                    </div>
                 </a>
+                    
+                <div class="card-body d-flex flex-column text-center p-3">
+                    {% if producto.categoria %}
+                        <span class="badge badge-light text-muted mb-2 align-self-center border">{{ producto.categoria.nombre }}</span>
+                    {% endif %}
+                    
+                    <a href="{% url 'tejobar_app:productos_show' producto.pk %}" class="text-decoration-none text-dark">
+                        <h5 class="card-title font-weight-bold mb-1" style="font-size: 1.1rem;">{{ producto.nombre }}</h5>
+                    </a>
+                    
+                    <h4 class="text-success font-weight-bold mt-2 mb-3">${{ producto.precio|floatformat:0 }}</h4>
+                    
+                    <!-- Empujar el form abajo si el título es corto -->
+                    <div class="mt-auto w-100 d-flex justify-content-between align-items-stretch">
+                        <a href="{% url 'tejobar_app:productos_show' producto.pk %}" class="btn btn-primary w-50 rounded-left-pill font-weight-bold shadow-sm d-flex align-items-center justify-content-center border-0" style="border-radius: 50px 0 0 50px;" title="Ver Detalles">
+                            <i class="fas fa-eye mx-1"></i><span class="d-none d-sm-inline">Detalles</span>
+                        </a>
+                        <form action="{% url 'tejobar_app:productos_apartar' producto.pk %}" method="POST" class="w-50 mb-0">
+                            {% csrf_token %}
+                            <input type="hidden" name="cantidad" value="1">
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <button type="submit" class="btn btn-success w-100 h-100 rounded-right-pill font-weight-bold shadow-sm d-flex align-items-center justify-content-center" style="border-radius: 0 50px 50px 0;" title="Añadir rápido al carrito">
+                                <i class="fas fa-cart-plus mx-1"></i><span class="d-none d-sm-inline">Añadir</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     {% empty %}

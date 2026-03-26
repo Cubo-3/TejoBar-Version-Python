@@ -43,6 +43,13 @@ class Equipo(models.Model):
     nombre_equipo = models.CharField(max_length=100, unique=True)
 
     @property
+    def capitan_nombre(self) -> str:
+        cap = self.equipo_jugadores.filter(es_capitan=True).first()
+        if cap:
+            return cap.get_nombre()
+        return "Sin Capitán"
+
+    @property
     def num_jugadores(self):
         return self.equipo_jugadores.count()
 
@@ -157,7 +164,8 @@ class Apartado(models.Model):
     ]
 
     persona = models.ForeignKey(
-        Persona, on_delete=models.CASCADE, related_name="apartados"
+        Persona, on_delete=models.CASCADE, related_name="apartados",
+        null=True, blank=True
     )
     producto = models.ForeignKey(
         Producto, on_delete=models.CASCADE, related_name="apartados"
@@ -167,6 +175,8 @@ class Apartado(models.Model):
     estado = models.CharField(
         max_length=20, choices=ESTADO_CHOICES, default=ESTADO_PENDIENTE
     )
+    cliente_nombre = models.CharField(max_length=150, blank=True, null=True)
+    cliente_telefono = models.CharField(max_length=30, blank=True, null=True)
 
     objects = ApartadoQuerySet.as_manager()
 
@@ -444,16 +454,18 @@ class Novedad(models.Model):
     TIPO_VENDIDO = "vendido"
     TIPO_VENCIDO = "vencido"
     TIPO_CANCHA = "cancha"
+    TIPO_PERDIDA = "perdida"
 
     TIPO_CHOICES = [
         (TIPO_AGREGADO, "Agregado / Ingreso"),
         (TIPO_VENDIDO, "Vendido / Apartado"),
         (TIPO_VENCIDO, "Vencido / Retirado"),
         (TIPO_CANCHA, "Pago de Cancha"),
+        (TIPO_PERDIDA, "Accidente / Pérdida"),
     ]
 
     producto = models.ForeignKey(
-        Producto, on_delete=models.CASCADE, related_name="novedades", null=True, blank=True
+        Producto, on_delete=models.SET_NULL, related_name="novedades", null=True, blank=True
     )
     tipo_novedad = models.CharField(
         max_length=20, choices=TIPO_CHOICES, default=TIPO_AGREGADO
@@ -465,3 +477,11 @@ class Novedad(models.Model):
     def __str__(self) -> str:
         prod_name = self.producto.nombre if self.producto else "N/A"
         return f"Novedad: {self.get_tipo_novedad_display()} - {prod_name} ({self.cantidad})"
+
+    @property
+    def movimiento(self) -> str:
+        if self.tipo_novedad == self.TIPO_AGREGADO:
+            return "Entrada"
+        elif self.tipo_novedad in [self.TIPO_VENDIDO, self.TIPO_VENCIDO, self.TIPO_PERDIDA]:
+            return "Salida"
+        return "N/A"
