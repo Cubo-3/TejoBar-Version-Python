@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 26-03-2026 a las 04:43:41
+-- Tiempo de generación: 26-03-2026 a las 12:50:43
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -347,25 +347,6 @@ CREATE TABLE `tejobar_app_apartado` (
   `cliente_telefono` varchar(30) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Volcado de datos para la tabla `tejobar_app_apartado`
---
-
-INSERT INTO `tejobar_app_apartado` (`id`, `cantidad`, `fecha_apartado`, `estado`, `persona_id`, `producto_id`, `cliente_nombre`, `cliente_telefono`) VALUES
-(2, 6, '2026-03-24 11:25:36.826269', 'comprado', 2, 2, NULL, NULL),
-(3, 5, '2026-03-24 11:32:20.626100', 'comprado', 2, 2, NULL, NULL),
-(4, 1, '2026-03-25 23:51:02.617209', 'cancelado', 1, 2, NULL, NULL),
-(5, 1, '2026-03-26 00:47:38.587262', 'comprado', NULL, 4, NULL, NULL),
-(6, 1, '2026-03-26 02:18:05.075629', 'comprado', NULL, 4, 'juan', NULL),
-(7, 10, '2026-03-26 02:18:05.086972', 'comprado', NULL, 2, 'juan', NULL),
-(8, 1, '2026-03-26 02:21:45.525597', 'comprado', NULL, 4, 'juan', NULL),
-(9, 10, '2026-03-26 02:21:45.771802', 'comprado', NULL, 2, 'juan', NULL),
-(10, 10, '2026-03-26 02:22:42.619749', 'comprado', NULL, 4, 'juan', NULL),
-(11, 10, '2026-03-26 02:22:42.622115', 'comprado', NULL, 2, 'juan', NULL),
-(12, 1, '2026-03-26 02:22:50.629079', 'comprado', NULL, 4, NULL, NULL),
-(13, 1, '2026-03-26 03:09:07.753587', 'cancelado', 2, 4, NULL, NULL),
-(14, 1, '2026-03-26 03:09:13.717734', 'comprado', 2, 2, NULL, NULL);
-
 -- --------------------------------------------------------
 
 --
@@ -409,7 +390,9 @@ INSERT INTO `tejobar_app_categoria` (`id`, `nombre`, `descripcion`, `estado`) VA
 (2, 'Papas', '', 1),
 (9, 'Bebidas', 'Categoría autogenerada por carga masiva', 1),
 (10, 'Licores', 'Categoría autogenerada por carga masiva', 1),
-(11, 'Comidas', 'Categoría autogenerada por carga masiva', 1);
+(11, 'Comidas', 'Categoría autogenerada por carga masiva', 1),
+(12, 'Snacks', 'Categoría autogenerada por carga masiva', 1),
+(13, 'Otros', 'Categoría autogenerada por carga masiva', 1);
 
 -- --------------------------------------------------------
 
@@ -460,15 +443,6 @@ CREATE TABLE `tejobar_app_historial` (
   `persona_id` bigint(20) NOT NULL,
   `producto_id` bigint(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Volcado de datos para la tabla `tejobar_app_historial`
---
-
-INSERT INTO `tejobar_app_historial` (`id`, `cantidad`, `precio`, `total`, `fecha_entrega`, `estado`, `created_at`, `updated_at`, `persona_id`, `producto_id`) VALUES
-(1, 6, 3500.00, 21000.00, '2026-03-24 11:26:53.089132', 'entregado', '2026-03-24 11:26:53.089154', '2026-03-24 11:26:57.773445', 2, 2),
-(2, 5, 3500.00, 17500.00, '2026-03-24 11:32:30.419899', 'entregado', '2026-03-24 11:32:30.419918', '2026-03-24 11:32:39.889292', 2, 2),
-(3, 1, 10000000.00, 10000000.00, '2026-03-26 03:31:52.105043', 'por_entregar', '2026-03-26 03:31:52.105067', '2026-03-26 03:31:52.105073', 2, 2);
 
 -- --------------------------------------------------------
 
@@ -565,29 +539,31 @@ INSERT INTO `tejobar_app_novedad` (`id`, `tipo_novedad`, `cantidad`, `fecha`, `d
 (3, 'vencido', 48, '2026-03-24 11:17:25.446814', 'Stock caducado automáticamente', NULL),
 (4, 'agregado', 2, '2026-03-24 11:17:25.457648', 'Stock devuelto: Carrito abandonado.', NULL),
 (5, 'vencido', 2, '2026-03-24 11:20:03.830775', 'Stock caducado automáticamente', NULL),
-(6, 'agregado', 90, '2026-03-24 11:25:18.289449', 'Nuevo producto o lote agregado', 2),
-(7, 'vendido', 6, '2026-03-24 11:25:36.828102', 'Separado/Vendido por sistema', 2),
-(8, 'vendido', 6, '2026-03-24 11:26:53.090444', 'Pago en efectivo procesado por Admin: admin', 2),
-(9, 'vendido', 5, '2026-03-24 11:32:20.627150', 'Separado/Vendido por sistema', 2),
-(10, 'vendido', 5, '2026-03-24 11:32:30.421495', 'Pago en efectivo procesado por Admin: admin', 2),
-(11, 'vendido', 1, '2026-03-25 23:51:02.619634', 'Separado/Vendido por sistema', 2),
-(12, 'agregado', 1, '2026-03-25 23:51:23.127003', 'Cancelación administrativa y devolución de stock. Admin: admin', 2),
+(6, 'agregado', 90, '2026-03-24 11:25:18.289449', 'Nuevo producto o lote agregado', NULL),
+(7, 'vendido', 6, '2026-03-24 11:25:36.828102', 'Separado/Vendido por sistema', NULL),
+(8, 'vendido', 6, '2026-03-24 11:26:53.090444', 'Pago en efectivo procesado por Admin: admin', NULL),
+(9, 'vendido', 5, '2026-03-24 11:32:20.627150', 'Separado/Vendido por sistema', NULL),
+(10, 'vendido', 5, '2026-03-24 11:32:30.421495', 'Pago en efectivo procesado por Admin: admin', NULL),
+(11, 'vendido', 1, '2026-03-25 23:51:02.619634', 'Separado/Vendido por sistema', NULL),
+(12, 'agregado', 1, '2026-03-25 23:51:23.127003', 'Cancelación administrativa y devolución de stock. Admin: admin', NULL),
 (13, 'agregado', 12, '2026-03-26 00:11:06.997140', 'Nuevo producto o lote agregado', NULL),
 (14, 'perdida', 12, '2026-03-26 00:11:16.606868', 'Producto eliminado con stock restante: 1214224', NULL),
-(15, 'agregado', 23, '2026-03-26 00:12:09.035385', 'Nuevo producto o lote agregado', 4),
-(16, 'vendido', 1, '2026-03-26 00:47:38.585711', 'Venta física a cliente: Anónimo', 4),
-(17, 'vendido', 1, '2026-03-26 02:18:05.056252', 'Venta física (POS): juan', 4),
-(18, 'vendido', 10, '2026-03-26 02:18:05.086295', 'Venta física (POS): juan', 2),
-(19, 'vendido', 1, '2026-03-26 02:21:45.524970', 'Venta física (POS): juan', 4),
-(20, 'vendido', 10, '2026-03-26 02:21:45.762391', 'Venta física (POS): juan', 2),
-(21, 'vendido', 10, '2026-03-26 02:22:42.618730', 'Venta física (POS): juan', 4),
-(22, 'vendido', 10, '2026-03-26 02:22:42.621820', 'Venta física (POS): juan', 2),
-(23, 'vendido', 1, '2026-03-26 02:22:50.628365', 'Venta física (POS): Anónimo', 4),
+(15, 'agregado', 23, '2026-03-26 00:12:09.035385', 'Nuevo producto o lote agregado', NULL),
+(16, 'vendido', 1, '2026-03-26 00:47:38.585711', 'Venta física a cliente: Anónimo', NULL),
+(17, 'vendido', 1, '2026-03-26 02:18:05.056252', 'Venta física (POS): juan', NULL),
+(18, 'vendido', 10, '2026-03-26 02:18:05.086295', 'Venta física (POS): juan', NULL),
+(19, 'vendido', 1, '2026-03-26 02:21:45.524970', 'Venta física (POS): juan', NULL),
+(20, 'vendido', 10, '2026-03-26 02:21:45.762391', 'Venta física (POS): juan', NULL),
+(21, 'vendido', 10, '2026-03-26 02:22:42.618730', 'Venta física (POS): juan', NULL),
+(22, 'vendido', 10, '2026-03-26 02:22:42.621820', 'Venta física (POS): juan', NULL),
+(23, 'vendido', 1, '2026-03-26 02:22:50.628365', 'Venta física (POS): Anónimo', NULL),
 (24, 'agregado', 10, '2026-03-26 02:36:23.841516', 'Nuevo producto o lote agregado', 5),
-(25, 'vendido', 1, '2026-03-26 03:09:07.786516', 'Separado/Vendido por sistema', 4),
-(26, 'vendido', 1, '2026-03-26 03:09:13.753525', 'Separado/Vendido por sistema', 2),
-(27, 'vendido', 1, '2026-03-26 03:31:52.125285', 'Pago en efectivo procesado por Admin: admin', 2),
-(28, 'agregado', 1, '2026-03-26 03:31:59.099718', 'Cancelación administrativa y devolución de stock. Admin: admin', 4);
+(25, 'vendido', 1, '2026-03-26 03:09:07.786516', 'Separado/Vendido por sistema', NULL),
+(26, 'vendido', 1, '2026-03-26 03:09:13.753525', 'Separado/Vendido por sistema', NULL),
+(27, 'vendido', 1, '2026-03-26 03:31:52.125285', 'Pago en efectivo procesado por Admin: admin', NULL),
+(28, 'agregado', 1, '2026-03-26 03:31:59.099718', 'Cancelación administrativa y devolución de stock. Admin: admin', NULL),
+(29, 'perdida', 48, '2026-03-26 11:25:55.640072', 'Producto eliminado con stock restante: poker', NULL),
+(30, 'perdida', 9, '2026-03-26 11:26:00.233028', 'Producto eliminado con stock restante: Cerveza Caliente', NULL);
 
 -- --------------------------------------------------------
 
@@ -658,14 +634,42 @@ CREATE TABLE `tejobar_app_producto` (
 --
 
 INSERT INTO `tejobar_app_producto` (`id`, `nombre`, `precio`, `stock`, `fecha_vencimiento`, `imagen`, `categoria_id`, `descripcion`) VALUES
-(2, 'poker', 10000000.00, 48, '2026-04-17', 'productos/aguardiente_JDdzqH9.jpg', 1, NULL),
-(4, 'Cerveza Caliente', 12.00, 9, '3000-02-22', '', 1, NULL),
 (5, 'picada', 10000.00, 10, NULL, 'productos/picada_HaN8dJ0.jpg', NULL, NULL),
 (6, 'Cerveza Aguila', 4500.00, 120, NULL, '', 9, 'Cerveza fria 330ml'),
 (7, 'Cerveza Poker', 4300.00, 100, NULL, '', 9, 'Cerveza tradicional 330ml'),
 (8, 'Aguardiente Antioqueño', 65000.00, 25, NULL, '', 10, 'Botella 750ml'),
 (9, 'Gaseosa Coca-Cola', 3500.00, 80, NULL, '', 9, 'Gaseosa 400ml'),
-(10, 'Picada Mixta', 28000.00, 15, NULL, '', 11, 'Picada para 2 personas');
+(10, 'Picada Mixta', 28000.00, 15, NULL, '', 11, 'Picada para 2 personas'),
+(11, 'Cerveza Club Colombia', 4800.00, 90, NULL, '', 9, 'Cerveza premium 330ml'),
+(12, 'Cerveza Heineken', 6000.00, 70, NULL, '', 9, 'Cerveza importada 330ml'),
+(13, 'Ron Medellin 8 Años', 85000.00, 20, NULL, '', 10, 'Botella 750ml'),
+(14, 'Ron Viejo de Caldas', 78000.00, 18, NULL, '', 10, 'Botella 750ml'),
+(15, 'Tequila Jose Cuervo', 95000.00, 15, NULL, '', 10, 'Botella 750ml'),
+(16, 'Whisky Old Parr', 145000.00, 12, NULL, '', 10, 'Botella 750ml'),
+(17, 'Vodka Smirnoff', 70000.00, 25, NULL, '', 10, 'Botella 750ml'),
+(18, 'Red Bull', 9000.00, 60, NULL, '', 9, 'Bebida energetica 250ml'),
+(19, 'Jugo Hit Mango', 3000.00, 85, NULL, '', 9, 'Jugo 500ml'),
+(20, 'Agua Cristal', 2500.00, 100, NULL, '', 9, 'Agua 600ml'),
+(21, 'Pepsi 400ml', 3500.00, 75, NULL, '', 9, 'Gaseosa 400ml'),
+(22, 'Papas Margarita BBQ', 4500.00, 50, NULL, '', 12, 'Papas sabor BBQ'),
+(23, 'Papas Margarita Naturales', 4000.00, 55, NULL, '', 12, 'Papas clasicas'),
+(24, 'Chicharron Paquete', 7000.00, 40, NULL, '', 12, 'Chicharron crocante'),
+(25, 'Mani Salado', 3000.00, 65, NULL, '', 12, 'Mani tostado'),
+(26, 'Salchipapa Personal', 12000.00, 30, NULL, '', 11, 'Porcion personal'),
+(27, 'Hamburguesa Sencilla', 15000.00, 25, NULL, '', 11, 'Hamburguesa con papas'),
+(28, 'Hamburguesa Doble', 22000.00, 20, NULL, '', 11, 'Doble carne con papas'),
+(29, 'Perro Caliente Especial', 14000.00, 28, NULL, '', 11, 'Con tocineta y queso'),
+(30, 'Arepa con Queso', 8000.00, 35, NULL, '', 11, 'Arepa asada rellena'),
+(31, 'Empanada Carne', 3000.00, 60, NULL, '', 11, 'Empanada frita'),
+(32, 'Empanada Pollo', 3000.00, 55, NULL, '', 11, 'Empanada frita'),
+(33, 'Picada Familiar', 55000.00, 10, NULL, '', 11, 'Para 4 personas'),
+(34, 'Tabla Ranchera', 48000.00, 12, NULL, '', 11, 'Mixta con chorizo'),
+(35, 'Cigarrillos Marlboro', 9000.00, 40, NULL, '', 13, 'Cajetilla 20 unidades'),
+(36, 'Cigarrillos Lucky Strike', 8500.00, 35, NULL, '', 13, 'Cajetilla 20 unidades'),
+(37, 'Hielo Bolsa', 5000.00, 50, NULL, '', 13, 'Bolsa 5kg'),
+(38, 'Michelada Preparada', 12000.00, 22, NULL, '', 9, 'Cerveza con limon y sal'),
+(39, 'Shot Jagermeister', 15000.00, 30, NULL, '', 10, 'Shot 40ml'),
+(40, 'Shot Tequila', 13000.00, 30, NULL, '', 10, 'Shot 40ml');
 
 -- --------------------------------------------------------
 
@@ -939,7 +943,7 @@ ALTER TABLE `tejobar_app_cancha`
 -- AUTO_INCREMENT de la tabla `tejobar_app_categoria`
 --
 ALTER TABLE `tejobar_app_categoria`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT de la tabla `tejobar_app_compra`
@@ -975,7 +979,7 @@ ALTER TABLE `tejobar_app_jugadorequipo`
 -- AUTO_INCREMENT de la tabla `tejobar_app_novedad`
 --
 ALTER TABLE `tejobar_app_novedad`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
 -- AUTO_INCREMENT de la tabla `tejobar_app_partido`
@@ -993,7 +997,7 @@ ALTER TABLE `tejobar_app_persona`
 -- AUTO_INCREMENT de la tabla `tejobar_app_producto`
 --
 ALTER TABLE `tejobar_app_producto`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
 
 --
 -- AUTO_INCREMENT de la tabla `tejobar_app_torneo`
