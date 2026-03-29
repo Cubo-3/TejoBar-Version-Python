@@ -1,0 +1,91 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Inventario - Movimientos{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0 text-dark"><i class="fas fa-boxes text-info mr-2"></i> Historial de Inventario</h1>
+    <div>
+        <a href="{% url 'tejobar_app:inventario_ingreso' %}" class="btn btn-success shadow-sm mr-2 font-weight-bold">
+            <i class="fas fa-plus-circle mr-1"></i> Ingreso
+        </a>
+        <a href="{% url 'tejobar_app:inventario_perdida' %}" class="btn btn-danger shadow-sm font-weight-bold">
+            <i class="fas fa-minus-circle mr-1"></i> Pérdida
+        </a>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4 bg-dark">
+    <!-- Filtros -->
+    <div class="card-header border-bottom border-secondary py-3">
+        <form method="get" class="row gx-3 align-items-end mb-0">
+            <div class="col-12 col-md-3 mb-3 mb-md-0">
+                <label for="fecha_inicio" class="form-label text-light small font-weight-bold text-uppercase mb-1">Desde:</label>
+                <input type="date" class="form-control bg-secondary text-white border-0" id="fecha_inicio" name="fecha_inicio" value="{{ fecha_inicio }}">
+            </div>
+            <div class="col-12 col-md-3 mb-3 mb-md-0">
+                <label for="fecha_fin" class="form-label text-light small font-weight-bold text-uppercase mb-1">Hasta:</label>
+                <input type="date" class="form-control bg-secondary text-white border-0" id="fecha_fin" name="fecha_fin" value="{{ fecha_fin }}">
+            </div>
+            <div class="col-12 col-md-3 mb-3 mb-md-0">
+                <label for="tipo" class="form-label text-light small font-weight-bold text-uppercase mb-1">Tipo:</label>
+                <select name="tipo" id="tipo" class="form-control bg-secondary text-white border-0">
+                    <option value="">Todos</option>
+                    <option value="ingreso" {% if tipo == 'ingreso' %}selected{% endif %}>Ingreso</option>
+                    <option value="venta" {% if tipo == 'venta' %}selected{% endif %}>Venta</option>
+                    <option value="perdida" {% if tipo == 'perdida' %}selected{% endif %}>Pérdida</option>
+                </select>
+            </div>
+            <div class="col-12 col-md-3 mt-2 mt-md-0 d-flex gap-2">
+                <button type="submit" class="btn btn-info font-weight-bold text-dark px-4"><i class="fas fa-filter mr-2"></i> Filtrar</button>
+                <a href="?" class="btn btn-outline-light text-white px-3" title="Limpiar"><i class="fas fa-eraser"></i></a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tabla -->
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover align-middle mb-0 text-center">
+                <thead class="bg-secondary text-light">
+                    <tr>
+                        <th class="py-3 border-0">Producto</th>
+                        <th class="py-3 border-0">Tipo</th>
+                        <th class="py-3 border-0">Cantidad</th>
+                        <th class="py-3 border-0">Motivo</th>
+                        <th class="py-3 border-0">Fecha</th>
+                        <th class="py-3 border-0">Usuario</th>
+                    </tr>
+                </thead>
+                <tbody class="border-top-0">
+                    {% for m in movimientos %}
+                    <tr>
+                        <td class="font-weight-bold align-middle">{{ m.producto.nombre }}</td>
+                        <td class="align-middle">
+                            {% if m.tipo_movimiento == 'ingreso' %}
+                            <span class="badge badge-success px-3 py-2 rounded-pill"><i class="fas fa-arrow-up mr-1"></i> INGRESO</span>
+                            {% elif m.tipo_movimiento == 'venta' %}
+                            <span class="badge badge-warning text-dark px-3 py-2 rounded-pill"><i class="fas fa-arrow-down mr-1"></i> VENTA</span>
+                            {% elif m.tipo_movimiento == 'perdida' %}
+                            <span class="badge badge-danger px-3 py-2 rounded-pill"><i class="fas fa-exclamation-triangle mr-1"></i> PÉRDIDA</span>
+                            {% endif %}
+                        </td>
+                        <td class="align-middle"><h5 class="mb-0 font-weight-bold">{{ m.cantidad }}</h5></td>
+                        <td class="text-muted align-middle">{{ m.motivo|default:"N/A" }}</td>
+                        <td class="text-light align-middle"><i class="far fa-clock mr-1"></i> {{ m.fecha|date:"d M Y, h:i A" }}</td>
+                        <td class="text-secondary align-middle">{{ m.usuario.username|default:"Sistema" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 border-0">
+                            <i class="fas fa-box-open fa-3x text-secondary mb-3 opacity-50"></i>
+                            <h5 class="text-secondary text-light">No se encontraron movimientos registrados.</h5>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

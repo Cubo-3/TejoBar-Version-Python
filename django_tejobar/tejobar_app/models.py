@@ -162,14 +162,20 @@ class Producto(models.Model):
         from .models import Novedad # Import here to avoid circular logic at load
         for p in vencidos:
             if p.stock > 0:
+                p_current_stock = p.stock
+                from .models import MovimientoInventario
+                MovimientoInventario.objects.create(
+                    producto=p,
+                    tipo_movimiento=MovimientoInventario.TIPO_PERDIDA,
+                    cantidad=p_current_stock,
+                    motivo="Stock caducado automáticamente"
+                )
                 Novedad.objects.create(
                     producto=p,
                     tipo_novedad=Novedad.TIPO_VENCIDO,
-                    cantidad=p.stock,
+                    cantidad=p_current_stock,
                     descripcion="Stock caducado automáticamente"
                 )
-        
-        vencidos.update(stock=0)
 
 
 class ApartadoQuerySet(models.QuerySet):
@@ -223,10 +229,15 @@ class Apartado(models.Model):
         )
         
         from .models import Novedad # Prevent circular import
+        from .models import MovimientoInventario
         for apartado in abandonados:
             if apartado.producto:
-                apartado.producto.stock += apartado.cantidad
-                apartado.producto.save()
+                MovimientoInventario.objects.create(
+                    producto=apartado.producto,
+                    tipo_movimiento=MovimientoInventario.TIPO_INGRESO,
+                    cantidad=apartado.cantidad,
+                    motivo="Devolución: Carrito abandonado."
+                )
                 
                 Novedad.objects.create(
                     producto=apartado.producto,
@@ -594,3 +605,47 @@ def gestionar_historial_salida(sender, instance, **kwargs):
         if historial:
             historial.fecha_salida = timezone.now()
             historial.save()
+
+class MovimientoInventario(models.Model):
+    TIPO_INGRESO = "ingreso"
+    TIPO_VENTA = "venta"
+    TIPO_PERDIDA = "perdida"
+
+    TIPO_CHOICES = [
+        (TIPO_INGRESO, "Ingreso"),
+        (TIPO_VENTA, "Venta"),
+        (TIPO_PERDIDA, "Pérdida"),
+    ]
+
+    id_movimiento = models.AutoField(primary_key=True)
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name="movimientos")
+    tipo_movimiento = models.CharField(max_length=20, choices=TIPO_CHOICES)
+    cantidad = models.PositiveIntegerField()
+    motivo = models.CharField(max_length=255, blank=True, null=True)
+    fecha = models.DateTimeField(auto_now_add=True)
+    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    def clean(self):
+        super().clean()
+        from django.core.exceptions import ValidationError
+        if self.tipo_movimiento == self.TIPO_PERDIDA and not self.motivo:
+            raise ValidationError({'motivo': 'El motivo es obligatorio para registrar una pérdida.'})
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        self.full_clean()
+        
+        if is_new:
+            if self.tipo_movimiento == self.TIPO_INGRESO:
+                self.producto.stock += self.cantidad
+            elif self.tipo_movimiento in [self.TIPO_VENTA, self.TIPO_PERDIDA]:
+                if self.producto.stock < self.cantidad:
+                    from django.core.exceptions import ValidationError
+                    raise ValidationError(f'Stock insuficiente para {self.producto.nombre}. Disponible: {self.producto.stock}')
+                self.producto.stock -= self.cantidad
+            self.producto.save()
+            
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.get_tipo_movimiento_display()} - {self.producto.nombre} ({self.cantidad})"

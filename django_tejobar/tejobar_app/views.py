@@ -195,8 +195,14 @@ def apartar_producto(request: HttpRequest, pk: int) -> HttpResponse:
                     descripcion="Separado/Vendido por sistema"
                 )
                 
-                producto.stock -= cantidad
-                producto.save()
+                from .models import MovimientoInventario
+                MovimientoInventario.objects.create(
+                    producto=producto,
+                    tipo_movimiento=MovimientoInventario.TIPO_VENTA,
+                    cantidad=cantidad,
+                    motivo="Apartado online",
+                    usuario=request.user
+                )
 
             messages.success(request, f"¡{cantidad}x {producto.nombre} añadido al carrito con éxito!")
             next_url = request.POST.get("next")
@@ -239,8 +245,19 @@ def dashboard(request: HttpRequest) -> HttpResponse:
             
         pedidos_por_entregar = Historial.objects.filter(estado="por_entregar").select_related("persona", "producto").order_by("fecha_entrega")
 
+        from django.db.models import Sum
+        from django.utils import timezone
+        from .models import MovimientoInventario
+        hoy = timezone.localdate()
+        movimientos_hoy = MovimientoInventario.objects.filter(fecha__date=hoy)
+        ventas_hoy = movimientos_hoy.filter(tipo_movimiento=MovimientoInventario.TIPO_VENTA).aggregate(Sum('cantidad'))['cantidad__sum'] or 0
+        perdidas_hoy = movimientos_hoy.filter(tipo_movimiento=MovimientoInventario.TIPO_PERDIDA).aggregate(Sum('cantidad'))['cantidad__sum'] or 0
+
         context.update(
             {
+                "total_productos_stock": Producto.objects.aggregate(Sum('stock'))['stock__sum'] or 0,
+                "ventas_hoy": ventas_hoy,
+                "perdidas_hoy": perdidas_hoy,
                 "total_productos": Producto.objects.count(),
                 "productos_bajo_stock": Producto.objects.filter(stock__lt=10).count(),
                 "total_categorias": Categoria.objects.count(),
@@ -791,8 +808,14 @@ def admin_venta_directa(request: HttpRequest) -> HttpResponse:
                         if producto.stock < cantidad:
                             raise ValueError(f"Stock insuficiente para {producto.nombre}. Disponible: {producto.stock} unidades.")
 
-                        producto.stock -= cantidad
-                        producto.save()
+                        from .models import MovimientoInventario
+                        MovimientoInventario.objects.create(
+                            producto=producto,
+                            tipo_movimiento=MovimientoInventario.TIPO_VENTA,
+                            cantidad=cantidad,
+                            motivo=f"Venta física (POS): {cliente_nombre or 'Anónimo'}",
+                            usuario=request.user
+                        )
 
                         Novedad.objects.create(
                             producto=producto,
@@ -1581,3 +1604,151 @@ def admin_carga_masiva(request: HttpRequest) -> HttpResponse:
         form = CargaMasivaProductosForm()
 
     return render(request, 'productos/carga_masiva.html', {'form': form})
+
+
+from .models import MovimientoInventario
+from .forms import MovimientoIngresoForm, MovimientoPerdidaForm
+
+@login_required
+@admin_required
+def inventario_movimientos(request: HttpRequest) -> HttpResponse:
+    movimientos = MovimientoInventario.objects.select_related("producto", "usuario").order_by("-fecha")
+    fecha_inicio = request.GET.get("fecha_inicio")
+    fecha_fin = request.GET.get("fecha_fin")
+    tipo = request.GET.get("tipo")
+    
+    if fecha_inicio:
+        movimientos = movimientos.filter(fecha__gte=fecha_inicio)
+    if fecha_fin:
+        from datetime import datetime, time
+        from django.utils import timezone
+        try:
+            fin_dt = datetime.strptime(fecha_fin, "%Y-%m-%d").date()
+            dt_end = timezone.make_aware(datetime.combine(fin_dt, time.max))
+            movimientos = movimientos.filter(fecha__lte=dt_end)
+        except ValueError:
+            pass
+            
+    if tipo:
+        movimientos = movimientos.filter(tipo_movimiento=tipo)
+
+    context = {
+        "movimientos": movimientos,
+        "fecha_inicio": fecha_inicio or "",
+        "fecha_fin": fecha_fin or "",
+        "tipo": tipo or "",
+    }
+    return render(request, "inventario/movimientos.html", context)
+
+
+@login_required
+@admin_required
+def inventario_ingreso(request: HttpRequest) -> HttpResponse:
+    from django.db import transaction
+    productos = Producto.objects.all().select_related("categoria").order_by("categoria__nombre", "nombre")
+    error = None
+    success = None
+
+    if request.method == "POST":
+        producto_ids = request.POST.getlist("producto_id[]")
+        cantidades = request.POST.getlist("cantidad[]")
+        motivo = request.POST.get("motivo", "").strip()
+
+        if not producto_ids or not cantidades or len(producto_ids) != len(cantidades):
+            error = "No agregaste ningún producto a la lista de ingresos."
+        elif not motivo:
+            error = "Debes especificar un motivo para el ingreso."
+        else:
+            try:
+                with transaction.atomic():
+                    total_productos = 0
+                    for pid, cant_str in zip(producto_ids, cantidades):
+                        cantidad = int(cant_str)
+                        if cantidad <= 0: raise ValueError("Cantidad inválida.")
+                        producto = get_object_or_404(Producto.objects.select_for_update(), pk=pid)
+                        
+                        MovimientoInventario.objects.create(
+                            producto=producto,
+                            tipo_movimiento=MovimientoInventario.TIPO_INGRESO,
+                            cantidad=cantidad,
+                            motivo=motivo,
+                            usuario=request.user
+                        )
+                        Novedad.objects.create(
+                            producto=producto,
+                            tipo_novedad=Novedad.TIPO_AGREGADO,
+                            cantidad=cantidad,
+                            descripcion=motivo
+                        )
+                        total_productos += cantidad
+                    
+                    messages.success(request, f"Se sumaron {total_productos} unidades correctamente.")
+                    return redirect("tejobar_app:inventario_movimientos")
+            except ValueError as e:
+                error = str(e)
+            except Exception as e:
+                error = "Ocurrió un error al procesar el ingreso."
+
+    return render(request, "inventario/ingreso_form.html", {
+        "productos": productos,
+        "error": error,
+        "success": success,
+    })
+
+
+@login_required
+@admin_required
+def inventario_perdida(request: HttpRequest) -> HttpResponse:
+    from django.db import transaction
+    productos = Producto.objects.filter(stock__gt=0).select_related("categoria").order_by("categoria__nombre", "nombre")
+    error = None
+    success = None
+
+    if request.method == "POST":
+        producto_ids = request.POST.getlist("producto_id[]")
+        cantidades = request.POST.getlist("cantidad[]")
+        motivo = request.POST.get("motivo", "").strip()
+
+        if not producto_ids or not cantidades or len(producto_ids) != len(cantidades):
+            error = "No agregaste ningún producto a la lista de pérdidas."
+        elif not motivo:
+            error = "Debes especificar un motivo general para la pérdida."
+        else:
+            try:
+                with transaction.atomic():
+                    total_productos = 0
+                    for pid, cant_str in zip(producto_ids, cantidades):
+                        cantidad = int(cant_str)
+                        if cantidad <= 0: raise ValueError("Cantidad inválida.")
+                        producto = get_object_or_404(Producto.objects.select_for_update(), pk=pid)
+                        
+                        if producto.stock < cantidad:
+                            raise ValueError(f"Stock insuficiente para {producto.nombre}. Disponible: {producto.stock} unidades.")
+
+                        MovimientoInventario.objects.create(
+                            producto=producto,
+                            tipo_movimiento=MovimientoInventario.TIPO_PERDIDA,
+                            cantidad=cantidad,
+                            motivo=motivo,
+                            usuario=request.user
+                        )
+                        Novedad.objects.create(
+                            producto=producto,
+                            tipo_novedad=Novedad.TIPO_PERDIDA,
+                            cantidad=cantidad,
+                            descripcion=f"Pérdida registrada: {motivo}"
+                        )
+                        total_productos += cantidad
+                    
+                    messages.success(request, f"Se registró la pérdida de {total_productos} unidades.")
+                    return redirect("tejobar_app:inventario_movimientos")
+            except ValueError as e:
+                error = str(e)
+            except Exception as e:
+                error = "Ocurrió un error al procesar la pérdida."
+
+    return render(request, "inventario/perdida_form.html", {
+        "productos": productos,
+        "error": error,
+        "success": success,
+    })

@@ -1,0 +1,257 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Registrar Ingreso - Inventario{% endblock %}
+
+{% block extra_styles %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    /* Estilos oscuros para Select2 para que coincida con la tarjeta */
+    .select2-container--default .select2-selection--single {
+        background-color: #6c757d;
+        border: none;
+        height: 48px;
+        padding: 5px 10px;
+        border-radius: 5px;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        color: #fff;
+        line-height: 38px;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 48px;
+    }
+    .select2-dropdown {
+        background-color: #343a40;
+        border: 1px solid #495057;
+        color: #fff;
+    }
+    .select2-search--dropdown .select2-search__field {
+        background-color: #495057;
+        color: #fff;
+        border: 1px solid #6c757d;
+        border-radius: 3px;
+    }
+    .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+        background-color: #198754;
+        color: white;
+    }
+    .select2-container--default .select2-results__option--selected {
+        background-color: #6c757d;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__clear {
+        color: #dc3545;
+        font-size: 20px;
+        height: 48px;
+        line-height: 46px;
+        margin-right: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+    <h2 class="text-dark font-weight-bold mb-0"><i class="fas fa-plus-circle text-success mr-2"></i> Registrar Ingreso</h2>
+    <a href="{% url 'tejobar_app:inventario_movimientos' %}" class="btn btn-outline-secondary rounded-pill px-4 shadow-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Volver
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-11 col-xl-10">
+        <div class="card bg-dark text-white shadow-lg border-secondary rounded-lg">
+            <div class="card-header border-bottom border-success py-3" style="background-color: rgba(255,255,255,0.02); border-bottom-width: 3px !important;">
+                <h5 class="mb-0 text-success font-weight-bold"><i class="fas fa-box-open text-success mr-2"></i> Ingreso Masivo de Inventario</h5>
+            </div>
+            
+            <div class="card-body p-5">
+                {% if success %}
+                <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+                    <i class="fas fa-check-circle mr-2"></i> {{ success }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                {% endif %}
+                
+                {% if error %}
+                <div class="alert alert-danger shadow-sm"><i class="fas fa-exclamation-circle mr-2"></i> {{ error }}</div>
+                {% endif %}
+
+                <p class="text-muted small mb-4">Selecciona los productos y las cantidades para sumarlas al inventario físico.</p>
+
+                <div class="row">
+                    <!-- Columna de Selección -->
+                    <div class="col-md-5 col-lg-4 border-right border-secondary pr-lg-4">
+                        <div class="form-group mb-4">
+                            <label for="producto_id" class="form-label text-light font-weight-bold text-uppercase small">
+                                <i class="fas fa-box text-info mr-1"></i> Seleccionar Producto
+                            </label>
+                            <select id="producto_id" class="form-control">
+                                <option value=""></option>
+                                {% regroup productos by categoria as productos_por_categoria %}
+                                {% for grupo in productos_por_categoria %}
+                                <optgroup label="{{ grupo.grouper.nombre|default:'Sin Categoría' }}">
+                                    {% for p in grupo.list %}
+                                    <option value="{{ p.id }}" data-nombre="{{ p.nombre }}">
+                                        {{ p.nombre }} (Stock actual: {{ p.stock }})
+                                    </option>
+                                    {% endfor %}
+                                </optgroup>
+                                {% empty %}
+                                <option disabled>No hay productos disponibles</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label for="cantidad" class="form-label text-light font-weight-bold text-uppercase small">
+                                <i class="fas fa-hashtag text-warning mr-1"></i> Cantidad a Ingresar
+                            </label>
+                            <input type="number" id="cantidad" class="form-control bg-secondary text-white border-0 shadow-sm" style="padding: 12px; font-size: 1.1rem;" min="1" value="1">
+                        </div>
+
+                        <button type="button" id="btn-agregar" class="btn btn-info w-100 font-weight-bold rounded-pill shadow-sm mb-3">
+                            <i class="fas fa-plus mr-2"></i> Añadir a la Lista
+                        </button>
+                    </div>
+
+                    <!-- Columna de Carrito -->
+                    <div class="col-md-7 col-lg-8 pl-lg-4">
+                        <h6 class="text-success font-weight-bold mb-3"><i class="fas fa-clipboard-list mr-2"></i> Lista de Ingresos</h6>
+                        
+                        <form method="POST" id="ingreso-form">
+                            {% csrf_token %}
+                            <div class="table-responsive mb-3" style="max-height: 250px; overflow-y: auto;">
+                                <table class="table table-dark table-sm table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Producto</th>
+                                            <th>Cant.</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cart-body">
+                                        <tr id="empty-cart-msg">
+                                            <td colspan="3" class="text-center text-muted py-4">No hay productos en la lista.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center bg-secondary p-3 rounded mb-4">
+                                <span class="font-weight-bold text-light">Total Unidades:</span>
+                                <h4 class="mb-0 text-white font-weight-bold"><span id="cart-total">0</span> uds</h4>
+                            </div>
+
+                            <div class="form-group mb-4">
+                                <label for="motivo" class="form-label text-light font-weight-bold text-uppercase small">
+                                    <i class="fas fa-comment-dots text-primary mr-1"></i> Motivo de Ingreso <span class="text-danger">*</span>
+                                </label>
+                                <select name="motivo" id="motivo" class="form-control bg-dark border-secondary text-white" required>
+                                    <option value="">-- Selecciona el motivo principal --</option>
+                                    <option value="Compra al proveedor">Compra al proveedor / Factura</option>
+                                    <option value="Ingreso de nuevo lote">Ingreso de nuevo lote</option>
+                                    <option value="Devolución de cliente">Devolución de cliente</option>
+                                    <option value="Préstamo o Novedad">Préstamo o Novedad de inventario</option>
+                                    <option value="Ajuste Positivo de conteo">Ajuste positivo (Sobrante físico)</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top border-secondary">
+                                <button type="submit" id="btn-procesar" class="btn btn-success font-weight-bold rounded-pill shadow-lg px-5 py-2 w-100" disabled>
+                                    <i class="fas fa-save mr-2"></i> Procesar Ingreso
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('#producto_id').select2({
+            placeholder: "-- Busque o seleccione un producto --",
+            allowClear: true,
+            width: '100%'
+        });
+
+        let cartTotal = 0;
+        let itemCount = 0;
+
+        function updateTotalUI() {
+            $('#cart-total').text(cartTotal);
+            
+            if (itemCount > 0) {
+                $('#empty-cart-msg').hide();
+                $('#btn-procesar').prop('disabled', false);
+            } else {
+                $('#empty-cart-msg').show();
+                $('#btn-procesar').prop('disabled', true);
+            }
+        }
+
+        $('#btn-agregar').click(function() {
+            const selectEl = $('#producto_id');
+            const selectedOption = selectEl.find('option:selected');
+            const pid = selectEl.val();
+            const cantidad = parseInt($('#cantidad').val());
+
+            if (!pid) {
+                alert("Por favor, selecciona un producto primero.");
+                return;
+            }
+            if (isNaN(cantidad) || cantidad <= 0) {
+                alert("La cantidad debe ser mayor a 0.");
+                return;
+            }
+
+            if ($(`#cart-row-${pid}`).length > 0) {
+                alert("Este producto ya está en la lista. Si deseas cambiar la cantidad, elimínalo primero.");
+                return;
+            }
+
+            const nombre = selectedOption.data('nombre');
+
+            const rowHtml = `
+                <tr id="cart-row-${pid}">
+                    <td class="align-middle">${nombre}</td>
+                    <td class="align-middle text-success font-weight-bold">+${cantidad}</td>
+                    <td class="align-middle text-right">
+                        <button type="button" class="btn btn-sm btn-danger btn-remove-item" data-id="${pid}" data-cantidad="${cantidad}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        <input type="hidden" name="producto_id[]" value="${pid}">
+                        <input type="hidden" name="cantidad[]" value="${cantidad}">
+                    </td>
+                </tr>
+            `;
+
+            $('#cart-body').append(rowHtml);
+            cartTotal += cantidad;
+            itemCount++;
+            updateTotalUI();
+
+            // Resetear inputs
+            selectEl.val(null).trigger('change');
+            $('#cantidad').val(1);
+        });
+
+        $(document).on('click', '.btn-remove-item', function() {
+            const pid = $(this).data('id');
+            const cantidad = parseInt($(this).data('cantidad'));
+            
+            $(`#cart-row-${pid}`).remove();
+            cartTotal -= cantidad;
+            itemCount--;
+            updateTotalUI();
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

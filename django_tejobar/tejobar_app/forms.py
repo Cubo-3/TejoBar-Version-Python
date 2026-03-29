@@ -72,6 +72,9 @@ class ProductoForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Solo mostrar categorías activas en el dropdown
         self.fields['categoria'].queryset = Categoria.objects.filter(estado=True)
+        if self.instance and self.instance.pk:
+            self.fields['stock'].disabled = True
+            self.fields['stock'].help_text = "Para modificar el stock, utilice el módulo de Inventario."
 
     def clean_precio(self):
         precio = self.cleaned_data.get("precio")
@@ -201,3 +204,36 @@ class CargaMasivaProductosForm(forms.Form):
         widget=forms.FileInput(attrs={'class': 'form-control', 'accept': '.xlsx,.xls,.csv'})
     )
 
+from .models import MovimientoInventario
+
+class MovimientoIngresoForm(forms.ModelForm):
+    class Meta:
+        model = MovimientoInventario
+        fields = ["producto", "cantidad"]
+        labels = {"producto": "Producto a Ingresar", "cantidad": "Cantidad Entrante"}
+        widgets = {
+            'producto': forms.Select(attrs={'class': 'form-control'}),
+            'cantidad': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
+        }
+
+class MovimientoPerdidaForm(forms.ModelForm):
+    class Meta:
+        model = MovimientoInventario
+        fields = ["producto", "cantidad", "motivo"]
+        labels = {"producto": "Producto Afectado", "cantidad": "Cantidad Perdida"}
+        widgets = {
+            'producto': forms.Select(attrs={'class': 'form-control'}),
+            'cantidad': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
+            'motivo': forms.Select(
+                attrs={'class': 'form-control'},
+                choices=[
+                    ('', 'Seleccione un motivo...'),
+                    ('Roto', 'Roto / Quebrado'),
+                    ('Vencido', 'Vencido / Expirado'),
+                    ('Derrame', 'Derrame'),
+                    ('Muestra', 'Muestra / Degustación'),
+                    ('Robo', 'Pérdida desconocida / Robo'),
+                    ('Otro', 'Otro')
+                ]
+            )
+        }

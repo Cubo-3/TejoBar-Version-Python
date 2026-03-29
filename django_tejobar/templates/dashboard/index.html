@@ -79,6 +79,37 @@
         class="badge rounded-pill bg-secondary text-white text-uppercase fs-6 ms-2 align-middle">{{ rol }}</span></p>
 
 {% if rol == "admin" %}
+<h4 class="mt-4 mb-3 text-dark"><i class="fas fa-calendar-day text-primary mr-2"></i> Actividad del Inventario (Hoy)</h4>
+<div class="row g-4 mb-4">
+    <div class="col-12 col-md-4 mb-3">
+        <div class="card text-center h-100 shadow bg-dark" style="border-radius: 15px; border-left: 5px solid #198754;">
+            <div class="card-body p-4">
+                <span class="d-block mb-2" style="font-size: 2.5rem; color: #198754;"><i class="fas fa-cash-register"></i></span>
+                <p class="text-white mb-1 font-weight-bold">Ventas Totales (Hoy)</p>
+                <h2 class="font-weight-bold mb-0" style="color: #198754;">{{ ventas_hoy }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-4 mb-3">
+        <div class="card text-center h-100 shadow bg-dark" style="border-radius: 15px; border-left: 5px solid #dc3545;">
+            <div class="card-body p-4">
+                <span class="d-block mb-2" style="font-size: 2.5rem; color: #dc3545;"><i class="fas fa-exclamation-triangle"></i></span>
+                <p class="text-white mb-1 font-weight-bold">Pérdidas (Hoy)</p>
+                <h2 class="font-weight-bold mb-0" style="color: #dc3545;">{{ perdidas_hoy }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-4 mb-3">
+        <div class="card text-center h-100 shadow bg-dark" style="border-radius: 15px; border-left: 5px solid #0dcaf0;">
+            <div class="card-body p-4">
+                <span class="d-block mb-2" style="font-size: 2.5rem; color: #0dcaf0;"><i class="fas fa-boxes"></i></span>
+                <p class="text-white mb-1 font-weight-bold">Inventario Físico</p>
+                <h2 class="font-weight-bold mb-0" style="color: #0dcaf0;">{{ total_productos_stock }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
 <h4 class="mt-4 mb-3 text-muted"><i class="fas fa-chart-line mr-2"></i> Resumen del Sistema</h4>
 <div class="row mb-4">
     <!-- Chart 1: Ecosistema (Doughnut) -->
