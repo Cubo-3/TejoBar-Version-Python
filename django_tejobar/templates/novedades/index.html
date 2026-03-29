@@ -64,7 +64,7 @@
                 </td>
             </tr>
             {% empty %}
-                <tr><td colspan="3" class="text-center text-muted">No existen equipos.</td></tr>
+                <tr><td colspan="4" class="text-center text-muted py-3">No existen equipos.</td></tr>
             {% endfor %}
         </tbody>
     </table>
@@ -235,7 +235,7 @@
                     <td>{{ nov.descripcion|default_if_none:"-" }}</td>
                 </tr>
             {% empty %}
-                <tr><td colspan="5" class="text-center text-muted">No existen novedades de productos en este periodo.</td></tr>
+                <tr><td colspan="6" class="text-center text-muted py-4">No existen novedades de productos en este periodo.</td></tr>
             {% endfor %}
         </tbody>
     </table>

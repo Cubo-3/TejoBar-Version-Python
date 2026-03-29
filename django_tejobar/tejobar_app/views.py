@@ -417,6 +417,7 @@ def dashboard_reporte_pdf(request: HttpRequest) -> HttpResponse:
 
 
 @login_required
+@admin_required
 def persona_list(request: HttpRequest) -> HttpResponse:
     personas = Persona.objects.all()
     return render(request, "dashboard/personas.html", {"personas": personas})
@@ -489,6 +490,7 @@ def persona_update(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 @login_required
+@admin_required
 def persona_delete(request: HttpRequest, pk: int) -> HttpResponse:
     persona = get_object_or_404(Persona, pk=pk)
     if request.method == "POST":
@@ -588,6 +590,16 @@ def equipo_create(request: HttpRequest) -> HttpResponse:
 @login_required
 def equipo_update(request: HttpRequest, pk: int) -> HttpResponse:
     equipo = get_object_or_404(Equipo, pk=pk)
+    persona = getattr(request.user, "persona", None)
+
+    es_capitan = False
+    if persona and hasattr(persona, "jugador"):
+        es_capitan = JugadorEquipo.objects.filter(jugador=persona.jugador, equipo=equipo, es_capitan=True).exists()
+
+    if not persona or (persona.rol != Persona.ROL_ADMIN and not es_capitan):
+        messages.error(request, "No tienes permiso para editar este equipo.")
+        return redirect("tejobar_app:equipos_index")
+
     if request.method == "POST":
         form = EquipoForm(request.POST, instance=equipo)
         if form.is_valid():
@@ -782,71 +794,54 @@ def admin_venta_directa(request: HttpRequest) -> HttpResponse:
     from django.db import transaction
 
     productos = Producto.objects.filter(stock__gt=0).select_related("categoria").order_by("categoria__nombre", "nombre")
-    error = None
-    success = None
-
     if request.method == "POST":
         producto_ids = request.POST.getlist("producto_id[]")
         cantidades = request.POST.getlist("cantidad[]")
         cliente_nombre = request.POST.get("cliente_nombre", "").strip()
 
         if not producto_ids or not cantidades or len(producto_ids) != len(cantidades):
-            error = "No agregaste ningún producto al carrito."
+            messages.error(request, "No hay productos en la lista de venta.")
         else:
             try:
                 with transaction.atomic():
-                    total_productos = 0
-                    nombres_vendidos = []
-
+                    total_articulos = 0
+                    total_precio = 0
                     for pid, cant_str in zip(producto_ids, cantidades):
                         cantidad = int(cant_str)
-                        if cantidad <= 0:
-                            raise ValueError(f"Cantidad inválida para el producto.")
-
+                        if cantidad <= 0: raise ValueError("Cantidad inválida.")
+                        
                         producto = get_object_or_404(Producto.objects.select_for_update(), pk=pid)
-
                         if producto.stock < cantidad:
-                            raise ValueError(f"Stock insuficiente para {producto.nombre}. Disponible: {producto.stock} unidades.")
-
-                        from .models import MovimientoInventario
+                            raise ValueError(f"Stock insuficiente para {producto.nombre}")
+                        
+                        # Registrar Movimiento
                         MovimientoInventario.objects.create(
                             producto=producto,
                             tipo_movimiento=MovimientoInventario.TIPO_VENTA,
                             cantidad=cantidad,
-                            motivo=f"Venta física (POS): {cliente_nombre or 'Anónimo'}",
+                            motivo=f"Venta Directa POS {'- ' + cliente_nombre if cliente_nombre else ''}",
                             usuario=request.user
                         )
-
+                        
+                        # Registrar Novedad
                         Novedad.objects.create(
                             producto=producto,
                             tipo_novedad=Novedad.TIPO_VENDIDO,
                             cantidad=cantidad,
-                            descripcion=f"Venta física (POS): {cliente_nombre or 'Anónimo'}"
+                            descripcion=f"Venta Directa: {cliente_nombre if cliente_nombre else 'Cliente General'}"
                         )
-
-                        Apartado.objects.create(
-                            persona=None,
-                            producto=producto,
-                            cantidad=cantidad,
-                            estado=Apartado.ESTADO_COMPRADO,
-                            cliente_nombre=cliente_nombre or None,
-                        )
-
-                        total_productos += cantidad
-                        nombres_vendidos.append(f"{cantidad}x {producto.nombre}")
-
-                    success = f"✅ Venta registrada con éxito: {total_productos} artículos. ({', '.join(nombres_vendidos)}) a {cliente_nombre or 'Cliente Anónimo'}"
-                    productos = Producto.objects.filter(stock__gt=0).select_related("categoria").order_by("categoria__nombre", "nombre")
-
+                        total_articulos += cantidad
+                        total_precio += (producto.precio * cantidad)
+                    
+                    messages.success(request, f"Venta procesada con éxito: {total_articulos} artículos por ${total_precio:,.0f}")
+                    return redirect("tejobar_app:admin_venta_directa")
             except ValueError as e:
-                error = str(e)
-            except Exception as e:
-                error = "Ocurrió un error al procesar la venta. Revisa los datos."
+                messages.error(request, str(e))
+            except Exception:
+                messages.error(request, "Error interno al procesar la venta.")
 
     return render(request, "ventas/directa.html", {
         "productos": productos,
-        "error": error,
-        "success": success,
     })
 
 
@@ -1252,21 +1247,13 @@ def api_disponibilidad_partido(request: HttpRequest) -> JsonResponse:
 # CATEGORIAS CRUD (Admin)
 # ==========================================
 
-@login_required
+@admin_required
 def admin_categorias_index(request):
-    persona = getattr(request.user, "persona", None)
-    if not persona or persona.rol != Persona.ROL_ADMIN:
-        return redirect("tejobar_app:dashboard")
-
     categorias = Categoria.objects.all()
     return render(request, "categorias/admin_index.html", {"categorias": categorias})
 
-@login_required
+@admin_required
 def admin_categorias_create(request):
-    persona = getattr(request.user, "persona", None)
-    if not persona or persona.rol != Persona.ROL_ADMIN:
-        return redirect("tejobar_app:dashboard")
-
     if request.method == "POST":
         form = CategoriaForm(request.POST)
         if form.is_valid():
@@ -1278,12 +1265,8 @@ def admin_categorias_create(request):
 
     return render(request, "categorias/form.html", {"form": form})
 
-@login_required
+@admin_required
 def admin_categorias_update(request, pk):
-    persona = getattr(request.user, "persona", None)
-    if not persona or persona.rol != Persona.ROL_ADMIN:
-        return redirect("tejobar_app:dashboard")
-
     categoria = get_object_or_404(Categoria, pk=pk)
 
     if request.method == "POST":
@@ -1297,12 +1280,8 @@ def admin_categorias_update(request, pk):
 
     return render(request, "categorias/form.html", {"form": form, "categoria": categoria})
 
-@login_required
+@admin_required
 def admin_categorias_delete(request, pk):
-    persona = getattr(request.user, "persona", None)
-    if not persona or persona.rol != Persona.ROL_ADMIN:
-        return redirect("tejobar_app:dashboard")
-
     categoria = get_object_or_404(Categoria, pk=pk)
 
     if request.method == "POST":
@@ -1652,12 +1631,13 @@ def inventario_ingreso(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         producto_ids = request.POST.getlist("producto_id[]")
         cantidades = request.POST.getlist("cantidad[]")
-        motivo = request.POST.get("motivo", "").strip()
+        origen = request.POST.get("origen", "").strip()
+        detalle = request.POST.get("detalle", "").strip()
 
         if not producto_ids or not cantidades or len(producto_ids) != len(cantidades):
-            error = "No agregaste ningún producto a la lista de ingresos."
-        elif not motivo:
-            error = "Debes especificar un motivo para el ingreso."
+            messages.error(request, "No agregaste ningún producto a la lista de ingresos.")
+        elif not origen:
+            messages.error(request, "Debes especificar el origen del ingreso.")
         else:
             try:
                 with transaction.atomic():
@@ -1667,32 +1647,38 @@ def inventario_ingreso(request: HttpRequest) -> HttpResponse:
                         if cantidad <= 0: raise ValueError("Cantidad inválida.")
                         producto = get_object_or_404(Producto.objects.select_for_update(), pk=pid)
                         
-                        MovimientoInventario.objects.create(
+                        mov = MovimientoInventario.objects.create(
                             producto=producto,
                             tipo_movimiento=MovimientoInventario.TIPO_INGRESO,
                             cantidad=cantidad,
-                            motivo=motivo,
+                            origen=origen,
+                            detalle=detalle,
                             usuario=request.user
                         )
+                        # Para compatibilidad con vistas que usen 'motivo'
+                        texto_motivo = mov.get_origen_display()
+                        if detalle:
+                            texto_motivo += f" - {detalle}"
+                        mov.motivo = texto_motivo
+                        mov.save()
+
                         Novedad.objects.create(
                             producto=producto,
                             tipo_novedad=Novedad.TIPO_AGREGADO,
                             cantidad=cantidad,
-                            descripcion=motivo
+                            descripcion=texto_motivo
                         )
                         total_productos += cantidad
                     
                     messages.success(request, f"Se sumaron {total_productos} unidades correctamente.")
                     return redirect("tejobar_app:inventario_movimientos")
             except ValueError as e:
-                error = str(e)
+                messages.error(request, str(e))
             except Exception as e:
-                error = "Ocurrió un error al procesar el ingreso."
+                messages.error(request, "Ocurrió un error al procesar el ingreso.")
 
     return render(request, "inventario/ingreso_form.html", {
         "productos": productos,
-        "error": error,
-        "success": success,
     })
 
 
@@ -1710,9 +1696,9 @@ def inventario_perdida(request: HttpRequest) -> HttpResponse:
         motivo = request.POST.get("motivo", "").strip()
 
         if not producto_ids or not cantidades or len(producto_ids) != len(cantidades):
-            error = "No agregaste ningún producto a la lista de pérdidas."
+            messages.error(request, "No agregaste ningún producto a la lista de pérdidas.")
         elif not motivo:
-            error = "Debes especificar un motivo general para la pérdida."
+            messages.error(request, "Debes especificar un motivo general para la pérdida.")
         else:
             try:
                 with transaction.atomic():
@@ -1743,12 +1729,10 @@ def inventario_perdida(request: HttpRequest) -> HttpResponse:
                     messages.success(request, f"Se registró la pérdida de {total_productos} unidades.")
                     return redirect("tejobar_app:inventario_movimientos")
             except ValueError as e:
-                error = str(e)
+                messages.error(request, str(e))
             except Exception as e:
-                error = "Ocurrió un error al procesar la pérdida."
+                messages.error(request, "Ocurrió un error al procesar la pérdida.")
 
     return render(request, "inventario/perdida_form.html", {
         "productos": productos,
-        "error": error,
-        "success": success,
     })

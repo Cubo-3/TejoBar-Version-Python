@@ -71,7 +71,14 @@
                             {% endif %}
                         </td>
                         <td class="align-middle"><h5 class="mb-0 font-weight-bold">{{ m.cantidad }}</h5></td>
-                        <td class="text-muted align-middle">{{ m.motivo|default:"N/A" }}</td>
+                        <td class="text-muted align-middle">
+                            {% if m.origen %}
+                                <span class="text-light">{{ m.get_origen_display }}</span>
+                                {% if m.detalle %}<br><small>{{ m.detalle }}</small>{% endif %}
+                            {% else %}
+                                {{ m.motivo|default:"N/A" }}
+                            {% endif %}
+                        </td>
                         <td class="text-light align-middle"><i class="far fa-clock mr-1"></i> {{ m.fecha|date:"d M Y, h:i A" }}</td>
                         <td class="text-secondary align-middle">{{ m.usuario.username|default:"Sistema" }}</td>
                     </tr>

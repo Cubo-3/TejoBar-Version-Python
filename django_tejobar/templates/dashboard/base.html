@@ -150,8 +150,8 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{% url 'tejobar_app:admin_novedades_index' %}" class="nav-link">
-                            <i class="fas fa-history mr-2"></i> Novedades
+                        <a href="{% url 'tejobar_app:admin_venta_directa' %}" class="nav-link">
+                            <i class="fas fa-cash-register mr-2"></i> Venta Física
                         </a>
                     </li>
                     <li class="nav-item mt-3">
@@ -163,6 +163,11 @@
                         </a>
                     </li>
                     <li class="nav-item pl-3">
+                        <a href="{% url 'tejobar_app:admin_novedades_index' %}" class="nav-link" style="font-size: 0.95rem;">
+                            <i class="fas fa-history mr-2"></i> Historial de Novedades
+                        </a>
+                    </li>
+                    <li class="nav-item pl-3">
                         <a href="{% url 'tejobar_app:inventario_ingreso' %}" class="nav-link" style="font-size: 0.95rem;">
                             <i class="fas fa-plus-circle text-success mr-2"></i> Registrar Ingreso
                         </a>
@@ -170,11 +175,6 @@
                     <li class="nav-item pl-3">
                         <a href="{% url 'tejobar_app:inventario_perdida' %}" class="nav-link" style="font-size: 0.95rem;">
                             <i class="fas fa-minus-circle text-danger mr-2"></i> Registrar Pérdida
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{% url 'tejobar_app:admin_venta_directa' %}" class="nav-link">
-                            <i class="fas fa-cash-register mr-2"></i> Venta Física
                         </a>
                     </li>
                     {% endif %}

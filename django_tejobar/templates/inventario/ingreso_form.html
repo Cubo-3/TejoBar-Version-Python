@@ -64,19 +64,6 @@
             </div>
             
             <div class="card-body p-5">
-                {% if success %}
-                <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
-                    <i class="fas fa-check-circle mr-2"></i> {{ success }}
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                {% endif %}
-                
-                {% if error %}
-                <div class="alert alert-danger shadow-sm"><i class="fas fa-exclamation-circle mr-2"></i> {{ error }}</div>
-                {% endif %}
-
                 <p class="text-muted small mb-4">Selecciona los productos y las cantidades para sumarlas al inventario físico.</p>
 
                 <div class="row">
@@ -144,18 +131,22 @@
                             </div>
 
                             <div class="form-group mb-4">
-                                <label for="motivo" class="form-label text-light font-weight-bold text-uppercase small">
-                                    <i class="fas fa-comment-dots text-primary mr-1"></i> Motivo de Ingreso <span class="text-danger">*</span>
+                                <label for="origen" class="form-label text-light font-weight-bold text-uppercase small">
+                                    <i class="fas fa-truck-loading text-primary mr-1"></i> Origen del Ingreso <span class="text-danger">*</span>
                                 </label>
-                                <select name="motivo" id="motivo" class="form-control bg-dark border-secondary text-white" required>
-                                    <option value="">-- Selecciona el motivo principal --</option>
-                                    <option value="Compra al proveedor">Compra al proveedor / Factura</option>
-                                    <option value="Ingreso de nuevo lote">Ingreso de nuevo lote</option>
-                                    <option value="Devolución de cliente">Devolución de cliente</option>
-                                    <option value="Préstamo o Novedad">Préstamo o Novedad de inventario</option>
-                                    <option value="Ajuste Positivo de conteo">Ajuste positivo (Sobrante físico)</option>
-                                    <option value="Otro">Otro</option>
+                                <select name="origen" id="origen" class="form-control bg-dark border-secondary text-white shadow-sm" style="padding: 10px;" required>
+                                    <option value="">-- Selecciona el origen --</option>
+                                    <option value="COMPRA_PROVEEDOR">Compra a proveedor</option>
+                                    <option value="DEVOLUCION_CLIENTE">Devolución de cliente</option>
+                                    <option value="AJUSTE_INVENTARIO">Ajuste de inventario</option>
                                 </select>
+                            </div>
+
+                            <div class="form-group mb-4">
+                                <label for="detalle" class="form-label text-light font-weight-bold text-uppercase small">
+                                    <i class="fas fa-align-left text-info mr-1"></i> Detalle (Opcional)
+                                </label>
+                                <textarea name="detalle" id="detalle" class="form-control bg-dark border-secondary text-white shadow-sm" rows="3" placeholder="Opcional: describe el ingreso..."></textarea>
                             </div>
 
                             <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top border-secondary">

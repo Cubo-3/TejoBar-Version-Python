@@ -617,11 +617,23 @@ class MovimientoInventario(models.Model):
         (TIPO_PERDIDA, "Pérdida"),
     ]
 
+    ORIGEN_COMPRA = "COMPRA_PROVEEDOR"
+    ORIGEN_DEVOLUCION = "DEVOLUCION_CLIENTE"
+    ORIGEN_AJUSTE = "AJUSTE_INVENTARIO"
+
+    ORIGEN_CHOICES = [
+        (ORIGEN_COMPRA, "Compra a proveedor"),
+        (ORIGEN_DEVOLUCION, "Devolución de cliente"),
+        (ORIGEN_AJUSTE, "Ajuste de inventario"),
+    ]
+
     id_movimiento = models.AutoField(primary_key=True)
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name="movimientos")
     tipo_movimiento = models.CharField(max_length=20, choices=TIPO_CHOICES)
     cantidad = models.PositiveIntegerField()
     motivo = models.CharField(max_length=255, blank=True, null=True)
+    origen = models.CharField(max_length=50, choices=ORIGEN_CHOICES, blank=True, null=True)
+    detalle = models.TextField(blank=True, null=True)
     fecha = models.DateTimeField(auto_now_add=True)
     usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
 
