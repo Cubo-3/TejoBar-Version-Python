@@ -26,6 +26,24 @@ class Persona(models.Model):
     def __str__(self) -> str:
         return self.nombre
 
+    @property
+    def can_be_deleted(self) -> bool:
+        from .models import Apartado, Partido
+        from django.db.models import Q
+        
+        tiene_apartados = self.apartados.filter(estado=Apartado.ESTADO_PENDIENTE).exists()
+        
+        tiene_partidos = False
+        if hasattr(self, 'jugador'):
+            equipos_ids = self.jugador.jugador_equipos.values_list('equipo_id', flat=True)
+            if equipos_ids:
+                tiene_partidos = Partido.objects.filter(
+                    Q(equipo1_id__in=equipos_ids) | Q(equipo2_id__in=equipos_ids),
+                    estado__in=[Partido.ESTADO_PENDIENTE, Partido.ESTADO_CONFIRMADA]
+                ).exists()
+                
+        return not (tiene_apartados or tiene_partidos)
+
 
 class Jugador(models.Model):
     persona = models.OneToOneField(
@@ -149,6 +167,13 @@ class Producto(models.Model):
         if self.fecha_vencimiento:
             return self.fecha_vencimiento < timezone.now().date()
         return False
+
+    @property
+    def can_be_deleted(self) -> bool:
+        tiene_historial = self.historial.exists()
+        tiene_apartados = self.apartados.exists()
+        tiene_stock = self.stock > 0
+        return not (tiene_historial or tiene_apartados or tiene_stock)
 
     @classmethod
     def actualizar_stock_vencidos(cls):

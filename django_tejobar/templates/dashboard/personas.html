@@ -42,9 +42,15 @@
                             <a href="{% url 'tejobar_app:personas_update' p.pk %}" class="btn btn-sm btn-info text-white" title="Editar">
                                 <i class="fas fa-edit"></i>
                             </a>
+                            {% if p.can_be_deleted %}
                             <a href="{% url 'tejobar_app:personas_delete' p.pk %}" class="btn btn-sm btn-danger" title="Eliminar">
                                 <i class="fas fa-trash-alt"></i>
                             </a>
+                            {% else %}
+                            <button class="btn btn-sm btn-secondary" title="No se puede eliminar (Tiene apartados o partidos activos)" disabled>
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                            {% endif %}
                         </td>
                     </tr>
                     {% empty %}

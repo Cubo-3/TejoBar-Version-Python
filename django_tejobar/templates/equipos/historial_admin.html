@@ -1,0 +1,86 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Historial Global de Equipos - TejoBar{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-history text-danger mr-2"></i> Historial Global de Equipos</h2>
+    <a href="{% url 'tejobar_app:equipos_index' %}" class="btn btn-secondary shadow-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Volver a Equipos
+    </a>
+</div>
+
+<!-- Filtros de Búsqueda -->
+<div class="card shadow-sm mb-4 border-left-danger">
+    <div class="card-body">
+        <form method="GET" class="form-row align-items-end">
+            <div class="form-group col-md-5 mb-0">
+                <label for="q_jugador" class="small font-weight-bold">Nombre del Jugador</label>
+                <input type="text" name="q_jugador" id="q_jugador" value="{{ q_jugador }}" class="form-control" placeholder="Buscar jugador...">
+            </div>
+            <div class="form-group col-md-5 mb-0">
+                <label for="q_equipo" class="small font-weight-bold">Nombre del Equipo</label>
+                <input type="text" name="q_equipo" id="q_equipo" value="{{ q_equipo }}" class="form-control" placeholder="Buscar equipo...">
+            </div>
+            <div class="form-group col-md-2 mb-0 mt-3 mt-md-0">
+                <button type="submit" class="btn btn-danger btn-block">
+                    <i class="fas fa-search mr-1"></i> Filtrar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0 text-center align-middle bg-white text-dark">
+                <thead class="thead-dark">
+                    <tr>
+                        <th class="text-white">Jugador</th>
+                        <th class="text-white">Equipo</th>
+                        <th class="text-white">Ingreso</th>
+                        <th class="text-white">Salida</th>
+                        <th class="text-white">Capitán</th>
+                        <th class="text-white">Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for registro in historial %}
+                    <tr>
+                        <td class="font-weight-bold text-dark">{{ registro.jugador.persona.nombre }}</td>
+                        <td class="font-weight-bold text-dark">{{ registro.equipo.nombre_equipo }}</td>
+                        <td class="text-dark">{{ registro.fecha_ingreso|date:"d/m/Y H:i" }}</td>
+                        <td class="text-dark">
+                            {% if registro.fecha_salida %}
+                                <span class="text-muted">{{ registro.fecha_salida|date:"d/m/Y H:i" }}</span>
+                            {% else %}
+                                <span class="badge badge-success text-dark">Activo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if registro.fue_capitan %}
+                                <span class="badge badge-warning text-dark"><i class="fas fa-star" title="Fue Capitán"></i></span>
+                            {% else %}
+                                <span class="badge badge-info text-dark"><i class="fas fa-user" title="Jugador Regular"></i></span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if registro.is_activo %}
+                                <span class="badge badge-success text-dark">Activo</span>
+                            {% else %}
+                                <span class="badge badge-secondary text-dark">Finalizado</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted bg-light">No se encontraron registros con los filtros aplicados. <a href="?">Limpiar búsqueda</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

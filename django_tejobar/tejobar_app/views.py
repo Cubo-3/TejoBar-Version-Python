@@ -493,6 +493,11 @@ def persona_update(request: HttpRequest, pk: int) -> HttpResponse:
 @admin_required
 def persona_delete(request: HttpRequest, pk: int) -> HttpResponse:
     persona = get_object_or_404(Persona, pk=pk)
+    
+    if not persona.can_be_deleted:
+        messages.error(request, "No se puede eliminar la persona porque tiene partidos activos o productos apartados.")
+        return redirect("tejobar_app:personas_index")
+        
     if request.method == "POST":
         persona.delete()
         messages.success(request, "Persona eliminada correctamente")
@@ -927,6 +932,24 @@ def admin_product_update(request: HttpRequest, pk: int) -> HttpResponse:
 @admin_required
 def admin_product_delete(request: HttpRequest, pk: int) -> HttpResponse:
     producto = get_object_or_404(Producto, pk=pk)
+    
+    tiene_historial = producto.historial.exists()
+    tiene_apartados = producto.apartados.exists()
+    tiene_stock = producto.stock > 0
+    
+    if tiene_historial or tiene_apartados or tiene_stock:
+        motivos = []
+        if tiene_historial:
+            motivos.append("historial de ventas")
+        if tiene_apartados:
+            motivos.append("apartados activos")
+        if tiene_stock:
+            motivos.append("stock disponible")
+            
+        motivos_str = " y ".join([", ".join(motivos[:-1]), motivos[-1]] if len(motivos) > 1 else motivos)
+        messages.error(request, f"No se puede eliminar el producto porque tiene {motivos_str}.")
+        return redirect("tejobar_app:admin_productos_index")
+
     if request.method == "POST":
         if producto.stock > 0:
             Novedad.objects.create(
@@ -1736,3 +1759,46 @@ def inventario_perdida(request: HttpRequest) -> HttpResponse:
     return render(request, "inventario/perdida_form.html", {
         "productos": productos,
     })
+
+@login_required
+def historial_equipo_jugador(request: HttpRequest) -> HttpResponse:
+    persona = getattr(request.user, "persona", None)
+    if not persona or not hasattr(persona, "jugador"):
+        messages.error(request, "Perfil de jugador no encontrado.")
+        return redirect("tejobar_app:dashboard")
+
+    from .models import HistorialEquipo
+    historial = HistorialEquipo.objects.filter(jugador=persona.jugador).select_related('equipo').order_by('-fecha_ingreso')
+    
+    return render(request, "equipos/historial_jugador.html", {
+        "usuario": persona,
+        "rol": persona.rol,
+        "historial": historial
+    })
+
+@admin_required
+def historial_equipo_admin(request: HttpRequest) -> HttpResponse:
+    from .models import HistorialEquipo, Persona
+    from django.db.models import Q
+    
+    q_jugador = request.GET.get("q_jugador", "")
+    q_equipo = request.GET.get("q_equipo", "")
+
+    historial = HistorialEquipo.objects.select_related('jugador__persona', 'equipo').order_by('-fecha_ingreso')
+
+    if q_jugador:
+        historial = historial.filter(jugador__persona__nombre__icontains=q_jugador)
+    if q_equipo:
+        historial = historial.filter(equipo__nombre_equipo__icontains=q_equipo)
+
+    persona = getattr(request.user, "persona", None)
+    
+    context = {
+        "usuario": persona,
+        "rol": Persona.ROL_ADMIN,
+        "historial": historial,
+        "q_jugador": q_jugador,
+        "q_equipo": q_equipo
+    }
+    return render(request, "equipos/historial_admin.html", context)
+

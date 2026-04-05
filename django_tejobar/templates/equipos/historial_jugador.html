@@ -1,0 +1,65 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Mi Historial de Equipos - TejoBar{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-history mr-2"></i> Mi Historial de Equipos</h2>
+    <a href="{% url 'tejobar_app:dashboard' %}" class="btn btn-secondary shadow-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Volver al Dashboard
+    </a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0 text-center align-middle bg-white text-dark">
+                <thead class="thead-dark">
+                    <tr>
+                        <th class="text-white">Equipo</th>
+                        <th class="text-white">Fecha de Ingreso</th>
+                        <th class="text-white">Fecha de Salida</th>
+                        <th class="text-white">Rol</th>
+                        <th class="text-white">Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for registro in historial %}
+                    <tr>
+                        <td class="font-weight-bold text-dark">{{ registro.equipo.nombre_equipo }}</td>
+                        <td class="text-dark">{{ registro.fecha_ingreso|date:"d/m/Y H:i" }}</td>
+                        <td class="text-dark">
+                            {% if registro.fecha_salida %}
+                                <span class="text-muted">{{ registro.fecha_salida|date:"d/m/Y H:i" }}</span>
+                            {% else %}
+                                <span class="badge badge-success text-dark">Actualidad</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if registro.fue_capitan %}
+                                <span class="badge badge-warning text-dark">
+                                    <i class="fas fa-star mr-1"></i>Capitán
+                                </span>
+                            {% else %}
+                                <span class="badge badge-info text-dark">Jugador</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if registro.is_activo %}
+                                <span class="badge badge-success text-dark">Activo</span>
+                            {% else %}
+                                <span class="badge badge-secondary text-dark">Finalizado</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted bg-light">No tienes registros de historial de equipos aún.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

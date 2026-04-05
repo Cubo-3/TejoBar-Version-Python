@@ -5,10 +5,23 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
     <h1 class="mb-0"><i class="fas fa-users mr-2"></i> Equipos</h1>
-    {% if request.user.persona.rol == 'admin' or request.user.persona.rol == 'jugador' and not request.user.persona.jugador.jugador_equipos.exists %}
-        <a href="{% url 'tejobar_app:equipos_create' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Crear equipo</a>
-    {% endif %}
+    <div class="d-flex">
+        {% if request.user.persona.rol == 'admin' %}
+            <a href="{% url 'tejobar_app:equipos_historial_admin' %}" class="btn btn-outline-danger mr-2">
+                <i class="fas fa-history mr-1"></i> Historial de equipos
+            </a>
+        {% endif %}
+        {% if request.user.persona.rol == 'jugador' or request.user.persona.rol == 'capitan' %}
+            <a href="{% url 'tejobar_app:equipos_historial_jugador' %}" class="btn btn-outline-warning border-warning font-weight-bold text-dark mr-2">
+                <i class="fas fa-history mr-1"></i> Mi Historial
+            </a>
+        {% endif %}
+        {% if request.user.persona.rol == 'admin' or request.user.persona.rol == 'jugador' and not request.user.persona.jugador.jugador_equipos.exists %}
+            <a href="{% url 'tejobar_app:equipos_create' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Crear equipo</a>
+        {% endif %}
+    </div>
 </div>
+
 
 <div class="table-responsive">
     <table class="table table-dark table-striped table-hover mt-3">

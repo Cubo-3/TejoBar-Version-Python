@@ -51,7 +51,12 @@
     </div>
     
     <div class="card-footer bg-light d-flex justify-content-end align-items-center py-3">
-        <a href="{% url 'tejobar_app:equipos_index' %}" class="btn btn-secondary mr-2">
+        {% if request.user.persona.rol == 'jugador' or request.user.persona.rol == 'capitan' %}
+            <a href="{% url 'tejobar_app:equipos_historial_jugador' %}" class="btn btn-outline-warning border-warning font-weight-bold text-dark mr-auto shadow-sm">
+                <i class="fas fa-history mr-1"></i> Mi Historial
+            </a>
+        {% endif %}
+        <a href="{% url 'tejobar_app:equipos_index' %}" class="btn btn-secondary mr-2 shadow-sm">
             <i class="fas fa-arrow-left"></i> Volver a equipos
         </a>
         
