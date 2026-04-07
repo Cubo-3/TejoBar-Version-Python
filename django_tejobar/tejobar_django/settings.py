@@ -73,6 +73,9 @@ AUTH_PASSWORD_VALIDATORS = [
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
         "OPTIONS": {"min_length": 4},
     },
+    {
+        "NAME": "tejobar_app.validators.NotSameAsOldPasswordValidator",
+    },
 ]
 
 LANGUAGE_CODE = "es-es"
@@ -106,5 +109,5 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'socobosoftware@gmail.com'
-EMAIL_HOST_PASSWORD = 'hphq fbal kbzi sase' # <-- PON TU CONTRASEÑA DE APLICACIÓN AQUÍ (No la normal)
+EMAIL_HOST_PASSWORD = 'hphq fbal kbzi sase'
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
