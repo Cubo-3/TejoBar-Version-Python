@@ -5,6 +5,7 @@ from django.urls import include, path
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("accounts/", include("django.contrib.auth.urls")), # Password reset and other auth views
     path("", include(("tejobar_app.urls", "tejobar_app"), namespace="tejobar_app")),
 ]
 

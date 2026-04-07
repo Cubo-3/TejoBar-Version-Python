@@ -271,6 +271,21 @@ def dashboard(request: HttpRequest) -> HttpResponse:
             }
         )
     else:
+        from django.db.models import Sum, Q
+        
+        # 1. Miembros y Equipo
+        mi_equipo_rel = JugadorEquipo.objects.filter(jugador__persona=persona).select_related('equipo').first()
+        mi_equipo = mi_equipo_rel.equipo if mi_equipo_rel else None
+        
+        mis_compañeros_count = 0
+        mis_partidos_count = 0
+        if mi_equipo:
+            mis_compañeros_count = mi_equipo.equipo_jugadores.count()
+            mis_partidos_count = Partido.objects.filter(
+                Q(equipo1=mi_equipo) | Q(equipo2=mi_equipo)
+            ).exclude(estado=Partido.ESTADO_CANCELADA).count()
+
+        # 2. Apartados y Gastos
         mis_apartados = Apartado.objects.filter(persona=persona).select_related("producto").order_by("-fecha_apartado")
         if fecha_inicio:
             mis_apartados = mis_apartados.filter(fecha_apartado__gte=fecha_inicio)
@@ -278,14 +293,27 @@ def dashboard(request: HttpRequest) -> HttpResponse:
             mis_apartados = mis_apartados.filter(fecha_apartado__lte=fecha_fin)
             
         total_carrito = sum(a.producto.precio * a.cantidad for a in mis_apartados if a.estado == 'pendiente')
+        mis_items_pendientes = mis_apartados.filter(estado='pendiente').count()
+        
+        total_gastado = Historial.objects.filter(persona=persona).aggregate(Sum('total'))['total__sum'] or 0
+
+        # 3. Próximo Partido
+        proximo_partido = None
+        if mi_equipo:
+            proximo_partido = Partido.objects.filter(
+                Q(equipo1=mi_equipo) | Q(equipo2=mi_equipo),
+                fecha__gte=timezone.localdate()
+            ).exclude(estado=Partido.ESTADO_CANCELADA).order_by('fecha', 'hora').first()
+
         context.update(
             {
-                "total_productos": Producto.objects.count(),
-                "total_categorias": Categoria.objects.filter(estado=True).count(),
-                "total_equipos": Equipo.objects.count(),
-                "total_jugadores": Jugador.objects.filter(estado=True).count(),
-                "total_partidos": Partido.objects.exclude(estado='Cancelada').count(),
-                "total_canchas": Cancha.objects.count(),
+                "mi_equipo_nombre": mi_equipo.nombre_equipo if mi_equipo else "Sin Equipo",
+                "mi_equipo_pk": mi_equipo.pk if mi_equipo else None,
+                "mis_compañeros_count": mis_compañeros_count,
+                "mis_partidos_count": mis_partidos_count,
+                "mis_items_pendientes": mis_items_pendientes,
+                "total_gastado": total_gastado,
+                "proximo_partido": proximo_partido,
                 "mis_apartados": mis_apartados,
                 "total_carrito": total_carrito,
             }
@@ -555,9 +583,20 @@ def equipo_detail(request: HttpRequest, pk: int) -> HttpResponse:
 
     jugadores_equipo = equipo.equipo_jugadores.select_related("jugador__persona").all()
     
+    # Obtener historial de miembros pasados (registrados)
+    from .models import HistorialEquipo
+    miembros_actuales_ids = jugadores_equipo.filter(jugador__isnull=False).values_list('jugador_id', flat=True)
+    historial_pasado = HistorialEquipo.objects.filter(
+        equipo=equipo, 
+        fecha_salida__isnull=False
+    ).exclude(
+        jugador_id__in=miembros_actuales_ids
+    ).select_related('jugador__persona').order_by('-fecha_salida')
+
     context = {
         "equipo": equipo,
         "jugadores_equipo": jugadores_equipo,
+        "historial_pasado": historial_pasado,
         "es_miembro": es_miembro,
         "es_capitan": es_capitan,
         "es_admin": persona.rol == Persona.ROL_ADMIN,
@@ -1801,4 +1840,43 @@ def historial_equipo_admin(request: HttpRequest) -> HttpResponse:
         "q_equipo": q_equipo
     }
     return render(request, "equipos/historial_admin.html", context)
+
+
+@login_required
+def equipo_reinvite_member(request: HttpRequest, pk: int, jugador_pk: int) -> HttpResponse:
+    equipo = get_object_or_404(Equipo, pk=pk)
+    persona = getattr(request.user, "persona", None)
+    
+    es_capitan = False
+    if persona and hasattr(persona, "jugador"):
+        es_capitan = JugadorEquipo.objects.filter(jugador=persona.jugador, equipo=equipo, es_capitan=True).exists()
+
+    if not persona or (persona.rol != Persona.ROL_ADMIN and not es_capitan):
+        messages.error(request, "No tienes permiso para invitar jugadores a este equipo.")
+        return redirect("tejobar_app:equipos_show", pk=equipo.pk)
+        
+    if equipo.equipo_jugadores.count() >= 5:
+        messages.error(request, "El equipo está lleno (límite 5 jugadores).")
+        return redirect("tejobar_app:equipos_show", pk=equipo.pk)
+
+    if request.method == "POST":
+        jugador_a_invitar = get_object_or_404(Jugador, persona__pk=jugador_pk)
+        
+        # Verificar si ya pertenece a otro equipo
+        if JugadorEquipo.objects.filter(jugador=jugador_a_invitar).exists():
+            messages.error(request, f"El jugador {jugador_a_invitar.persona.nombre} ya pertenece a otro equipo. Debe salir de su equipo actual antes de ser invitado.")
+            return redirect("tejobar_app:equipos_show", pk=equipo.pk)
+            
+        try:
+            JugadorEquipo.objects.create(
+                jugador=jugador_a_invitar,
+                equipo=equipo,
+                es_capitan=False,
+                tipo_usuario=JugadorEquipo.TIPO_REGISTRADO
+            )
+            messages.success(request, f"¡{jugador_a_invitar.persona.nombre} ha sido reincorporado al equipo!")
+        except Exception as e:
+            messages.error(request, f"Error al reincorporar al jugador: {str(e)}")
+            
+    return redirect("tejobar_app:equipos_show", pk=equipo.pk)
 

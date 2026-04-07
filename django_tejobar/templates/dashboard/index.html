@@ -413,68 +413,84 @@
 </div>
 {% else %}
 
-<h4 class="mt-4 mb-4 text-dark"><i class="fas fa-star text-warning mr-2"></i> Ecosistema TejoBar</h4>
+<h4 class="mt-4 mb-4 text-dark"><i class="fas fa-id-card text-warning mr-2"></i> Mi Resumen TejoBar</h4>
 
 <!-- Tarjetas visuales para el Usuario Jugador -->
 <div class="row g-4 mb-5">
     <div class="col-6 col-md-4 col-lg-2 mb-4">
-        <div class="card text-center h-100 player-stat-card shadow">
-            <div class="card-body p-4">
-                <span class="player-stat-icon">🍻</span>
-                <p class="text-white mb-1 font-weight-bold">Productos</p>
-                <h2 class="player-stat-value">{{ total_productos }}</h2>
+        {% if mi_equipo_pk %}
+        <a href="{% url 'tejobar_app:equipos_show' mi_equipo_pk %}" class="text-decoration-none">
+        {% else %}
+        <a href="{% url 'tejobar_app:equipos_index' %}" class="text-decoration-none">
+        {% endif %}
+            <div class="card text-center h-100 player-stat-card shadow border-l-warning">
+                <div class="card-body p-4">
+                    <span class="player-stat-icon">🏆</span>
+                    <p class="text-white mb-1 font-weight-bold">Mi Equipo</p>
+                    <h5 class="text-warning font-weight-bold mb-0 text-truncate">{{ mi_equipo_nombre }}</h5>
+                </div>
             </div>
-        </div>
-    </div>
-
-    <div class="col-6 col-md-4 col-lg-2 mb-4">
-        <div class="card text-center h-100 player-stat-card shadow">
-            <div class="card-body p-4">
-                <span class="player-stat-icon">📦</span>
-                <p class="text-white mb-1 font-weight-bold">Categorías</p>
-                <h2 class="player-stat-value">{{ total_categorias }}</h2>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-6 col-md-4 col-lg-2 mb-4">
-        <div class="card text-center h-100 player-stat-card shadow">
-            <div class="card-body p-4">
-                <span class="player-stat-icon">🏆</span>
-                <p class="text-white mb-1 font-weight-bold">Equipos</p>
-                <h2 class="player-stat-value">{{ total_equipos }}</h2>
-            </div>
-        </div>
+        </a>
     </div>
 
     <div class="col-6 col-md-4 col-lg-2 mb-4">
         <div class="card text-center h-100 player-stat-card shadow">
             <div class="card-body p-4">
                 <span class="player-stat-icon">👥</span>
-                <p class="text-white mb-1 font-weight-bold">Jugadores</p>
-                <h2 class="player-stat-value">{{ total_jugadores }}</h2>
+                <p class="text-white mb-1 font-weight-bold">Compañeros</p>
+                <h2 class="player-stat-value">{{ mis_compañeros_count }}</h2>
             </div>
         </div>
     </div>
 
     <div class="col-6 col-md-4 col-lg-2 mb-4">
-        <div class="card text-center h-100 player-stat-card shadow">
-            <div class="card-body p-4">
-                <span class="player-stat-icon">🎯</span>
-                <p class="text-white mb-1 font-weight-bold">Partidos</p>
-                <h2 class="player-stat-value">{{ total_partidos }}</h2>
+        <a href="{% url 'tejobar_app:partidos_index' %}" class="text-decoration-none">
+            <div class="card text-center h-100 player-stat-card shadow">
+                <div class="card-body p-4">
+                    <span class="player-stat-icon">🎯</span>
+                    <p class="text-white mb-1 font-weight-bold">Mis Partidos</p>
+                    <h2 class="player-stat-value text-info">{{ mis_partidos_count }}</h2>
+                </div>
             </div>
-        </div>
+        </a>
     </div>
 
     <div class="col-6 col-md-4 col-lg-2 mb-4">
         <div class="card text-center h-100 player-stat-card shadow">
             <div class="card-body p-4">
-                <span class="player-stat-icon">🏟️</span>
-                <p class="text-white mb-1 font-weight-bold">Canchas</p>
-                <h2 class="player-stat-value">{{ total_canchas }}</h2>
+                <span class="player-stat-icon">🛒</span>
+                <p class="text-white mb-1 font-weight-bold">Mi Carrito</p>
+                <h2 class="player-stat-value text-success">{{ mis_items_pendientes }}</h2>
             </div>
         </div>
+    </div>
+
+    <div class="col-6 col-md-4 col-lg-2 mb-4">
+        <a href="{% url 'tejobar_app:dashboard_historial' %}" class="text-decoration-none">
+            <div class="card text-center h-100 player-stat-card shadow">
+                <div class="card-body p-4">
+                    <span class="player-stat-icon">💰</span>
+                    <p class="text-white mb-1 font-weight-bold">Total Gastado</p>
+                    <h4 class="text-warning font-weight-bold mb-0">${{ total_gastado|floatformat:0 }}</h4>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-6 col-md-4 col-lg-2 mb-4">
+        <a href="{% url 'tejobar_app:partidos_index' %}" class="text-decoration-none">
+            <div class="card text-center h-100 player-stat-card shadow">
+                <div class="card-body p-4">
+                    <span class="player-stat-icon">📅</span>
+                    <p class="text-white mb-1 font-weight-bold">Siguiente Juego</p>
+                    {% if proximo_partido %}
+                        <h6 class="text-info font-weight-bold mb-0">{{ proximo_partido.fecha|date:"d M" }} - {{ proximo_partido.hora }}</h6>
+                    {% else %}
+                        <h6 class="text-muted font-weight-bold mb-0">Sin juegos</h6>
+                    {% endif %}
+                </div>
+            </div>
+        </a>
     </div>
 </div>
 

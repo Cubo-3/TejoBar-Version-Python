@@ -99,3 +99,12 @@ LOGOUT_REDIRECT_URL = "tejobar_app:home"
 # MercadoPago Settings (Sandbox/Test setup)
 MERCADOPAGO_ACCESS_TOKEN = "APP_USR-6802487222160604-031816-309a1174dc10c3fd3f062d37c3897449-794354829"
 MERCADOPAGO_PUBLIC_KEY = "APP_USR-32956c66-7101-48de-9823-5c234a073664"
+
+# Email Configuration für Gmail SMTP
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'socobosoftware@gmail.com'
+EMAIL_HOST_PASSWORD = 'hphq fbal kbzi sase' # <-- PON TU CONTRASEÑA DE APLICACIÓN AQUÍ (No la normal)
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER

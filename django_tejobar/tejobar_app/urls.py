@@ -55,6 +55,7 @@ urlpatterns = [
     path("equipos/<int:pk>/reactivar/", views.equipo_reactivate, name="equipos_reactivate"),
     path("equipos/<int:pk>/agregar-miembro/", views.equipo_add_member, name="equipos_add_member"),
     path("equipos/<int:pk>/expulsar/<int:jugador_pk>/", views.equipo_remove_member, name="equipos_remove_member"),
+    path("equipos/<int:pk>/reinvitar/<int:jugador_pk>/", views.equipo_reinvite_member, name="equipos_reinvite_member"),
     path("equipos/historial/", views.historial_equipo_jugador, name="equipos_historial_jugador"),
     path("administracion/equipos/historial/", views.historial_equipo_admin, name="equipos_historial_admin"),
     # Partidos
