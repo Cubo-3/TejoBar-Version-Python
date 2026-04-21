@@ -140,7 +140,8 @@
         </tr>
     </table>
 
-    <!-- METRICAS -->
+    <!-- CONTENIDO GENERAL -->
+    {% if tipo_reporte == 'General' or not tipo_reporte %}
     <h2>1. Métricas del Sistema</h2>
     
     <table class="metrics-table">
@@ -223,6 +224,37 @@
     <p style="text-align: center; color: #666; padding: 20px; border: 1px solid #ccc; background-color: #f9f9f9;">
         No se encontraron apartados registrados para los filtros actuales.
     </p>
+    {% endif %}
+    {% endif %}
+
+    <!-- CONTENIDO ESPECÍFICO -->
+    {% if tipo_reporte == 'Especifico' %}
+    <h2>Detalle de Módulo: {{ modulo_nombre|upper }}</h2>
+    
+    <table class="data-table" repeat="1">
+        <thead>
+            <tr>
+                {% for col in columnas %}
+                <th>{{ col|upper }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for fila in datos %}
+            <tr>
+                {% for celda in fila %}
+                <td><div class="td-content">{{ celda|default_if_none:"-" }}</div></td>
+                {% endfor %}
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="{{ columnas|length }}" style="text-align: center; color: #666; padding: 20px; border: 1px solid #ccc; background-color: #f9f9f9;">
+                    No se encontraron registros para este módulo con los filtros actuales.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
     {% endif %}
 
 </body>

@@ -1,0 +1,102 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Generar Reportes - TejoBar{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+    <h2 class="text-dark font-weight-bold mb-0"><i class="fas fa-file-pdf text-danger mr-2"></i> Generar Reportes</h2>
+    <a href="{% url 'tejobar_app:dashboard' %}" class="btn btn-outline-secondary rounded-pill px-4 shadow-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Volver
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10 col-xl-8">
+        <div class="card bg-dark text-white shadow-lg border-secondary rounded-lg">
+            <div class="card-header border-bottom border-danger py-3" style="background-color: rgba(255,255,255,0.02); border-bottom-width: 3px !important;">
+                <h5 class="mb-0 text-danger font-weight-bold"><i class="fas fa-cogs mr-2"></i> Configurar Parámetros del PDF</h5>
+            </div>
+            
+            <div class="card-body p-5">
+                <p class="text-muted small mb-4">Selecciona el tipo de informe que deseas generar y utiliza los filtros de fecha opcionales para acotar la consulta.</p>
+
+                <form action="{% url 'tejobar_app:generar_reportes' %}" method="POST" id="formReportes">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <!-- Tipo de Reporte -->
+                        <div class="col-md-6">
+                            <div class="form-group mb-4">
+                                <label for="tipo" class="form-label text-light font-weight-bold text-uppercase small">
+                                    <i class="fas fa-layer-group text-info mr-1"></i> Tipo de Reporte <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-control bg-dark border-secondary text-white" id="tipo" name="tipo" style="height: 48px;" required onchange="toggleModulo()">
+                                    <option value="General">General (Métricas Completas)</option>
+                                    <option value="Especifico">Específico (Por Módulo)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Módulo (Oculto por defecto) -->
+                        <div class="col-md-6" id="div-modulo" style="display: none;">
+                            <div class="form-group mb-4">
+                                <label for="modulo" class="form-label text-light font-weight-bold text-uppercase small">
+                                    <i class="fas fa-cube text-warning mr-1"></i> Módulo a Evaluar <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-control bg-dark border-secondary text-white" id="modulo" name="modulo" style="height: 48px;">
+                                    <option value="Productos">Inventario - Productos</option>
+                                    <option value="Categorias">Inventario - Categorías</option>
+                                    <option value="Ventas">Movimientos - Ventas</option>
+                                    <option value="Perdidas">Movimientos - Pérdidas</option>
+                                    <option value="Partidos">Operación - Partidos</option>
+                                    <option value="Canchas">Operación - Canchas</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-2">
+                        <div class="col-md-6">
+                            <div class="form-group mb-4">
+                                <label for="fecha_inicio" class="form-label text-light font-weight-bold text-uppercase small">
+                                    <i class="far fa-calendar-alt text-success mr-1"></i> Fecha Inicio (Opcional)
+                                </label>
+                                <input type="date" class="form-control bg-secondary text-white border-0 shadow-sm" style="padding: 12px; font-size: 1.1rem; height: 48px;" id="fecha_inicio" name="fecha_inicio">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-4">
+                                <label for="fecha_fin" class="form-label text-light font-weight-bold text-uppercase small">
+                                    <i class="far fa-calendar-check text-success mr-1"></i> Fecha Fin (Opcional)
+                                </label>
+                                <input type="date" class="form-control bg-secondary text-white border-0 shadow-sm" style="padding: 12px; font-size: 1.1rem; height: 48px;" id="fecha_fin" name="fecha_fin">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-center mt-4 pt-3 border-top border-secondary">
+                        <button type="submit" class="btn btn-danger font-weight-bold rounded-pill shadow-lg px-5 py-2 w-100">
+                            <i class="fas fa-file-download mr-2"></i> Emitir Documento PDF
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleModulo() {
+    const tipo = document.getElementById('tipo').value;
+    const divModulo = document.getElementById('div-modulo');
+    const moduloSelect = document.getElementById('modulo');
+    if (tipo === 'Especifico') {
+        divModulo.style.display = 'block';
+        moduloSelect.required = true;
+    } else {
+        divModulo.style.display = 'none';
+        moduloSelect.required = false;
+        moduloSelect.value = "";
+    }
+}
+</script>
+{% endblock %}

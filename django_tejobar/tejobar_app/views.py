@@ -171,7 +171,6 @@ def apartar_producto(request: HttpRequest, pk: int) -> HttpResponse:
                     messages.error(request, f"Lo sentimos, stock insuficiente. Disponible: {producto.stock} unidades.")
                     return redirect("tejobar_app:productos_show", pk=producto.pk)
 
-                from django.utils import timezone
                 if producto.fecha_vencimiento and producto.fecha_vencimiento < timezone.now().date():
                     messages.error(request, "Este producto está expirado y no puede ser apartado.")
                     return redirect("tejobar_app:productos_show", pk=producto.pk)
@@ -246,7 +245,6 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         pedidos_por_entregar = Historial.objects.filter(estado="por_entregar").select_related("persona", "producto").order_by("fecha_entrega")
 
         from django.db.models import Sum
-        from django.utils import timezone
         from .models import MovimientoInventario
         hoy = timezone.localdate()
         movimientos_hoy = MovimientoInventario.objects.filter(fecha__date=hoy)
@@ -361,7 +359,6 @@ def dashboard_historial(request: HttpRequest) -> HttpResponse:
         apartados_entregados = apartados_entregados.filter(fecha_entrega__gte=fecha_inicio)
     if fecha_fin:
         from datetime import datetime, time
-        from django.utils import timezone
         # Allow same day filtering by extending time to end of day
         try:
             fin_dt = datetime.strptime(fecha_fin, "%Y-%m-%d").date()
@@ -404,7 +401,6 @@ def dashboard_reporte_pdf(request: HttpRequest) -> HttpResponse:
         apartados = apartados.filter(fecha_apartado__gte=fecha_inicio)
         
     from datetime import datetime, time
-    from django.utils import timezone
     
     if fecha_fin:
         try:
@@ -1880,3 +1876,119 @@ def equipo_reinvite_member(request: HttpRequest, pk: int, jugador_pk: int) -> Ht
             
     return redirect("tejobar_app:equipos_show", pk=equipo.pk)
 
+@login_required
+@admin_required
+def generar_reportes(request: HttpRequest) -> HttpResponse:
+    from .utils import generar_pdf
+    if request.method == "POST":
+        tipo = request.POST.get("tipo")
+        modulo = request.POST.get("modulo")
+        fecha_inicio = request.POST.get("fecha_inicio")
+        fecha_fin = request.POST.get("fecha_fin")
+        
+        persona = getattr(request.user, "persona", None)
+        generado_por = persona.nombre if persona else "Administrador"
+
+        # Configurar filtros de fecha
+        from datetime import datetime, time
+        from django.utils import timezone
+        dt_start = None
+        dt_end = None
+        if fecha_inicio:
+            ini_dt = datetime.strptime(fecha_inicio, "%Y-%m-%d").date()
+            dt_start = timezone.make_aware(datetime.combine(ini_dt, time.min))
+        if fecha_fin:
+            try:
+                fin_dt = datetime.strptime(fecha_fin, "%Y-%m-%d").date()
+                dt_end = timezone.make_aware(datetime.combine(fin_dt, time.max))
+            except ValueError:
+                pass
+
+        if tipo == "General":
+            # Repetir lógica de dashboard_reporte_pdf para reusabilidad
+            apartados = Apartado.objects.select_related("persona", "producto").order_by("-fecha_apartado").all()
+            if dt_start:
+                apartados = apartados.filter(fecha_apartado__gte=dt_start)
+            if dt_end:
+                apartados = apartados.filter(fecha_apartado__lte=dt_end)
+            
+            from django.db.models import Sum    
+            context = {
+                "tipo_reporte": "General",
+                "total_productos": Producto.objects.count(),
+                "productos_bajo_stock": Producto.objects.filter(stock__lt=10).count(),
+                "total_categorias": Categoria.objects.count(),
+                "total_equipos": Equipo.objects.count(),
+                "total_jugadores": Jugador.objects.count(),
+                "total_partidos": Partido.objects.count(),
+                "total_canchas": Cancha.objects.count(),
+                "total_usuarios": User.objects.filter(is_active=True).count(),
+                "apartados": apartados,
+                "fecha_inicio": fecha_inicio or "",
+                "fecha_fin": fecha_fin or "",
+                "generado_por": generado_por,
+            }
+            return generar_pdf(context, "dashboard/reporte_pdf.html", "reporte_general")
+
+        elif tipo == "Especifico":
+            context = {
+                "tipo_reporte": "Especifico",
+                "modulo_nombre": modulo,
+                "fecha_inicio": fecha_inicio or "",
+                "fecha_fin": fecha_fin or "",
+                "generado_por": generado_por,
+            }
+            
+            datos = []
+            columnas = []
+            
+            if modulo == "Productos":
+                columnas = ["ID", "Nombre", "Precio", "Stock", "Vencimiento"]
+                qs = Producto.objects.all().order_by("nombre")
+                for item in qs:
+                    datos.append([item.pk, item.nombre, f"${item.precio}", item.stock, item.fecha_vencimiento or "N/A"])
+                    
+            elif modulo == "Categorias":
+                columnas = ["ID", "Nombre", "Estado"]
+                qs = Categoria.objects.all().order_by("nombre")
+                for item in qs:
+                    datos.append([item.pk, item.nombre, "Activa" if item.estado else "Inactiva"])
+                    
+            elif modulo in ["Ventas", "Perdidas"]:
+                from .models import MovimientoInventario
+                columnas = ["Fecha", "Producto", "Cant", "Motivo", "Usuario"]
+                t_mov = MovimientoInventario.TIPO_VENTA if modulo == "Ventas" else MovimientoInventario.TIPO_PERDIDA
+                qs = MovimientoInventario.objects.filter(tipo_movimiento=t_mov).order_by("-fecha")
+                if dt_start: qs = qs.filter(fecha__gte=dt_start)
+                if dt_end: qs = qs.filter(fecha__lte=dt_end)
+                for item in qs:
+                    u_nombre = item.usuario.username if item.usuario else "Sistema"
+                    datos.append([item.fecha.strftime('%Y-%m-%d %H:%M'), item.producto.nombre, item.cantidad, item.motivo, u_nombre])
+
+            elif modulo == "Partidos":
+                columnas = ["Fecha", "Hora", "Equipos", "Cancha", "Estado"]
+                qs = Partido.objects.all().order_by("-fecha", "-hora")
+                if dt_start: qs = qs.filter(fecha__gte=dt_start)
+                if dt_end: qs = qs.filter(fecha__lte=dt_end)
+                for item in qs:
+                    eqs = f"{item.equipo1.nombre_equipo} vs {item.equipo2.nombre_equipo}"
+                    f_str = item.fecha.strftime('%Y-%m-%d') if hasattr(item.fecha, 'strftime') else str(item.fecha)
+                    h_str = item.hora.strftime('%H:%M') if hasattr(item.hora, 'strftime') else str(item.hora)
+                    cancha_name = str(item.cancha) if item.cancha else "N/A"
+                    datos.append([f_str, h_str, eqs, cancha_name, item.get_estado_display()])
+
+            elif modulo == "Canchas":
+                columnas = ["ID", "Descripción", "Estado", "Precio/Hora"]
+                qs = Cancha.objects.all().order_by("id")
+                for item in qs:
+                    datos.append([item.pk, str(item), "Habilitada" if item.estado else "Deshabilitada", f"${item.precio_por_hora}"])
+            
+            else:
+                columnas = ["Aviso"]
+                datos = [["Módulo en desarrollo o no soportado."]]
+                
+            context["columnas"] = columnas
+            context["datos"] = datos
+            return generar_pdf(context, "dashboard/reporte_pdf.html", f"reporte_{modulo.lower()}")
+
+    return render(request, "dashboard/generar_reportes.html")

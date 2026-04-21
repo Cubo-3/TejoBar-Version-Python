@@ -20,6 +20,7 @@ urlpatterns = [
     path("dashboard/", views.dashboard, name="dashboard"),
     path("dashboard/historial/", views.dashboard_historial, name="dashboard_historial"),
     path("dashboard/reporte-pdf/", views.dashboard_reporte_pdf, name="dashboard_reporte_pdf"),
+    path("dashboard/reportes/generar/", views.generar_reportes, name="generar_reportes"),
     # CRUD básico personas / equipos
     path("personas/", views.persona_list, name="personas_index"),
     path("administracion/productos/", views.admin_product_list, name="admin_productos_index"),
