@@ -120,7 +120,11 @@ h2 {
             {% csrf_token %}
             <div class="input-group">
                 <i class="fas fa-user"></i>
-                <input type="text" name="nombre" placeholder="Nombre completo" value="{{ form.nombre.value|default_if_none:'' }}" required>
+                <input type="text" name="nombre" placeholder="Nombre completo"
+                       value="{{ form.nombre.value|default_if_none:'' }}"
+                       required minlength="2" maxlength="25"
+                       pattern="[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+"
+                       title="Solo letras y espacios. Mínimo 2, máximo 25 caracteres.">
             </div>
             <div class="input-group">
                 <i class="fas fa-envelope"></i>
@@ -132,16 +136,45 @@ h2 {
             </div>
             <div class="input-group">
                 <i class="fas fa-lock"></i>
-                <input type="password" name="password" placeholder="Contraseña" required>
-            </div>
+                <input type="password" name="password" placeholder="Contraseña"
+                       required minlength="8"
+                       pattern="(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-_=+\[\]{};:',.<>/?|`~]).{8,}"
+                       title="Mínimo 8 caracteres, una mayúscula, un número y un carácter especial."></div>
             <div class="input-group">
                 <i class="fas fa-lock"></i>
-                <input type="password" name="password2" placeholder="Confirmar contraseña" required>
-            </div>
+                <input type="password" name="password2" placeholder="Confirmar contraseña"
+                       required minlength="8"></div>
             <button type="submit" class="btn-login">Registrarse</button>
             <a href="{% url 'tejobar_app:login' %}" class="forgot">¿Ya tienes cuenta? Inicia sesión</a>
         </form>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const nombreInput = document.querySelector('input[name="nombre"]');
+    if (nombreInput) {
+        // Bloquear al escribir (keystrokes)
+        nombreInput.addEventListener('keypress', function(e) {
+            const char = String.fromCharCode(e.which || e.keyCode);
+            const regex = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]$/;
+            if (e.which !== 0 && e.keyCode !== 0 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                if (!regex.test(char)) {
+                    e.preventDefault();
+                }
+            }
+        });
+
+        // Limpiar en caso de copiar y pegar
+        nombreInput.addEventListener('input', function(e) {
+            const originalVal = this.value;
+            const cleanedVal = originalVal.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '');
+            if (originalVal !== cleanedVal) {
+                this.value = cleanedVal;
+            }
+        });
+    }
+});
+</script>
 {% endblock %}
 

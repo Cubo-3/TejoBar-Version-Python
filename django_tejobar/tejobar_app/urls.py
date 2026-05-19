@@ -25,6 +25,11 @@ urlpatterns = [
     path("personas/", views.persona_list, name="personas_index"),
     path("administracion/productos/", views.admin_product_list, name="admin_productos_index"),
     path("administracion/productos/carga-masiva/", views.admin_carga_masiva, name="admin_carga_masiva"),
+    path(
+        "administracion/productos/descargar-plantilla/",
+        views.admin_product_template_download,
+        name="admin_productos_descargar_plantilla"
+    ),
     path("administracion/productos/crear/", views.admin_product_create, name="admin_productos_create"),
     path("administracion/productos/<int:pk>/editar/", views.admin_product_update, name="admin_productos_update"),
     path("administracion/productos/<int:pk>/eliminar/", views.admin_product_delete, name="admin_productos_delete"),

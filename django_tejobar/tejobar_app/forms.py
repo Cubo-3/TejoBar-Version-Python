@@ -1,6 +1,8 @@
+import re
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
+from django.core.validators import RegexValidator
 
 from .models import Persona, Producto, Equipo, Partido, Cancha, Categoria
 
@@ -21,10 +23,18 @@ class LoginForm(AuthenticationForm):
 
 
 class RegistroForm(forms.Form):
-    nombre = forms.CharField(max_length=100)
+    _nombre_validator = RegexValidator(
+        regex=r'^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$',
+        message="El nombre solo puede contener letras y espacios."
+    )
+    nombre = forms.CharField(
+        min_length=2,
+        max_length=25,
+        validators=[_nombre_validator]
+    )
     correo = forms.EmailField()
     numero = forms.CharField(max_length=20)
-    password = forms.CharField(widget=forms.PasswordInput)
+    password = forms.CharField(widget=forms.PasswordInput, min_length=8)
     password2 = forms.CharField(widget=forms.PasswordInput, label="Confirmar contraseña")
 
     def clean_correo(self):
@@ -33,6 +43,21 @@ class RegistroForm(forms.Form):
         if User.objects.filter(Q(email__iexact=correo) | Q(username__iexact=correo)).exists():
             raise forms.ValidationError("Ya existe un usuario con este correo.")
         return correo
+
+    def clean_password(self):
+        password = self.cleaned_data.get("password", "")
+        errors = []
+        if len(password) < 8:
+            errors.append("La contraseña debe tener al menos 8 caracteres.")
+        if not re.search(r'[A-Z]', password):
+            errors.append("La contraseña debe contener al menos una letra mayúscula.")
+        if not re.search(r'\d', password):
+            errors.append("La contraseña debe contener al menos un número.")
+        if not re.search(r'[!@#$%^&*()\-_=+\[\]{};:\'",.<>/?\\|`~]', password):
+            errors.append("La contraseña debe contener al menos un carácter especial (!@#$%^&*...).")
+        if errors:
+            raise forms.ValidationError(errors)
+        return password
 
     def clean(self):
         cleaned = super().clean()
@@ -44,9 +69,21 @@ class RegistroForm(forms.Form):
 
 
 class PersonaForm(forms.ModelForm):
+    nombre = forms.CharField(
+        min_length=2,
+        max_length=25,
+        validators=[
+            RegexValidator(
+                regex=r'^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$',
+                message="El nombre solo puede contener letras y espacios."
+            )
+        ],
+        label="Nombre"
+    )
+
     class Meta:
         model = Persona
-        fields = ["nombre", "correo", "numero"]
+        fields = ["nombre", "correo", "numero", "rol"]
 
 
 class CategoriaForm(forms.ModelForm):
@@ -63,9 +100,15 @@ class CategoriaForm(forms.ModelForm):
 class ProductoForm(forms.ModelForm):
     class Meta:
         model = Producto
-        fields = ["nombre", "precio", "stock", "fecha_vencimiento", "imagen", "categoria"]
+        fields = ["nombre", "precio", "stock", "fecha_vencimiento", "imagen", "categoria", "descripcion"]
         widgets = {
             'categoria': forms.Select(attrs={'class': 'form-control'}),
+            'descripcion': forms.Textarea(attrs={
+                'class': 'form-control premium-input',
+                'rows': 3,
+                'placeholder': 'Descripción del producto (opcional)...',
+                'maxlength': '500'
+            }),
         }
         
     def __init__(self, *args, **kwargs):

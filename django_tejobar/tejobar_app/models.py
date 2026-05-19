@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator, MinLengthValidator, RegexValidator, MaxLengthValidator
 from django.core.exceptions import ValidationError
 
 
@@ -18,13 +18,26 @@ class Persona(models.Model):
     user = models.OneToOneField(
         User, on_delete=models.CASCADE, related_name="persona", null=True, blank=True
     )
-    nombre = models.CharField(max_length=100)
+    nombre = models.CharField(
+        max_length=25,
+        validators=[
+            MinLengthValidator(2, message="El nombre debe tener al menos 2 caracteres."),
+            RegexValidator(
+                regex=r'^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$',
+                message="El nombre solo puede contener letras y espacios."
+            )
+        ]
+    )
     correo = models.EmailField(unique=True)
     numero = models.CharField(max_length=20)
     rol = models.CharField(max_length=10, choices=ROL_CHOICES, default=ROL_JUGADOR)
 
     def __str__(self) -> str:
         return self.nombre
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     @property
     def can_be_deleted(self) -> bool:
@@ -119,7 +132,12 @@ class Categoria(models.Model):
         return self.nombre
 
 class Producto(models.Model):
-    nombre = models.CharField(max_length=100)
+    nombre = models.CharField(
+        max_length=100,
+        validators=[
+            MinLengthValidator(3, message="El nombre debe tener al menos 3 caracteres.")
+        ]
+    )
     precio = models.DecimalField(
         max_digits=10, 
         decimal_places=2,
@@ -135,7 +153,14 @@ class Producto(models.Model):
         ]
     )
     fecha_vencimiento = models.DateField(blank=True, null=True)
-    descripcion = models.TextField("Descripción", blank=True, null=True)
+    descripcion = models.TextField(
+        "Descripción",
+        blank=True,
+        null=True,
+        validators=[
+            MaxLengthValidator(500, message="La descripción no puede superar los 500 caracteres.")
+        ]
+    )
     imagen = models.ImageField(upload_to="productos", blank=True, null=True)
     categoria = models.ForeignKey(
         Categoria,

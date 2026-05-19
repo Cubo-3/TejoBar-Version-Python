@@ -909,6 +909,26 @@ def api_crear_categoria(request: HttpRequest) -> JsonResponse:
 
 
 @admin_required
+def admin_product_template_download(request: HttpRequest) -> HttpResponse:
+    import csv
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = 'attachment; filename="plantilla_productos.csv"'
+    
+    # Write UTF-8 BOM so Excel opens special characters correctly
+    response.write('\ufeff')
+    
+    writer = csv.writer(response)
+    # Header columns in lowercase exactly as required by services.py
+    writer.writerow(['nombre', 'precio', 'stock', 'categoria', 'descripcion'])
+    
+    # Elegant sample rows to guide the user
+    writer.writerow(['Cerveza Club Colombia', '3500', '24', 'Bebidas', 'Lager premium nacional de 330ml'])
+    writer.writerow(['Aguardiente Antioqueño', '45000', '10', 'Licores', 'Media botella de aguardiente sin azúcar'])
+    
+    return response
+
+
+@admin_required
 def admin_product_list(request: HttpRequest) -> HttpResponse:
     Producto.actualizar_stock_vencidos()
     productos = Producto.objects.all()
