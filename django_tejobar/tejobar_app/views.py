@@ -1207,22 +1207,52 @@ def finalizar_partido(request: HttpRequest, pk: int) -> HttpResponse:
     return redirect("tejobar_app:admin_partidos_index")
 
 
+def _usuario_puede_pagar_partido(request: HttpRequest, partido: Partido) -> bool:
+    persona = getattr(request.user, "persona", None)
+    if not persona:
+        return False
+    if persona.rol == Persona.ROL_ADMIN:
+        return True
+    mi_equipo_rel = JugadorEquipo.objects.filter(jugador__persona=persona).first()
+    if not mi_equipo_rel:
+        return False
+    equipo_id = mi_equipo_rel.equipo_id
+    return partido.equipo1_id == equipo_id or partido.equipo2_id == equipo_id
+
+
+def _partido_listo_para_pago(partido: Partido) -> bool:
+    return bool(
+        partido.hora_inicio
+        and partido.hora_fin
+        and not partido.pago_cancha
+        and partido.total_cancha > 0
+    )
+
+
+def _registrar_pago_cancha_efectivo(partido: Partido, descripcion_extra: str = "") -> bool:
+    if not _partido_listo_para_pago(partido):
+        return False
+    partido.pago_cancha = True
+    partido.save()
+    descripcion = f"Pago de cancha para el partido #{partido.pk} - Total: ${partido.total_cancha}"
+    if descripcion_extra:
+        descripcion = f"{descripcion} ({descripcion_extra})"
+    Novedad.objects.create(
+        producto=None,
+        tipo_novedad=Novedad.TIPO_CANCHA,
+        cantidad=1,
+        descripcion=descripcion,
+    )
+    return True
+
+
 @admin_required
 def pagar_partido(request: HttpRequest, pk: int) -> HttpResponse:
+    if request.method != "POST":
+        return redirect("tejobar_app:admin_partidos_index")
     partido = get_object_or_404(Partido, pk=pk)
-    if partido.hora_inicio and partido.hora_fin and not partido.pago_cancha:
-        partido.pago_cancha = True
-        partido.save()
-        
-        # Log the court payment
-        Novedad.objects.create(
-            producto=None,
-            tipo_novedad=Novedad.TIPO_CANCHA,
-            cantidad=1,
-            descripcion=f"Pago de cancha para el partido #{partido.pk} - Total: ${partido.total_cancha}"
-        )
-        
-        messages.success(request, "Pago de cancha registrado exitosamente.")
+    if _registrar_pago_cancha_efectivo(partido, descripcion_extra="Efectivo en caja"):
+        messages.success(request, "Pago de cancha en efectivo registrado exitosamente.")
     else:
         messages.error(request, "No se puede registrar el pago para este partido.")
     return redirect("tejobar_app:admin_partidos_index")
@@ -1273,7 +1303,17 @@ def admin_canchas_delete(request: HttpRequest, pk: int) -> HttpResponse:
 
 def partido_list(request: HttpRequest) -> HttpResponse:
     partidos = Partido.objects.select_related("equipo1", "equipo2", "cancha").order_by("fecha")
-    return render(request, "partidos/index.html", {"partidos": partidos})
+    mi_equipo_id = None
+    if request.user.is_authenticated:
+        persona = getattr(request.user, "persona", None)
+        if persona:
+            mi_equipo_rel = JugadorEquipo.objects.filter(jugador__persona=persona).first()
+            mi_equipo_id = mi_equipo_rel.equipo_id if mi_equipo_rel else None
+    return render(
+        request,
+        "partidos/index.html",
+        {"partidos": partidos, "mi_equipo_id": mi_equipo_id},
+    )
 
 
 from django.http import JsonResponse
@@ -1410,17 +1450,42 @@ def crear_preferencia_apartado(request, pk):
         return redirect("tejobar_app:dashboard")
 
 @login_required
+def pago_cancha_efectivo_jugador(request: HttpRequest, pk: int) -> HttpResponse:
+    """Indica al jugador que complete el pago en caja; el admin confirma con pagar_partido."""
+    if request.method != "POST":
+        return redirect("tejobar_app:partidos_index")
+    partido = get_object_or_404(Partido.objects.select_related("cancha", "equipo1", "equipo2"), pk=pk)
+    if not _usuario_puede_pagar_partido(request, partido):
+        messages.error(request, "No tienes permiso para gestionar el pago de este partido.")
+        return redirect("tejobar_app:partidos_index")
+    if not _partido_listo_para_pago(partido):
+        messages.error(request, "Este partido no está listo para cobrar la cancha.")
+        return redirect("tejobar_app:partidos_index")
+    messages.info(
+        request,
+        f"Acércate a la caja del bar para pagar ${partido.total_cancha:,.0f} en efectivo "
+        f"por la cancha «{partido.cancha}». El personal confirmará tu pago.",
+    )
+    return redirect("tejobar_app:partidos_index")
+
+
+@login_required
 def crear_preferencia_cancha(request, pk):
-    partido = get_object_or_404(Partido, pk=pk)
-    
+    partido = get_object_or_404(Partido.objects.select_related("cancha"), pk=pk)
+
+    if not _usuario_puede_pagar_partido(request, partido):
+        messages.error(request, "No tienes permiso para pagar la cancha de este partido.")
+        return redirect("tejobar_app:partidos_index")
+
     if partido.pago_cancha:
         messages.warning(request, "Este partido ya está pagado.")
-        return redirect("dashboard")
-        
+        return redirect("tejobar_app:partidos_index")
+
+    if not _partido_listo_para_pago(partido):
+        messages.warning(request, "El partido aún no está finalizado o no tiene costo de cancha.")
+        return redirect("tejobar_app:partidos_index")
+
     monto_total = partido.total_cancha
-    if monto_total <= 0:
-        messages.warning(request, "El partido no tiene costo de cancha o no se ha calculado.")
-        return redirect("dashboard")
         
     sdk = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
     
@@ -1443,9 +1508,13 @@ def crear_preferencia_cancha(request, pk):
     }
 
     preference_response = sdk.preference().create(preference_data)
-    preference = preference_response["response"]
-    
-    return redirect(preference["init_point"])
+
+    if preference_response.get("status") in (200, 201) and "init_point" in preference_response.get("response", {}):
+        return redirect(preference_response["response"]["init_point"])
+
+    error_msg = preference_response.get("response", "Error desconocido en MercadoPago")
+    messages.error(request, f"Error al conectar con MercadoPago: {error_msg}")
+    return redirect("tejobar_app:partidos_index")
 
 @login_required
 def pago_exitoso(request):
@@ -1597,26 +1666,43 @@ def admin_despachar_pedido(request: HttpRequest, pk: int) -> HttpResponse:
 def editar_item_carrito(request: HttpRequest, pk: int) -> HttpResponse:
     if request.method == "POST":
         persona = getattr(request.user, "persona", None)
-        apartado = get_object_or_404(Apartado, pk=pk, persona=persona, estado=Apartado.ESTADO_PENDIENTE)
-        nueva_cantidad = int(request.POST.get("cantidad", 1))
-        
-        if nueva_cantidad <= 0:
-            messages.error(request, "La cantidad debe ser mayor a cero.")
+        apartado = get_object_or_404(
+            Apartado.objects.select_related("producto"),
+            pk=pk,
+            persona=persona,
+            estado=Apartado.ESTADO_PENDIENTE,
+        )
+        try:
+            nueva_cantidad = int(request.POST.get("cantidad", ""))
+        except (TypeError, ValueError):
+            messages.error(request, "Ingresa una cantidad válida.")
             return redirect("tejobar_app:dashboard")
-            
+
+        max_cantidad = apartado.cantidad + apartado.producto.stock
+
+        if nueva_cantidad < 1:
+            messages.error(request, "La cantidad mínima es 1.")
+            return redirect("tejobar_app:dashboard")
+
+        if nueva_cantidad > max_cantidad:
+            messages.error(
+                request,
+                f"La cantidad no puede superar el stock disponible ({max_cantidad} unidades).",
+            )
+            return redirect("tejobar_app:dashboard")
+
         diferencia = nueva_cantidad - apartado.cantidad
         if diferencia > 0 and apartado.producto.stock < diferencia:
             messages.error(request, f"Stock insuficiente. Disponible adicional: {apartado.producto.stock}")
             return redirect("tejobar_app:dashboard")
-            
-        # Update stock and Apartado
+
         apartado.producto.stock -= diferencia
         apartado.producto.save()
         apartado.cantidad = nueva_cantidad
         apartado.save()
-        
-        messages.success(request, "Cantidad del carrito actualizada.")
-        
+
+        messages.success(request, "Apartado actualizado correctamente.")
+
     return redirect("tejobar_app:dashboard")
 
 

@@ -131,8 +131,26 @@
                     
                     <div class="info-row">
                         <div class="text-secondary"><i class="fas fa-map-marker-alt info-icon"></i> <strong>Cancha</strong></div>
-                        <div class="font-weight-bold text-white text-truncate ml-3" style="max-width: 150px;" title="{{ partido.cancha.disponibilidad|default:partido.cancha|default:'--' }}">
-                            {{ partido.cancha.disponibilidad|default:partido.cancha|default:"--" }}
+                        <div class="font-weight-bold text-white text-truncate ml-3" style="max-width: 150px;">
+                            {% if user.is_authenticated and partido.hora_fin and not partido.pago_cancha and partido.total_cancha %}
+                                {% if mi_equipo_id == partido.equipo1_id or mi_equipo_id == partido.equipo2_id %}
+                                    <button type="button" class="btn btn-link p-0 text-white font-weight-bold text-truncate"
+                                        style="max-width: 150px;"
+                                        data-toggle="modal" data-target="#pagoCanchaModal{{ partido.pk }}"
+                                        title="Pagar cancha — ${{ partido.total_cancha|floatformat:0 }}">
+                                        {{ partido.cancha.disponibilidad|default:partido.cancha|default:"--" }}
+                                        <i class="fas fa-wallet text-warning ml-1"></i>
+                                    </button>
+                                {% else %}
+                                    <span title="{{ partido.cancha.disponibilidad|default:partido.cancha|default:'--' }}">
+                                        {{ partido.cancha.disponibilidad|default:partido.cancha|default:"--" }}
+                                    </span>
+                                {% endif %}
+                            {% else %}
+                                <span title="{{ partido.cancha.disponibilidad|default:partido.cancha|default:'--' }}">
+                                    {{ partido.cancha.disponibilidad|default:partido.cancha|default:"--" }}
+                                </span>
+                            {% endif %}
                         </div>
                     </div>
                     
@@ -158,9 +176,25 @@
                                     <i class="fas fa-play-circle fa-pulse mr-2"></i> <strong>¡En curso!</strong>
                                 </div>
                             {% else %}
-                                <div class="alert alert-secondary py-2 mb-0 shadow-sm" role="alert">
+                                <div class="alert alert-secondary py-2 mb-2 shadow-sm" role="alert">
                                     <i class="fas fa-flag-checkered mr-2"></i> <strong>Finalizado</strong>
                                 </div>
+                                {% if user.is_authenticated and not partido.pago_cancha and partido.total_cancha %}
+                                    {% if mi_equipo_id == partido.equipo1_id or mi_equipo_id == partido.equipo2_id %}
+                                        <p class="small text-muted mb-2">
+                                            Cancha: <strong class="text-warning">${{ partido.total_cancha|floatformat:0 }}</strong>
+                                            ({{ partido.horas_jugadas }} h)
+                                        </p>
+                                        <button type="button" class="btn btn-warning btn-block font-weight-bold shadow-sm"
+                                            data-toggle="modal" data-target="#pagoCanchaModal{{ partido.pk }}">
+                                            <i class="fas fa-hand-holding-usd mr-2"></i> Pagar Cancha
+                                        </button>
+                                    {% elif not mi_equipo_id %}
+                                        <p class="small text-muted mb-0">Únete a un equipo para pagar la cancha.</p>
+                                    {% endif %}
+                                {% elif partido.pago_cancha %}
+                                    <span class="badge badge-success px-3 py-2"><i class="fas fa-check-circle mr-1"></i> Cancha pagada</span>
+                                {% endif %}
                             {% endif %}
                         </div>
                     {% endif %}
@@ -179,4 +213,27 @@
     {% endfor %}
 </div>
 
+{% for partido in partidos %}
+    {% if user.is_authenticated and partido.hora_fin and not partido.pago_cancha and partido.total_cancha %}
+        {% if mi_equipo_id == partido.equipo1_id or mi_equipo_id == partido.equipo2_id %}
+            {% include "partidos/pago_cancha_modal.html" with partido=partido modal_id_suffix=partido.pk modo="jugador" %}
+        {% endif %}
+    {% endif %}
+{% endfor %}
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    document.querySelectorAll('.btn-pago-tarjeta-cancha').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var modal = btn.closest('.modal');
+            if (modal && typeof jQuery !== 'undefined') {
+                jQuery(modal).modal('hide');
+            }
+        });
+    });
+})();
+</script>
 {% endblock %}

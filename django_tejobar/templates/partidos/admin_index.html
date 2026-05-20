@@ -44,7 +44,18 @@
                         </td>
                         <td class="text-dark">{{ partido.fecha|date:"d/M/Y" }}</td>
                         <td class="text-dark">{{ partido.hora }}</td>
-                        <td class="text-dark">{{ partido.cancha.disponibilidad|default:partido.cancha|default:"--" }}</td>
+                        <td class="text-dark">
+                            {% if partido.hora_inicio and partido.hora_fin and not partido.pago_cancha and partido.total_cancha %}
+                                <button type="button" class="btn btn-link p-0 font-weight-bold text-dark text-decoration-none"
+                                    data-toggle="modal" data-target="#pagoCanchaModal{{ partido.pk }}"
+                                    title="Pagar cancha">
+                                    <i class="fas fa-map-marker-alt text-primary mr-1"></i>
+                                    {{ partido.cancha.disponibilidad|default:partido.cancha|default:"--" }}
+                                </button>
+                            {% else %}
+                                {{ partido.cancha.disponibilidad|default:partido.cancha|default:"--" }}
+                            {% endif %}
+                        </td>
                         <td>
                             {% if partido.estado == 'Pendiente' %}
                                 <span class="badge badge-warning text-dark">{{ partido.estado }}</span>
@@ -71,9 +82,10 @@
                                     <div class="mb-1 text-muted small">
                                         ⏱️ {{ partido.horas_jugadas }}h = <strong>${{ partido.total_cancha|floatformat:0 }}</strong>
                                     </div>
-                                    <a href="{% url 'tejobar_app:admin_partidos_pagar' partido.pk %}" class="btn btn-sm btn-warning font-weight-bold text-dark shadow-sm">
+                                    <button type="button" class="btn btn-sm btn-warning font-weight-bold text-dark shadow-sm"
+                                        data-toggle="modal" data-target="#pagoCanchaModal{{ partido.pk }}">
                                         <i class="fas fa-hand-holding-usd"></i> Cobrar
-                                    </a>
+                                    </button>
                                 {% else %}
                                     <div class="mb-1 text-muted small">
                                         ⏱️ {{ partido.horas_jugadas }}h = <strong>${{ partido.total_cancha|floatformat:0 }}</strong>
@@ -101,4 +113,32 @@
         </div>
     </div>
 </div>
+
+{% for partido in partidos %}
+    {% if partido.hora_inicio and partido.hora_fin and not partido.pago_cancha and partido.total_cancha %}
+        {% include "partidos/pago_cancha_modal.html" with partido=partido modal_id_suffix=partido.pk modo="admin" %}
+    {% endif %}
+{% endfor %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    document.querySelectorAll('.form-pago-efectivo-cancha').forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+            if (!confirm('¿Confirmas el pago en EFECTIVO de esta cancha?')) {
+                e.preventDefault();
+            }
+        });
+    });
+    document.querySelectorAll('.btn-pago-tarjeta-cancha').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var modal = btn.closest('.modal');
+            if (modal && typeof jQuery !== 'undefined') {
+                jQuery(modal).modal('hide');
+            }
+        });
+    });
+})();
+</script>
 {% endblock %}

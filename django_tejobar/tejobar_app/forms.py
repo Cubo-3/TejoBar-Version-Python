@@ -2,6 +2,7 @@ import re
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 
 from .models import Persona, Producto, Equipo, Partido, Cancha, Categoria
@@ -91,10 +92,24 @@ class CategoriaForm(forms.ModelForm):
         model = Categoria
         fields = ["nombre", "descripcion", "estado"]
         widgets = {
-            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Bebidas alcohólicas'}),
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej. Bebidas alcohólicas',
+                'minlength': '2',
+                'maxlength': '50',
+                'required': True,
+            }),
             'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Opcional'}),
             'estado': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
+
+    def clean_nombre(self):
+        nombre = (self.cleaned_data.get("nombre") or "").strip()
+        if len(nombre) < 2 or len(nombre) > 50:
+            raise ValidationError(
+                "El nombre de la categoría debe tener entre 2 y 50 caracteres."
+            )
+        return nombre
 
 
 class ProductoForm(forms.ModelForm):

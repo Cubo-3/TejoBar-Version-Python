@@ -67,10 +67,15 @@
                                 <label for="{{ form.nombre.id_for_label }}" class="form-label font-weight-bold text-light small text-uppercase">
                                     <i class="fas fa-tag text-info mr-1"></i> Nombre de la Categoría <span class="text-danger">*</span>
                                 </label>
-                                <input type="text" name="{{ form.nombre.name }}" id="{{ form.nombre.id_for_label }}" class="form-control premium-input rounded-pill px-4 py-2 {% if form.nombre.errors %}is-invalid border-danger{% endif %}" value="{{ form.nombre.value|default_if_none:'' }}" required placeholder="Ej. Licores Nacionales">
-                                {% if form.nombre.errors %}
-                                    <div class="invalid-feedback d-block ml-3 font-weight-bold">{{ form.nombre.errors|striptags }}</div>
-                                {% endif %}
+                                <input type="text" name="{{ form.nombre.name }}" id="{{ form.nombre.id_for_label }}"
+                                    class="form-control premium-input rounded-pill px-4 py-2 {% if form.nombre.errors %}is-invalid border-danger{% endif %}"
+                                    value="{{ form.nombre.value|default_if_none:'' }}"
+                                    required minlength="2" maxlength="50"
+                                    placeholder="Ej. Licores Nacionales"
+                                    aria-describedby="nombreCategoriaError">
+                                <div id="nombreCategoriaError" class="invalid-feedback d-block ml-3 font-weight-bold {% if not form.nombre.errors %}d-none{% endif %}" role="alert">
+                                    {% if form.nombre.errors %}{{ form.nombre.errors|striptags }}{% endif %}
+                                </div>
                             </div>
 
                             <!-- Descripción -->
@@ -116,26 +121,45 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Client-side Validation Highlights
-    const forms = document.querySelectorAll('form');
-    Array.from(forms).forEach(form => {
-        form.addEventListener('submit', event => {
-            if (!form.checkValidity()) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
-            form.classList.add('was-validated');
-            
-            // Highlight empty required premium inputs
-            const requiredInputs = form.querySelectorAll('input[required]');
-            requiredInputs.forEach(input => {
-                if (!input.value) {
-                    input.classList.add('border-danger');
-                } else {
-                    input.classList.remove('border-danger');
-                }
-            });
-        }, false);
+    const MSG_NOMBRE_CATEGORIA = 'El nombre de la categoría debe tener entre 2 y 50 caracteres.';
+    const form = document.getElementById('categoriaForm');
+    const nombreInput = document.getElementById('{{ form.nombre.id_for_label }}');
+    const nombreError = document.getElementById('nombreCategoriaError');
+
+    if (!form || !nombreInput || !nombreError) return;
+
+    function mostrarErrorNombre(mensaje) {
+        nombreInput.classList.add('is-invalid', 'border-danger');
+        nombreError.textContent = mensaje;
+        nombreError.classList.remove('d-none');
+    }
+
+    function limpiarErrorNombre() {
+        nombreInput.classList.remove('is-invalid', 'border-danger');
+        nombreError.textContent = '';
+        nombreError.classList.add('d-none');
+    }
+
+    function nombreEsValido(valor) {
+        var nombre = (valor || '').trim();
+        return nombre.length >= 2 && nombre.length <= 50;
+    }
+
+    nombreInput.addEventListener('input', function() {
+        if (nombreEsValido(nombreInput.value)) {
+            limpiarErrorNombre();
+        }
+    });
+
+    form.addEventListener('submit', function(event) {
+        if (!nombreEsValido(nombreInput.value)) {
+            event.preventDefault();
+            event.stopPropagation();
+            mostrarErrorNombre(MSG_NOMBRE_CATEGORIA);
+            nombreInput.focus();
+            return;
+        }
+        limpiarErrorNombre();
     });
 });
 </script>

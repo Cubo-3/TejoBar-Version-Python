@@ -81,6 +81,7 @@ urlpatterns = [
     # MercadoPago Pagos
     path("pago/crear/carrito/", views.crear_preferencia_carrito, name="pago_crear_carrito"),
     path("pago/crear/apartado/<int:pk>/", views.crear_preferencia_apartado, name="pago_crear_apartado"),
+    path("pago/cancha/<int:pk>/efectivo/", views.pago_cancha_efectivo_jugador, name="pago_cancha_efectivo"),
     path("pago/crear/cancha/<int:pk>/", views.crear_preferencia_cancha, name="pago_crear_cancha"),
     path("pago/exitoso/", views.pago_exitoso, name="pago_exitoso"),
     path("pago/fallido/", views.pago_fallido, name="pago_fallido"),
