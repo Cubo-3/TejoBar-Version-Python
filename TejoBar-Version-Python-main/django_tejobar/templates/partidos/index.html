@@ -1,0 +1,199 @@
+{% extends "layouts/public.html" %}
+{% load static %}
+
+{% block title %}Partidos - TejoBar{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .match-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border-radius: 15px;
+        overflow: hidden;
+        border: none;
+        display: flex;
+        flex-direction: column !important;
+    }
+    .match-card--finalizado {
+        opacity: 0.92;
+    }
+    .match-header {
+        background: linear-gradient(135deg, rgba(255,123,0,0.2) 0%, rgba(13,13,13,0.8) 100%);
+        border-bottom: 1px solid rgba(255,123,0,0.1);
+        color: white;
+        text-align: center;
+        padding: 20px 15px;
+        position: relative;
+    }
+
+    .vs-badge {
+        background-color: #ff7b00;
+        color: white;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 14px;
+        margin: -10px auto 10px auto;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+        border: 2px solid #0d0d0d;
+    }
+
+    .team-name {
+        font-size: 1.25rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .match-body {
+        background-color: transparent;
+        padding: 20px;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        align-items: center;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        padding-bottom: 8px;
+    }
+    .info-row:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .info-icon {
+        color: #ff7b00;
+        width: 25px;
+        text-align: center;
+        margin-right: 10px;
+    }
+
+    .partidos-proximos-scroll {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding-bottom: 12px;
+        scroll-snap-type: x proximity;
+        -webkit-overflow-scrolling: touch;
+    }
+    .partidos-proximos-scroll > .partido-slide {
+        flex: 0 0 auto;
+        width: 100%;
+        max-width: 360px;
+        scroll-snap-align: start;
+    }
+    @media (min-width: 768px) {
+        .partidos-proximos-scroll > .partido-slide {
+            width: 50%;
+            max-width: 420px;
+        }
+    }
+    @media (min-width: 992px) {
+        .partidos-proximos-scroll > .partido-slide {
+            width: 33.333%;
+        }
+    }
+
+    .seccion-partidos-titulo {
+        color: #e67e22;
+        border-left: 4px solid #ff7b00;
+        padding-left: 12px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4 mt-3">
+    <div class="col-12 text-center">
+        <h1 class="font-weight-bold" style="color: #e67e22;">
+            <i class="fas fa-trophy mr-2"></i> Torneos y Retos
+        </h1>
+        <p class="text-muted lead mb-4">Descubre los próximos partidos de tejo y únete a la emoción.</p>
+
+        <a href="{% url 'tejobar_app:equipos_index' %}" class="boton" style="font-size: 1.1rem;">
+            <i class="fas fa-users mr-2"></i> Forma un Equipo o Únete a uno
+        </a>
+    </div>
+</div>
+
+<!-- Próximos partidos: de izquierda a derecha, el que sigue primero -->
+<section class="mb-5">
+    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap">
+        <h2 class="h4 font-weight-bold mb-0 seccion-partidos-titulo">
+            <i class="fas fa-calendar-check mr-2"></i> Próximos partidos
+        </h2>
+        {% if partidos_proximos %}
+        <small class="text-muted"><i class="fas fa-arrows-alt-h mr-1"></i> Desliza para ver los siguientes</small>
+        {% endif %}
+    </div>
+
+    {% if partidos_proximos %}
+    <div class="row partidos-proximos-scroll mx-0">
+        {% for partido in partidos_proximos %}
+        <div class="partido-slide mb-4 pr-3">
+            {% include "partidos/_tarjeta_partido.html" with partido=partido %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="col-12 text-center my-4">
+        <div class="alert border-0 shadow-sm py-5" style="background: rgba(255,255,255,0.05);" role="alert">
+            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+            <h3 class="font-weight-bold h5" style="color:#ff7b00;">No hay partidos programados</h3>
+            <p class="text-muted mb-0">¡Reúne a tu equipo y sé el primero en organizar un partido!</p>
+        </div>
+    </div>
+    {% endif %}
+</section>
+
+<!-- Partidos finalizados -->
+<section class="mb-5">
+    <h2 class="h4 font-weight-bold mb-4 seccion-partidos-titulo" style="border-left-color: #6c757d;">
+        <i class="fas fa-flag-checkered mr-2 text-secondary"></i> Partidos finalizados
+    </h2>
+
+    {% if partidos_finalizados %}
+    <div class="row">
+        {% for partido in partidos_finalizados %}
+        <div class="col-12 col-md-6 col-lg-4 mb-4">
+            {% include "partidos/_tarjeta_partido.html" with partido=partido %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-4">
+        <p class="text-muted mb-0"><i class="fas fa-info-circle mr-1"></i> Aún no hay partidos finalizados.</p>
+    </div>
+    {% endif %}
+</section>
+
+{% for partido in partidos_finalizados %}
+    {% if user.is_authenticated and partido.esta_finalizado and not partido.pago_cancha and partido.total_cancha %}
+        {% if mi_equipo_id == partido.equipo1_id or mi_equipo_id == partido.equipo2_id %}
+            {% include "partidos/pago_cancha_modal.html" with partido=partido modal_id_suffix=partido.pk modo="jugador" %}
+        {% endif %}
+    {% endif %}
+{% endfor %}
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    document.querySelectorAll('.btn-pago-tarjeta-cancha').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var modal = btn.closest('.modal');
+            if (modal && typeof jQuery !== 'undefined') {
+                jQuery(modal).modal('hide');
+            }
+        });
+    });
+})();
+</script>
+{% endblock %}

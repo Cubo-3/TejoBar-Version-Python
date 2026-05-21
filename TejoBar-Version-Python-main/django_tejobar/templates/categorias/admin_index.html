@@ -1,0 +1,69 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Administración de Categorías{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-tags mr-2"></i> Administrar Categorías</h2>
+    <a href="{% url 'tejobar_app:admin_categorias_create' %}" class="btn btn-primary shadow-sm">
+        <i class="fas fa-plus"></i> Nueva Categoría
+    </a>
+</div>
+
+{% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    {% endfor %}
+{% endif %}
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0 text-center align-middle bg-white text-dark">
+                <thead class="thead-dark">
+                    <tr>
+                        <th class="text-white">ID</th>
+                        <th class="text-white">Nombre</th>
+                        <th class="text-white">Descripción</th>
+                        <th class="text-white">Estado</th>
+                        <th class="text-white">Opciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cat in categorias %}
+                    <tr>
+                        <td class="text-dark">{{ cat.id }}</td>
+                        <td class="font-weight-bold text-dark">{{ cat.nombre }}</td>
+                        <td class="text-dark">{{ cat.descripcion|truncatechars:50|default:"N/A" }}</td>
+                        <td>
+                            {% if cat.estado %}
+                                <span class="badge badge-success text-dark">Activo</span>
+                            {% else %}
+                                <span class="badge badge-secondary text-dark">Inactivo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'tejobar_app:admin_categorias_update' pk=cat.id %}" class="btn btn-sm btn-info text-white" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'tejobar_app:admin_categorias_delete' pk=cat.id %}" class="btn btn-sm btn-danger" title="Eliminar">
+                                <i class="fas fa-trash-alt"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted bg-light">No hay categorías registradas</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

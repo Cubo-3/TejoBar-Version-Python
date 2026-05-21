@@ -1,0 +1,68 @@
+{# Modal de pago de cancha. Requiere: partido, modal_id_suffix, url_efectivo, url_tarjeta, modo ("admin"|"jugador") #}
+<div class="modal fade" id="pagoCanchaModal{{ modal_id_suffix }}" tabindex="-1" role="dialog"
+    aria-labelledby="pagoCanchaModalLabel{{ modal_id_suffix }}" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content {% if modo == 'admin' %}bg-white text-dark{% else %}bg-dark text-white border-secondary{% endif %}">
+            <div class="modal-header {% if modo != 'admin' %}border-secondary{% endif %}">
+                <h5 class="modal-title font-weight-bold" id="pagoCanchaModalLabel{{ modal_id_suffix }}">
+                    <i class="fas fa-futbol {% if modo == 'admin' %}text-warning{% else %}text-info{% endif %} mr-2"></i>
+                    Pagar Cancha
+                </h5>
+                <button type="button" class="close {% if modo != 'admin' %}text-white{% endif %}" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2">
+                    <strong>Cancha:</strong>
+                    {{ partido.cancha.disponibilidad|default:partido.cancha }}
+                </p>
+                <p class="mb-2">
+                    <strong>Partido #{{ partido.pk }}:</strong>
+                    {{ partido.equipo1.nombre_equipo|default:"—" }}
+                    <span class="text-muted mx-1">vs</span>
+                    {{ partido.equipo2.nombre_equipo|default:"—" }}
+                </p>
+                <p class="mb-4">
+                    <strong>Tiempo jugado:</strong> {{ partido.horas_jugadas }} h
+                    <span class="d-block mt-2 h4 mb-0 {% if modo == 'admin' %}text-success{% else %}text-warning{% endif %}">
+                        Total: ${{ partido.total_cancha|floatformat:0 }}
+                    </span>
+                </p>
+                <p class="small {% if modo == 'admin' %}text-muted{% else %}text-muted{% endif %} mb-4">
+                    Selecciona el método de pago para continuar:
+                </p>
+                <div class="row">
+                    <div class="col-12 col-sm-6 mb-3 mb-sm-0">
+                        <form method="post"
+                            action="{% if modo == 'admin' %}{% url 'tejobar_app:admin_partidos_pagar' partido.pk %}{% else %}{% url 'tejobar_app:pago_cancha_efectivo' partido.pk %}{% endif %}"
+                            class="h-100 form-pago-efectivo-cancha" data-partido-id="{{ partido.pk }}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success btn-lg btn-block font-weight-bold shadow-sm py-3">
+                                <i class="fas fa-money-bill-wave fa-2x d-block mb-2"></i>
+                                Efectivo
+                            </button>
+                        </form>
+                        {% if modo == 'jugador' %}
+                        <small class="text-muted d-block text-center mt-2">Paga en caja del bar</small>
+                        {% else %}
+                        <small class="text-muted d-block text-center mt-2">Registro en caja / efectivo</small>
+                        {% endif %}
+                    </div>
+                    <div class="col-12 col-sm-6">
+                        <a href="{% url 'tejobar_app:pago_crear_cancha' partido.pk %}"
+                            class="btn btn-primary btn-lg btn-block font-weight-bold shadow-sm py-3 btn-pago-tarjeta-cancha"
+                            data-partido-id="{{ partido.pk }}">
+                            <i class="fas fa-credit-card fa-2x d-block mb-2"></i>
+                            Tarjeta (Mercado Pago)
+                        </a>
+                        <small class="text-muted d-block text-center mt-2">Pasarela Mercado Pago</small>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer {% if modo != 'admin' %}border-secondary{% endif %}">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>

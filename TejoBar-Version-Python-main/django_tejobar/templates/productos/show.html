@@ -1,0 +1,78 @@
+{% extends "layouts/public.html" %}
+{% load static %}
+
+{% block title %}{{ producto.nombre }} - TejoBar{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-10">
+        <div class="card p-0 m-0" style="height: auto !important; overflow: visible !important;">
+            <div class="card-header border-bottom border-secondary p-4 pb-0" style="background: transparent;">
+                <h3 class="mb-0 text-white" style="font-weight: 700;"><i class="fas fa-beer mr-2" style="color: #ff7b00;"></i> Detalles del Producto</h3>
+            </div>
+            <div class="row g-0 p-4">
+                <div class="col-md-5 d-flex align-items-center justify-content-center p-3">
+                    {% if producto.imagen %}
+                        <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="img-fluid rounded shadow" style="max-height: 350px; object-fit: contain;">
+                    {% else %}
+                        <img src="{% static 'img/productos/no-image.png' %}" alt="{{ producto.nombre }}" class="img-fluid rounded shadow" style="max-height: 350px; object-fit: contain;">
+                    {% endif %}
+                </div>
+                <div class="col-md-7 p-4">
+                    <h2 class="mb-3 border-bottom border-secondary pb-2">{{ producto.nombre }}</h2>
+                    
+                    <div class="mb-4">
+                        <h3 class="text-success font-weight-bold mb-3">💲 {{ producto.precio|floatformat:0 }}</h3>
+                        
+                        <p class="mb-2">
+                            <i class="fas fa-boxes text-info mr-2"></i> 
+                            <span class="text-light">Stock disponible:</span> 
+                            <strong class="text-white">{{ producto.stock }}</strong>
+                        </p>
+                        
+                        <p class="mb-2">
+                            <i class="fas fa-calendar-alt text-warning mr-2"></i>
+                            <span class="text-light">Vencimiento:</span> 
+                            {% if not producto.fecha_vencimiento %}
+                                <span class="badge badge-secondary">Sin caducidad</span>
+                            {% elif producto.is_expired %}
+                                <span class="badge badge-danger">Vencido ({{ producto.fecha_vencimiento }})</span>
+                            {% else %}
+                                <span class="badge badge-success">Válido hasta {{ producto.fecha_vencimiento }}</span>
+                            {% endif %}
+                        </p>
+                        
+                        <p class="mb-2">
+                            <i class="fas fa-tag text-primary mr-2"></i>
+                            <span class="text-light">Categoría:</span> 
+                            <strong class="text-white">{{ producto.categoria.nombre|default:"Sin categoría" }}</strong>
+                        </p>
+                    </div>
+
+                    {% if user.is_authenticated %}
+                        <form method="post" action="{% url 'tejobar_app:productos_apartar' producto.pk %}" class="mt-4 p-4 rounded d-flex align-items-center flex-wrap gap-3" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);">
+                            {% csrf_token %}
+                            <label for="cantidad" class="mb-0 mr-3 text-light font-weight-bold" style="font-size: 1.1rem;">Cantidad a añadir:</label>
+                            <input type="number" name="cantidad" id="cantidad" min="1" max="{{ producto.stock }}" value="1" class="form-control mr-3" style="width: 100px; background: rgba(0,0,0,0.5); color: #fff; border: 1px solid #ff7b00;">
+                            <button type="submit" class="boton m-0">
+                                <i class="fas fa-cart-plus mr-1"></i> Añadir al Carrito
+                            </button>
+                        </form>
+                    {% else %}
+                        <div class="alert alert-info mt-4">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Debes iniciar sesión para apartar este producto.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-footer border-top border-secondary p-4" style="background: transparent;">
+                <a href="{% url 'tejobar_app:productos_index' %}" class="boton" style="padding: 10px 20px; font-size: 14px; background: transparent; border: 1px solid #ff7b00; color: #ff7b00 !important; margin: 0;">
+                    <i class="fas fa-arrow-left mr-1"></i> Volver al Catálogo
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
