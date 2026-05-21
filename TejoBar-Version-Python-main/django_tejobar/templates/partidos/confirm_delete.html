@@ -1,0 +1,60 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Eliminar Partido - Dashboard{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 mt-4">
+        <div class="card border-danger shadow-sm">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Confirmar Eliminación</h4>
+            </div>
+            <div class="card-body py-5 text-dark">
+                <div class="text-center mb-4">
+                    <i class="fas fa-trash-alt fa-4x text-danger mb-3"></i>
+                    <h5>¿Estás seguro que deseas eliminar el siguiente partido?</h5>
+                </div>
+
+                <div class="p-3 bg-light rounded mb-4 text-left">
+                    <p class="mb-1"><strong>Encuentro:</strong> {{ partido.equipo1.nombre_equipo|default:"—" }} vs {{ partido.equipo2.nombre_equipo|default:"—" }}</p>
+                    <p class="mb-1"><strong>Fecha:</strong> {{ partido.fecha|date:"d/m/Y" }} a las {{ partido.hora }}</p>
+                    <p class="mb-0"><strong>Cancha:</strong> {{ partido.cancha.disponibilidad|default:partido.cancha }}</p>
+                </div>
+
+                <form method="post" id="eliminarPartidoForm">
+                    {% csrf_token %}
+
+                    <div class="mb-4 text-left">
+                        <label for="motivo" class="font-weight-bold text-uppercase small text-secondary">
+                            <i class="fas fa-comment-alt mr-1"></i> Motivo de eliminación
+                            <span class="text-muted font-weight-normal">(opcional)</span>
+                        </label>
+                        <textarea
+                            name="motivo"
+                            id="motivo"
+                            class="form-control border-secondary"
+                            rows="3"
+                            maxlength="255"
+                            placeholder="Ej. Lluvia, equipo no se presentó, reprogramación..."
+                        >{{ motivo|default:'' }}</textarea>
+                        <small class="text-muted d-block mt-1">
+                            Puedes dejar este campo vacío. Si lo diligencias, quedará registrado en el historial del sistema.
+                        </small>
+                    </div>
+
+                    <p class="text-muted text-center"><small>Esta acción no se puede deshacer.</small></p>
+
+                    <div class="d-flex justify-content-center flex-wrap mt-4">
+                        <a href="{% url 'tejobar_app:admin_partidos_index' %}" class="btn btn-secondary px-4 mr-2 mb-2">
+                            <i class="fas fa-arrow-left mr-1"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-danger px-4 mb-2">
+                            <i class="fas fa-trash-alt mr-1"></i> Sí, Eliminar Partido
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
