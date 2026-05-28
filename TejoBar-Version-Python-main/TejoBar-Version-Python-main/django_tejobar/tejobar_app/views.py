@@ -1669,17 +1669,17 @@ def pago_exitoso(request):
                 )
                 messages.success(request, "Pago de cancha exitoso. Se ha registrado en novedades.")
                 
-    return redirect("dashboard")
+    return redirect("tejobar_app:dashboard")
 
 @login_required
 def pago_fallido(request):
     messages.error(request, "El pago a través de MercadoPago ha fallado o fue cancelado.")
-    return redirect("dashboard")
+    return redirect("tejobar_app:dashboard")
 
 @login_required
 def pago_pendiente(request):
     messages.info(request, "El pago se encuentra pendiente. Te notificaremos cuando se apruebe.")
-    return redirect("dashboard")
+    return redirect("tejobar_app:dashboard")
 
 
 @admin_required
