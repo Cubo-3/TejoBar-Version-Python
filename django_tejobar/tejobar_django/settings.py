@@ -35,7 +35,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -68,10 +68,14 @@ ASGI_APPLICATION = "tejobar_django.asgi.application"
 # CORREGIDO: Sintaxis limpia para que use la URL de Railway en la nube,
 # o caiga en tu MySQL local si no encuentra la variable de entorno de producción.
 DATABASES = {
-    "default": dj_database_url.config(
-        default="mysql://root:@127.0.0.1:3306/tejobar_db",
-        conn_max_age=600,
-    )
+    'default': {
+'ENGINE': 'django.db.backends.mysql',
+'NAME': os.getenv('MYSQLDATABASE'),
+'USER': os.getenv('MYSQLUSER'),
+'PASSWORD': os.getenv('MYSQLPASSWORD'),
+'HOST': os.getenv('MYSQLHOST'),
+'PORT': os.getenv('MYSQLPORT'),
+}
 }
 
 if DATABASES["default"]["ENGINE"] == "django.db.backends.mysql":
@@ -103,7 +107,11 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
-STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
