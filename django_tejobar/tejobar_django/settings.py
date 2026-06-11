@@ -2,6 +2,9 @@ import os
 from pathlib import Path
 import dj_database_url
 
+
+
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-tejobar-dev-secret-key-no-uso-produccion")
