@@ -8,12 +8,20 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-tejobar-dev-secret-
 
 DEBUG = os.getenv("RAILWAY_ENVIRONMENT") is None
 
-ALLOWED_HOSTS: [
+# CORREGIDO: Se cambió ":" por "="
+ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
     ".railway.app",  # Permite cualquier subdominio asignado por Railway
 ]
-CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:8000', 'http://localhost:8000', 'https://127.0.0.1:8000', 'https://localhost:8000', "https://*.railway.app"]
+
+CSRF_TRUSTED_ORIGINS = [
+    'http://127.0.0.1:8000', 
+    'http://localhost:8000', 
+    'https://127.0.0.1:8000', 
+    'https://localhost:8000', 
+    "https://*.railway.app"
+]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -57,21 +65,13 @@ TEMPLATES = [
 WSGI_APPLICATION = "tejobar_django.wsgi.application"
 ASGI_APPLICATION = "tejobar_django.asgi.application"
 
+# CORREGIDO: Sintaxis limpia para que use la URL de Railway en la nube,
+# o caiga en tu MySQL local si no encuentra la variable de entorno de producción.
 DATABASES = {
     "default": dj_database_url.config(
         default="mysql://root:@127.0.0.1:3306/tejobar_db",
         conn_max_age=600,
-    ) {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": "tejobar_db",
-        "USER": "root",
-        "PASSWORD": "",
-        "HOST": "127.0.0.1",
-        "PORT": "3306",
-        "OPTIONS": {
-            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
-        }
-    }
+    )
 }
 
 if DATABASES["default"]["ENGINE"] == "django.db.backends.mysql":
