@@ -6,3 +6,8 @@ mysqlclient>=2.2.0
 pandas>=2.0.0
 openpyxl>=3.0.0
 pymysql>=1.1.0
+
+
+gunicorn==26.0.0
+mysqlclient==2.2.8
+python-dotenv==1.2.2
