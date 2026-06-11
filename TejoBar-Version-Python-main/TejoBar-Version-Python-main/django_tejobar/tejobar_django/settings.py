@@ -1,14 +1,19 @@
 import os
 from pathlib import Path
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "django-insecure-tejobar-dev-secret-key-no-uso-produccion"
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-tejobar-dev-secret-key-no-uso-produccion")
 
-DEBUG = True
+DEBUG = os.getenv("RAILWAY_ENVIRONMENT") is None
 
-ALLOWED_HOSTS: list[str] = ["*"]
-CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:8000', 'http://localhost:8000', 'https://127.0.0.1:8000', 'https://localhost:8000']
+ALLOWED_HOSTS: [
+    "localhost",
+    "127.0.0.1",
+    ".railway.app",  # Permite cualquier subdominio asignado por Railway
+]
+CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:8000', 'http://localhost:8000', 'https://127.0.0.1:8000', 'https://localhost:8000', "https://*.railway.app"]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -22,6 +27,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -52,7 +58,10 @@ WSGI_APPLICATION = "tejobar_django.wsgi.application"
 ASGI_APPLICATION = "tejobar_django.asgi.application"
 
 DATABASES = {
-    "default": {
+    "default": dj_database_url.config(
+        default="mysql://root:@127.0.0.1:3306/tejobar_db",
+        conn_max_age=600,
+    ) {
         "ENGINE": "django.db.backends.mysql",
         "NAME": "tejobar_db",
         "USER": "root",
@@ -64,6 +73,9 @@ DATABASES = {
         }
     }
 }
+
+if DATABASES["default"]["ENGINE"] == "django.db.backends.mysql":
+    DATABASES["default"].setdefault("OPTIONS", {})["init_command"] = "SET sql_mode='STRICT_TRANS_TABLES'"
 
 AUTH_PASSWORD_VALIDATORS = [
     {
