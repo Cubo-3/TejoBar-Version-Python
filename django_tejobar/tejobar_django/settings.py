@@ -72,14 +72,19 @@ ASGI_APPLICATION = "tejobar_django.asgi.application"
 # o caiga en tu MySQL local si no encuentra la variable de entorno de producción.
 DATABASES = {
     'default': {
-'ENGINE': 'django.db.backends.mysql',
-'NAME': os.getenv('MYSQLDATABASE'),
-'USER': os.getenv('MYSQLUSER'),
-'PASSWORD': os.getenv('MYSQLPASSWORD'),
-'HOST': os.getenv('MYSQLHOST'),
-'PORT': os.getenv('MYSQLPORT'),
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.getenv('MYSQLDATABASE', 'tejobar_db'),
+        'USER': os.getenv('MYSQLUSER', 'root'),
+        'PASSWORD': os.getenv('MYSQLPASSWORD', ''),
+        'HOST': os.getenv('MYSQLHOST', 'localhost'),
+        'PORT': os.getenv('MYSQLPORT', '3306'),
+    }
 }
-}
+
+# Uso de dj_database_url para Railway usando DATABASE_URL o MYSQL_URL (el que provea Railway)
+db_url = os.getenv("DATABASE_URL") or os.getenv("MYSQL_URL")
+if db_url:
+    DATABASES['default'] = dj_database_url.parse(db_url, conn_max_age=600)
 
 if DATABASES["default"]["ENGINE"] == "django.db.backends.mysql":
     DATABASES["default"].setdefault("OPTIONS", {})["init_command"] = "SET sql_mode='STRICT_TRANS_TABLES'"
@@ -126,14 +131,14 @@ LOGIN_REDIRECT_URL = "tejobar_app:dashboard"
 LOGOUT_REDIRECT_URL = "tejobar_app:home"
 
 # MercadoPago Settings (Sandbox/Test setup)
-MERCADOPAGO_ACCESS_TOKEN = "APP_USR-6802487222160604-031816-309a1174dc10c3fd3f062d37c3897449-794354829"
-MERCADOPAGO_PUBLIC_KEY = "APP_USR-32956c66-7101-48de-9823-5c234a073664"
+MERCADOPAGO_ACCESS_TOKEN = os.getenv("MERCADOPAGO_ACCESS_TOKEN", "tu_access_token_local_aqui")
+MERCADOPAGO_PUBLIC_KEY = os.getenv("MERCADOPAGO_PUBLIC_KEY", "tu_public_key_local_aqui")
 
 # Email Configuration für Gmail SMTP
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'socobosoftware@gmail.com'
-EMAIL_HOST_PASSWORD = 'hphq fbal kbzi sase'
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'tu_correo_local@gmail.com')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'tu_password_local')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
