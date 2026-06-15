@@ -33,6 +33,7 @@ urlpatterns = [
     path("administracion/productos/crear/", views.admin_product_create, name="admin_productos_create"),
     path("administracion/productos/<int:pk>/editar/", views.admin_product_update, name="admin_productos_update"),
     path("administracion/productos/<int:pk>/eliminar/", views.admin_product_delete, name="admin_productos_delete"),
+    path("administracion/productos/<int:pk>/toggle-activo/", views.admin_product_toggle_active, name="admin_productos_toggle_active"),
     path("administracion/novedades/", views.admin_novedades_index, name="admin_novedades_index"),
     path("administracion/inventario/", views.inventario_movimientos, name="inventario_movimientos"),
     path("administracion/inventario/ingreso/", views.inventario_ingreso, name="inventario_ingreso"),

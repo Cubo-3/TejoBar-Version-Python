@@ -1002,7 +1002,12 @@ def admin_product_delete(request: HttpRequest, pk: int) -> HttpResponse:
             motivos.append("stock disponible")
             
         motivos_str = " y ".join([", ".join(motivos[:-1]), motivos[-1]] if len(motivos) > 1 else motivos)
-        messages.error(request, f"No se puede eliminar el producto porque tiene {motivos_str}.")
+        toggle_url = reverse('tejobar_app:admin_productos_toggle_active', args=[producto.pk])
+        messages.error(
+            request, 
+            f"No se puede eliminar el producto porque tiene {motivos_str}. "
+            f"¿Deseas <a href='{toggle_url}'>desactivarlo</a> en su lugar?"
+        )
         return redirect("tejobar_app:admin_productos_index")
 
     if request.method == "POST":
@@ -1017,6 +1022,16 @@ def admin_product_delete(request: HttpRequest, pk: int) -> HttpResponse:
         messages.success(request, "Producto eliminado correctamente")
         return redirect("tejobar_app:admin_productos_index")
     return render(request, "productos/confirm_delete.html", {"producto": producto})
+
+
+@admin_required
+def admin_product_toggle_active(request: HttpRequest, pk: int) -> HttpResponse:
+    producto = get_object_or_404(Producto, pk=pk)
+    producto.activo = not producto.activo
+    producto.save()
+    estado_str = "activado" if producto.activo else "desactivado"
+    messages.success(request, f"Producto {estado_str} correctamente.")
+    return redirect("tejobar_app:admin_productos_index")
 
 
 @login_required

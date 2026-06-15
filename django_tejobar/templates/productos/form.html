@@ -171,6 +171,19 @@
                                 <div class="invalid-feedback d-block ml-3 font-weight-bold mt-2">{{ error }}</div>
                                 {% endfor %}
                             </div>
+
+                            <!-- Estado (Activo) -->
+                            <div class="col-12 mt-3 mb-2">
+                                <div class="custom-control custom-switch" style="transform: scale(1.1); transform-origin: left center;">
+                                    {{ form.activo }}
+                                    <label class="custom-control-label font-weight-bold text-success ml-2" for="{{ form.activo.id_for_label }}" style="cursor: pointer;">
+                                        Producto Activo (Visible para la venta en el catálogo)
+                                    </label>
+                                </div>
+                                {% for error in form.activo.errors %}
+                                <div class="invalid-feedback d-block ml-3 font-weight-bold">{{ error }}</div>
+                                {% endfor %}
+                            </div>
                         </div>
 
                         <!-- Botones de Acción -->

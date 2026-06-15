@@ -189,7 +189,7 @@ class ProductoQuerySet(models.QuerySet):
         from django.utils import timezone
         today = timezone.now().date()
         from django.db.models import Q
-        return self.filter(stock__gt=0).filter(
+        return self.filter(stock__gt=0, activo=True).filter(
             Q(fecha_vencimiento__gte=today) | Q(fecha_vencimiento__isnull=True)
         )
 
@@ -203,6 +203,7 @@ class Categoria(models.Model):
         return self.nombre
 
 class Producto(models.Model):
+    activo = models.BooleanField(default=True)
     nombre = models.CharField(
         max_length=100,
         validators=[

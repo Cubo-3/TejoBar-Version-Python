@@ -115,7 +115,7 @@ class CategoriaForm(forms.ModelForm):
 class ProductoForm(forms.ModelForm):
     class Meta:
         model = Producto
-        fields = ["nombre", "precio", "stock", "fecha_vencimiento", "imagen", "categoria", "descripcion"]
+        fields = ["nombre", "precio", "stock", "fecha_vencimiento", "imagen", "categoria", "descripcion", "activo"]
         widgets = {
             'categoria': forms.Select(attrs={'class': 'form-control'}),
             'descripcion': forms.Textarea(attrs={
@@ -124,6 +124,7 @@ class ProductoForm(forms.ModelForm):
                 'placeholder': 'Descripción del producto (opcional)...',
                 'maxlength': '500'
             }),
+            'activo': forms.CheckboxInput(attrs={'class': 'form-check-input ml-2'}),
         }
         
     def __init__(self, *args, **kwargs):

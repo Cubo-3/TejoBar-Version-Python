@@ -30,6 +30,7 @@
                         <th class="text-white">Stock</th>
                         <th class="text-white">Categoría</th>
                         <th class="text-white">Vencimiento</th>
+                        <th class="text-white">Estado</th>
                         <th class="text-white">Opciones</th>
                     </tr>
                 </thead>
@@ -47,6 +48,15 @@
                             {% else %}
                             <span class="text-dark">{{ producto.fecha_vencimiento|default_if_none:"N/A" }}</span>
                             {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'tejobar_app:admin_productos_toggle_active' producto.id %}" class="text-decoration-none" title="Cambiar Estado">
+                                {% if producto.activo %}
+                                <span class="badge badge-success py-2 px-3 shadow-sm" style="cursor: pointer;"><i class="fas fa-toggle-on fa-lg mr-1"></i> Activo</span>
+                                {% else %}
+                                <span class="badge badge-secondary py-2 px-3 shadow-sm" style="cursor: pointer;"><i class="fas fa-toggle-off fa-lg mr-1"></i> Inactivo</span>
+                                {% endif %}
+                            </a>
                         </td>
                         <td>
                             <a href="{% url 'tejobar_app:admin_productos_update' producto.id %}" class="btn btn-sm btn-info text-white" title="Editar">
