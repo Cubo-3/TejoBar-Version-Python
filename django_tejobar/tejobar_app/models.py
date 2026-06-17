@@ -269,7 +269,7 @@ class Producto(models.Model):
     def can_be_deleted(self) -> bool:
         tiene_historial = self.historial.exists()
         tiene_apartados = self.apartados.exists()
-        tiene_stock = self.stock > 0
+        tiene_stock = self.activo and self.stock > 0
         return not (tiene_historial or tiene_apartados or tiene_stock)
 
     @classmethod
