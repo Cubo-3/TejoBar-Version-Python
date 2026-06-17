@@ -10,7 +10,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-tejobar-dev-secret-key-no-uso-produccion")
 
-DEBUG = True # TEMPORALMENTE EN TRUE PARA VER EL DETALLE DEL ERROR 500 EN EL NAVEGADOR
+DEBUG = os.getenv("RAILWAY_ENVIRONMENT") is None
 
 # CORREGIDO: Se cambió ":" por "="
 ALLOWED_HOSTS = [
