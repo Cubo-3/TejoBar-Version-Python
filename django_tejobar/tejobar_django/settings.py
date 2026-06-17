@@ -1,16 +1,8 @@
 import os
 from pathlib import Path
+# pyrefly: ignore [missing-import]
 import dj_database_url
 
-STATIC_URL = '/static/'
-
-# Esta línea le dice a Django dónde meter los archivos estáticos en producción
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-# Si tienes una carpeta de estáticos general
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
-]
 
 
 
@@ -151,3 +143,11 @@ EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'tu_correo_local@gmail.com')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'tu_password_local')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+# Déjalas al final definitivo de tu settings.py
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
