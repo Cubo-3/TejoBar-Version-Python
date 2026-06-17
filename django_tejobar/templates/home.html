@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TejoBar Puente Aranda</title>
-  <link rel="stylesheet" href="{% static 'css/newstyle.css' %}?v=1.3"/>
+  <link rel="stylesheet" href="{% static 'css/newstyle.css' %}?v=1.5"/>
   <link href="https://fonts.googleapis.com/css2?family=Segoe+UI&display=swap" rel="stylesheet" />
   <script src="{% static 'js/newjs.js' %}?v=1.2"></script>
 </head>
@@ -13,7 +13,13 @@
 <body>
   <header>
     <a href="{% url 'tejobar_app:home' %}" class="logo">TejoBar</a>
-    <nav>
+    <!-- Botón hamburguesa (visible solo en móvil) -->
+    <button class="hamburger-btn" id="hamburgerBtn" aria-label="Abrir menú" aria-expanded="false">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+    <nav id="mainNav">
       <ul class="menu-top">
         <li><a href="{% url 'tejobar_app:home' %}">🏠Inicio</a></li>
         <li><a href="{% url 'tejobar_app:partidos_index' %}">🥇Partidos</a></li>
@@ -34,6 +40,9 @@
       </ul>
     </nav>
   </header>
+
+  <!-- Overlay oscuro al abrir el menú móvil -->
+  <div class="nav-overlay" id="navOverlay"></div>
 
   <div id="loader">
   <div class="spinner"></div>
@@ -102,6 +111,45 @@
   <footer>
     <p>&copy; 2026 TejoBar. Todos los derechos reservados.</p>
   </footer>
+
+  <!-- Script menú hamburguesa -->
+  <script>
+  (function () {
+      var btn = document.getElementById('hamburgerBtn');
+      var nav = document.getElementById('mainNav');
+      var overlay = document.getElementById('navOverlay');
+
+      function openMenu() {
+          nav.classList.add('is-open');
+          btn.classList.add('is-active');
+          overlay.classList.add('visible');
+          btn.setAttribute('aria-expanded', 'true');
+          document.body.style.overflow = 'hidden';
+      }
+
+      function closeMenu() {
+          nav.classList.remove('is-open');
+          btn.classList.remove('is-active');
+          overlay.classList.remove('visible');
+          btn.setAttribute('aria-expanded', 'false');
+          document.body.style.overflow = '';
+      }
+
+      btn.addEventListener('click', function () {
+          nav.classList.contains('is-open') ? closeMenu() : openMenu();
+      });
+
+      overlay.addEventListener('click', closeMenu);
+
+      nav.querySelectorAll('a, button[type="submit"]').forEach(function (el) {
+          el.addEventListener('click', closeMenu);
+      });
+
+      window.addEventListener('resize', function () {
+          if (window.innerWidth > 768) closeMenu();
+      });
+  })();
+  </script>
 
 </body>
 

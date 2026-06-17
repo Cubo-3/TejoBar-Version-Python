@@ -1,5 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
 
+/* Prevenir scroll horizontal en móvil */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
   font-family: 'Outfit', 'Segoe UI', sans-serif;
@@ -9,6 +18,7 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 header, nav a, .hero, .section, .card, footer {
@@ -341,4 +351,319 @@ footer {
 .category-btn.active {
   background-color: #e67e22;
   color: white;
+}
+
+/* ============================================================
+   RESPONSIVE MOBILE — TejoBar
+   ============================================================ */
+
+/* Botón hamburguesa (oculto por defecto en desktop) */
+.hamburger-btn {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 44px;
+  height: 44px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  gap: 5px;
+  z-index: 1100;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+.hamburger-btn:hover {
+  background: rgba(255, 123, 0, 0.15);
+}
+.hamburger-btn span {
+  display: block;
+  width: 26px;
+  height: 2px;
+  background: #ff7b00;
+  border-radius: 2px;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: center;
+}
+/* Estado activo → X */
+.hamburger-btn.is-active span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+.hamburger-btn.is-active span:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0);
+}
+.hamburger-btn.is-active span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+/* Overlay oscuro cuando el menú está abierto */
+.nav-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 990;
+  backdrop-filter: blur(2px);
+}
+.nav-overlay.visible {
+  display: block;
+}
+
+/* ---- Breakpoint principal: ≤ 768px ---- */
+@media (max-width: 768px) {
+
+  /* Header */
+  header {
+    padding: 12px 18px;
+    flex-wrap: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+
+  .logo {
+    font-size: 22px;
+  }
+
+  /* Mostrar hamburguesa */
+  .hamburger-btn {
+    display: flex;
+  }
+
+  /* Nav desplegable lateral */
+  nav {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: min(280px, 80vw);
+    height: 100vh;
+    background: rgba(13, 13, 13, 0.97);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-left: 1px solid rgba(255, 123, 0, 0.25);
+    z-index: 1050;
+    padding: 80px 0 30px;
+    transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+  }
+
+  nav.is-open {
+    right: 0;
+  }
+
+  nav ul.menu-top {
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
+    width: 100%;
+  }
+
+  nav ul.menu-top li {
+    width: 100%;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  nav a,
+  nav button {
+    display: block;
+    width: 100%;
+    padding: 16px 24px;
+    font-size: 16px;
+    text-align: left;
+    color: #e0e0e0 !important;
+    text-transform: none;
+    letter-spacing: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+  }
+
+  nav a:hover,
+  nav button:hover {
+    background: rgba(255, 123, 0, 0.12);
+    color: #fff !important;
+    text-shadow: none;
+  }
+
+  /* Hero */
+  .hero {
+    padding: 70px 16px 60px;
+  }
+
+  .hero h1 {
+    font-size: 32px;
+    margin-bottom: 12px;
+  }
+
+  .hero p {
+    font-size: 15px;
+    padding: 0 8px;
+  }
+
+  /* Secciones */
+  .section,
+  .section1 {
+    padding: 50px 16px;
+  }
+
+  .section h2,
+  .section1 h2 {
+    font-size: 26px;
+  }
+
+  /* Grid → 1 columna */
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    padding: 0 4px;
+    margin-top: 24px;
+  }
+
+  /* Cards en móvil */
+  .card {
+    height: auto;
+    min-height: 140px;
+    flex-direction: row;
+  }
+
+  .card-image {
+    width: 36%;
+    min-height: 120px;
+  }
+
+  .card-content {
+    padding: 18px 14px;
+  }
+
+  .card-content h3 {
+    font-size: 18px;
+  }
+
+  .card-content p {
+    font-size: 15px;
+  }
+
+  /* Hover effects simplificados en móvil */
+  .card:hover .card-image {
+    position: static;
+    width: 36%;
+    height: auto;
+    filter: none;
+  }
+
+  .card:hover .card-content {
+    position: static;
+    width: auto;
+    height: auto;
+    background: none;
+    text-align: left;
+    padding: 18px 14px;
+  }
+
+  /* Botones */
+  .boton {
+    padding: 13px 26px;
+    font-size: 14px;
+    width: 100%;
+    max-width: 320px;
+    text-align: center;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* Filtros de categoría */
+  .category-filters-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .category-btn {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  /* Contacto */
+  .contacto p {
+    font-size: 16px;
+    line-height: 1.7;
+  }
+
+  /* Footer */
+  footer {
+    font-size: 12px;
+    padding: 16px;
+  }
+}
+
+/* ---- Breakpoint medio: 769px – 992px (tablet) ---- */
+@media (min-width: 769px) and (max-width: 992px) {
+  header {
+    padding: 14px 24px;
+  }
+
+  nav ul {
+    gap: 14px;
+  }
+
+  nav a {
+    font-size: 13px;
+  }
+
+  .hero h1 {
+    font-size: 42px;
+  }
+
+  .hero {
+    padding: 90px 20px;
+  }
+
+  .grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 22px;
+  }
+
+  .card {
+    height: 220px;
+  }
+}
+
+/* ---- Pantallas muy pequeñas: ≤ 400px ---- */
+@media (max-width: 400px) {
+  .hero h1 {
+    font-size: 26px;
+  }
+
+  .hero p {
+    font-size: 14px;
+  }
+
+  .section h2,
+  .section1 h2 {
+    font-size: 22px;
+  }
+
+  .logo {
+    font-size: 20px;
+  }
+
+  .card {
+    flex-direction: column;
+    min-height: auto;
+  }
+
+  .card-image {
+    width: 100%;
+    height: 160px;
+  }
+
+  .card-content {
+    padding: 14px 12px;
+  }
 }
