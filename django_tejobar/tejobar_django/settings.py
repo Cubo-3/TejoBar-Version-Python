@@ -143,11 +143,3 @@ EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'tu_correo_local@gmail.com')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'tu_password_local')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-
-# Déjalas al final definitivo de tu settings.py
-STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',
-]
