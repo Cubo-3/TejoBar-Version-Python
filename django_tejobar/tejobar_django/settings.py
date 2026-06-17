@@ -2,6 +2,15 @@ import os
 from pathlib import Path
 import dj_database_url
 
+STATIC_URL = '/static/'
+
+# Esta línea le dice a Django dónde meter los archivos estáticos en producción
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# Si tienes una carpeta de estáticos general
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
 
 
 
