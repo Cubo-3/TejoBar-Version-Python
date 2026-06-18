@@ -174,6 +174,46 @@
                     <li><a href="{% url 'tejobar_app:productos_index' %}">🍻Productos</a></li>
                     {% if user.is_authenticated %}
                     <li><a href="{% url 'tejobar_app:dashboard' %}">📊Dashboard</a></li>
+                    
+                    {% if request.user.persona.rol == 'admin' %}
+                    <li class="dropdown">
+                        <a href="#" id="notifDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="position: relative; display: inline-block;">
+                            🔔
+                            {% if total_notificaciones > 0 %}
+                            <span class="badge badge-danger badge-pill" style="position: absolute; top: -5px; right: -10px; font-size: 0.65rem; padding: 0.25em 0.4em;">{{ total_notificaciones }}</span>
+                            {% endif %}
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right shadow-sm p-0" aria-labelledby="notifDropdown" style="min-width: 280px; max-height: 400px; overflow-y: auto;">
+                            <div class="dropdown-header bg-dark text-white">Notificaciones (Dinámicas)</div>
+                            
+                            {% if notificaciones_vencimiento %}
+                                <div class="dropdown-item bg-light font-weight-bold text-danger border-bottom">⚠️ Por vencer / Vencidos</div>
+                                {% for prod in notificaciones_vencimiento %}
+                                <a class="dropdown-item text-wrap border-bottom" href="{% url 'tejobar_app:admin_productos_index' %}">
+                                    <small><strong>{{ prod.nombre }}</strong> (Stock: {{ prod.stock }})</small><br>
+                                    <small class="text-muted">Vence: {{ prod.fecha_vencimiento|date:"d/m/Y" }}</small>
+                                </a>
+                                {% endfor %}
+                            {% endif %}
+                            
+                            {% if notificaciones_pagos %}
+                                <div class="dropdown-item bg-light font-weight-bold text-success border-bottom">💰 Pagos recientes</div>
+                                {% for pago in notificaciones_pagos %}
+                                <a class="dropdown-item text-wrap border-bottom" href="{% url 'tejobar_app:admin_novedades_index' %}">
+                                    <small><strong>{{ pago.get_tipo_novedad_display }}</strong></small><br>
+                                    <small class="text-muted">{{ pago.descripcion|truncatechars:50 }}</small><br>
+                                    <small class="text-muted">{{ pago.fecha|date:"d/m/Y H:i" }}</small>
+                                </a>
+                                {% endfor %}
+                            {% endif %}
+                            
+                            {% if total_notificaciones == 0 %}
+                                <div class="dropdown-item text-center text-muted py-3">Sin novedades recientes</div>
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% endif %}
+
                     <li>
                         <form method="post" action="{% url 'tejobar_app:logout' %}" style="display:inline;">
                             {% csrf_token %}

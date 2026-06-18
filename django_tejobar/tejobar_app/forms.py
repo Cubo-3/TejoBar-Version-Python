@@ -135,6 +135,15 @@ class ProductoForm(forms.ModelForm):
             self.fields['stock'].disabled = True
             self.fields['stock'].help_text = "Para modificar el stock, utilice el módulo de Inventario."
 
+    def clean_nombre(self):
+        nombre = (self.cleaned_data.get("nombre") or "").strip()
+        qs = Producto.objects.filter(nombre__iexact=nombre)
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError("Ya existe un producto con este nombre.")
+        return nombre
+
     def clean_precio(self):
         precio = self.cleaned_data.get("precio")
         if precio is not None and precio <= 0:
