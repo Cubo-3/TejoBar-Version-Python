@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+# pyrefly: ignore [missing-import]
 import dj_database_url
 
 

@@ -5,11 +5,9 @@
 
 {% block extra_styles %}
 <style>
-    /* Efecto hover suave para las tarjetas (Delegado a newstyle.css) */
-    
-    /* Imagen asegurada para que sea responsiva y mantenga proporciones */
+    /* Imagen responsiva con proporciones correctas */
     .catalog-img {
-        height: 220px;
+        height: 200px;
         object-fit: cover;
         width: 100%;
         border-radius: 16px 16px 0 0;
@@ -30,6 +28,30 @@
     .filter-pill:hover, .filter-pill.active {
         background: #ff7b00;
         color: #fff !important;
+    }
+
+    /* === RESPONSIVE === */
+    @media (max-width: 576px) {
+        .catalog-img {
+            height: 150px;
+        }
+        /* Filtro de categoría: ancho completo */
+        .col-md-6.col-lg-4 {
+            padding: 0 8px;
+        }
+        /* Botones de la tarjeta más fáciles de tocar */
+        .btn {
+            min-height: 40px;
+        }
+        /* Título del producto sin overflow */
+        .card-title {
+            font-size: 0.95rem !important;
+        }
+        /* Precio más compacto */
+        .card-body h4 {
+            font-size: 1.1rem !important;
+            margin-bottom: 0.5rem !important;
+        }
     }
 </style>
 {% endblock %}

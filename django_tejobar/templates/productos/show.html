@@ -4,6 +4,40 @@
 {% block title %}{{ producto.nombre }} - TejoBar{% endblock %}
 
 {% block content %}
+{% block extra_styles %}
+<style>
+    /* === RESPONSIVE producto detalle === */
+    @media (max-width: 768px) {
+        /* Imagen arriba, info abajo */
+        .row.g-0.p-4 > .col-md-5,
+        .row.g-0.p-4 > .col-md-7 {
+            width: 100% !important;
+            max-width: 100% !important;
+            flex: 0 0 100% !important;
+        }
+        .row.g-0.p-4 > .col-md-5 img {
+            max-height: 260px !important;
+            width: 100% !important;
+        }
+        /* Formulario de cantidad: en columna */
+        form.d-flex.flex-wrap {
+            flex-direction: column !important;
+            gap: 12px !important;
+        }
+        form.d-flex input[type="number"] {
+            width: 100% !important;
+            margin-right: 0 !important;
+        }
+        .boton {
+            width: 100%;
+            text-align: center;
+        }
+        /* Card header / footer padding */
+        .card-header, .card-footer { padding: 16px !important; }
+        .card-body, .row.g-0.p-4 { padding: 16px !important; }
+    }
+</style>
+{% endblock %}
 <div class="row justify-content-center mt-5">
     <div class="col-md-10">
         <div class="card p-0 m-0" style="height: auto !important; overflow: visible !important;">

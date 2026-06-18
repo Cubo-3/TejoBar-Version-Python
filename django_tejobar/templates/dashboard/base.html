@@ -29,11 +29,11 @@
             min-width: 250px;
             max-width: 250px;
             background-color: #343a40 !important;
-            /* Dark background */
             color: #fff;
             flex-grow: 1;
-            /* Stretch to fill remaining height */
             padding-top: 1rem;
+            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
         }
 
         /* Side navigation styling */
@@ -51,14 +51,108 @@
         /* Main content area */
         .main-content {
             flex-grow: 1;
-            /* Stretch to fill horizontal space */
             background-color: #f8f9fa;
+            min-width: 0;
         }
 
         /* Sub-wrapper for sidebar + content to span height below header */
         .content-wrapper {
             display: flex;
             flex-grow: 1;
+        }
+
+        /* Hamburguesa para el dashboard */
+        .dash-hamburger {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 40px;
+            height: 40px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            gap: 5px;
+            border-radius: 8px;
+            transition: background 0.2s;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+        .dash-hamburger span {
+            display: block;
+            width: 22px;
+            height: 2px;
+            background: #ffa500;
+            border-radius: 2px;
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: center;
+        }
+        .dash-hamburger.is-active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+        .dash-hamburger.is-active span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+        .dash-hamburger.is-active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+        /* Overlay para la sidebar en móvil */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 990;
+            backdrop-filter: blur(2px);
+        }
+        .sidebar-overlay.visible { display: block; }
+
+        /* === RESPONSIVE === */
+        @media (max-width: 768px) {
+
+            /* Header adaptable */
+            header {
+                padding: 10px 14px !important;
+                flex-wrap: nowrap;
+            }
+
+            .dash-hamburger { display: flex; }
+
+            /* Sidebar se convierte en drawer lateral */
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: -100%;
+                height: 100vh;
+                min-width: 260px;
+                max-width: 80vw;
+                z-index: 1050;
+                padding-top: 70px;
+                overflow-y: auto;
+            }
+
+            .sidebar.is-open {
+                left: 0;
+                transform: none;
+            }
+
+            /* El contenido ocupa todo el ancho */
+            .content-wrapper {
+                flex-direction: column;
+            }
+
+            .main-content {
+                padding: 16px !important;
+            }
+
+            /* Tablas: scroll horizontal */
+            .table-responsive { -webkit-overflow-scrolling: touch; }
+
+            /* Cards de stat full width en móvil */
+            .player-stat-card .card-body { padding: 1rem !important; }
+            .player-stat-icon { font-size: 2rem !important; }
+            .player-stat-value { font-size: 1.5rem !important; }
+        }
+
+        @media (max-width: 480px) {
+            .main-content h1, .main-content .h1 { font-size: 1.5rem; }
+            .main-content h3, .main-content .h3 { font-size: 1.1rem; }
         }
     </style>
     {% block extra_styles %}{% endblock %}
@@ -68,6 +162,10 @@
     <div class="wrapper">
         <!-- Header -->
         <header>
+            <!-- Botón hamburguesa sidebar (móvil) -->
+            <button class="dash-hamburger" id="dashHamburger" aria-label="Abrir navegación">
+                <span></span><span></span><span></span>
+            </button>
             <a href="{% url 'tejobar_app:home' %}" class="logo">TejoBar</a>
             <nav>
                 <ul class="menu-top">
@@ -91,9 +189,11 @@
         </header>
 
         <!-- Body wrapper below header -->
+        <!-- Overlay sidebar móvil -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
         <div class="content-wrapper">
             <!-- Full Height Sidebar glued to left -->
-            <div class="sidebar d-flex flex-column">
+            <div class="sidebar d-flex flex-column" id="dashSidebar">
                 <div class="px-3 pb-2 mb-2 border-bottom border-secondary">
                     <span class="fs-5 fw-semibold pt-2 d-block">Navegación</span>
                 </div>
@@ -204,6 +304,45 @@
 
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Script sidebar móvil -->
+    <script>
+    (function () {
+        var btn = document.getElementById('dashHamburger');
+        var sidebar = document.getElementById('dashSidebar');
+        var overlay = document.getElementById('sidebarOverlay');
+        if (!btn || !sidebar) return;
+
+        function openSidebar() {
+            sidebar.classList.add('is-open');
+            btn.classList.add('is-active');
+            overlay.classList.add('visible');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeSidebar() {
+            sidebar.classList.remove('is-open');
+            btn.classList.remove('is-active');
+            overlay.classList.remove('visible');
+            document.body.style.overflow = '';
+        }
+
+        btn.addEventListener('click', function () {
+            sidebar.classList.contains('is-open') ? closeSidebar() : openSidebar();
+        });
+        overlay.addEventListener('click', closeSidebar);
+
+        sidebar.querySelectorAll('.nav-link').forEach(function (link) {
+            link.addEventListener('click', function () {
+                if (window.innerWidth <= 768) closeSidebar();
+            });
+        });
+
+        window.addEventListener('resize', function () {
+            if (window.innerWidth > 768) closeSidebar();
+        });
+    })();
+    </script>
+
     {% block extra_scripts %}{% endblock %}
 </body>
 

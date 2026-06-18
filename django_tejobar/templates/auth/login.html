@@ -19,7 +19,8 @@
     border: 1px solid rgba(255,123,0,0.2);
     padding: 40px;
     border-radius: 20px;
-    width: 320px;
+    width: 100%;
+    max-width: 360px;
     box-shadow: 0 0 15px rgba(0,0,0,0.2);
     text-align: center;
 }
@@ -90,6 +91,26 @@ h2 {
   border-radius: 4px;
   margin-bottom: 10px;
   font-size: 14px;
+}
+
+/* Responsivo móvil */
+@media (max-width: 480px) {
+  .login-container {
+    padding: 0 16px;
+    align-items: flex-start;
+    padding-top: 30px;
+  }
+  .login-box {
+    padding: 28px 20px;
+    border-radius: 16px;
+  }
+  .avatar {
+    width: 64px;
+    height: 64px;
+    font-size: 28px;
+  }
+  h2 { font-size: 1.3rem; }
+  .btn-login { padding: 11px; font-size: 15px; }
 }
 </style>
 {% endblock %}

@@ -990,7 +990,7 @@ def admin_product_delete(request: HttpRequest, pk: int) -> HttpResponse:
     
     tiene_historial = producto.historial.exists()
     tiene_apartados = producto.apartados.exists()
-    tiene_stock = producto.stock > 0
+    tiene_stock = producto.activo and producto.stock > 0
     
     if tiene_historial or tiene_apartados or tiene_stock:
         motivos = []

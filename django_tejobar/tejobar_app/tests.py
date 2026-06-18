@@ -493,7 +493,36 @@ class AdminProductViewsTests(BaseViewTestCase):
 
         resp = self.client.post(reverse("tejobar_app:admin_productos_delete", args=[self.product.pk]))
         self.assertEqual(resp.status_code, 302)
-        pass
+
+    def test_delete_active_product_with_stock_shows_warning(self):
+        self.client.force_login(self.admin_user)
+        p_active = Producto.objects.create(
+            nombre="Cerveza Activa Stock",
+            precio=3000.0,
+            stock=50,
+            categoria=self.categoria,
+            activo=True
+        )
+        resp = self.client.get(reverse("tejobar_app:admin_productos_delete", args=[p_active.pk]))
+        self.assertEqual(resp.status_code, 302)
+        self.assertTrue(Producto.objects.filter(pk=p_active.pk).exists())
+
+    def test_delete_inactive_product_with_stock_succeeds(self):
+        self.client.force_login(self.admin_user)
+        p_inactive = Producto.objects.create(
+            nombre="Cerveza Inactiva Stock",
+            precio=3000.0,
+            stock=50,
+            categoria=self.categoria,
+            activo=False
+        )
+        resp = self.client.get(reverse("tejobar_app:admin_productos_delete", args=[p_inactive.pk]))
+        self.assertEqual(resp.status_code, 200)
+        self.assertTemplateUsed(resp, "productos/confirm_delete.html")
+
+        resp = self.client.post(reverse("tejobar_app:admin_productos_delete", args=[p_inactive.pk]))
+        self.assertEqual(resp.status_code, 302)
+        self.assertFalse(Producto.objects.filter(pk=p_inactive.pk).exists())
 
     def test_admin_carga_masiva_view(self):
         self.client.force_login(self.admin_user)
