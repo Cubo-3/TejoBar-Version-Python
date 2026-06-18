@@ -1059,14 +1059,15 @@ def crear_preferencia_carrito(request):
         })
 
     back_urls = {
-        "success": request.build_absolute_uri(reverse("tejobar_app:pago_exitoso")),
-        "failure": request.build_absolute_uri(reverse("tejobar_app:pago_fallido")),
-        "pending": request.build_absolute_uri(reverse("tejobar_app:pago_pendiente"))
+        "success": "https://tejobar-version-python-production.up.railway.app/pago-exitoso/",
+        "failure": "https://tejobar-version-python-production.up.railway.app/pago-fallido/",
+        "pending": "https://tejobar-version-python-production.up.railway.app/pago-pendiente/"
     }
 
     preference_data = {
         "items": items,
         "back_urls": back_urls,
+        "auto_return": "approved",
         "external_reference": f"carrito_{persona.pk}"
     }
 
@@ -1529,10 +1530,11 @@ def crear_preferencia_apartado(request, pk):
             }
         ],
         "back_urls": {
-            "success": request.build_absolute_uri(reverse('tejobar_app:pago_exitoso')),
-            "failure": request.build_absolute_uri(reverse('tejobar_app:pago_fallido')),
-            "pending": request.build_absolute_uri(reverse('tejobar_app:pago_pendiente'))
+            "success": "https://tejobar-version-python-production.up.railway.app/pago-exitoso/",
+            "failure": "https://tejobar-version-python-production.up.railway.app/pago-fallido/",
+            "pending": "https://tejobar-version-python-production.up.railway.app/pago-pendiente/"
         },
+        "auto_return": "approved",
         "external_reference": f"apartado_{apartado.pk}"
     }
 
@@ -1596,10 +1598,11 @@ def crear_preferencia_cancha(request, pk):
             }
         ],
         "back_urls": {
-            "success": request.build_absolute_uri(reverse('tejobar_app:pago_exitoso')),
-            "failure": request.build_absolute_uri(reverse('tejobar_app:pago_fallido')),
-            "pending": request.build_absolute_uri(reverse('tejobar_app:pago_pendiente'))
+            "success": "https://tejobar-version-python-production.up.railway.app/pago-exitoso/",
+            "failure": "https://tejobar-version-python-production.up.railway.app/pago-fallido/",
+            "pending": "https://tejobar-version-python-production.up.railway.app/pago-pendiente/"
         },
+        "auto_return": "approved",
         "external_reference": f"cancha_{partido.pk}"
     }
 
