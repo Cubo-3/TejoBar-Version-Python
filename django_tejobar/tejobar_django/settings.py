@@ -1,12 +1,13 @@
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 # pyrefly: ignore [missing-import]
 import dj_database_url
 
-
-
-
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Cargar variables de entorno desde el archivo .env
+load_dotenv(BASE_DIR / '.env')
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-tejobar-dev-secret-key-no-uso-produccion")
 
