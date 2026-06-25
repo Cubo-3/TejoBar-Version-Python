@@ -124,7 +124,7 @@ class ProductoForm(forms.ModelForm):
                 'placeholder': 'Descripción del producto (opcional)...',
                 'maxlength': '500'
             }),
-            'activo': forms.CheckboxInput(attrs={'class': 'form-check-input ml-2'}),
+            'activo': forms.CheckboxInput(attrs={'class': 'custom-control-input'}),
         }
         
     def __init__(self, *args, **kwargs):
@@ -155,6 +155,16 @@ class ProductoForm(forms.ModelForm):
         if stock is not None and stock < 0:
             raise forms.ValidationError("No puedes registrar inventario negativo.")
         return stock
+
+    def clean_fecha_vencimiento(self):
+        fecha_vencimiento = self.cleaned_data.get("fecha_vencimiento")
+        if fecha_vencimiento:
+            from django.utils import timezone
+            from datetime import timedelta
+            limite = timezone.now().date() + timedelta(days=14)
+            if fecha_vencimiento < limite:
+                raise forms.ValidationError("La fecha de vencimiento debe ser al menos 2 semanas en el futuro (mínimo 14 días desde hoy).")
+        return fecha_vencimiento
 
 
 class EquipoForm(forms.ModelForm):

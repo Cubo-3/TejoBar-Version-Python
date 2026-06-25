@@ -918,6 +918,15 @@ class CustomValidationModelTests(BaseViewTestCase):
             prod2.full_clean()
         self.assertIn("El stock no puede ser negativo.", str(cm.exception))
 
+        # Fecha de vencimiento menor a 2 semanas
+        from django.utils import timezone
+        from datetime import timedelta
+        fecha_invalida = timezone.now().date() + timedelta(days=13)
+        prod3 = Producto(nombre="Test 3", precio=10.0, stock=5, categoria=self.categoria, fecha_vencimiento=fecha_invalida)
+        with self.assertRaises(ValidationError) as cm:
+            prod3.full_clean()
+        self.assertIn("La fecha de vencimiento debe ser al menos 2 semanas en el futuro", str(cm.exception))
+
 
 # ==============================================================================
 # NUEVAS PRUEBAS: LÓGICA DE NEGOCIO COMPLEJA EN VISTAS

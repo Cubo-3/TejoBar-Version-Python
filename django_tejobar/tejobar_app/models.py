@@ -253,6 +253,12 @@ class Producto(models.Model):
             raise ValidationError({'precio': 'El precio debe ser mayor a 0.'})
         if self.stock is not None and self.stock < 0:
             raise ValidationError({'stock': 'El stock no puede ser negativo.'})
+        if self.fecha_vencimiento:
+            from django.utils import timezone
+            from datetime import timedelta
+            limite = timezone.now().date() + timedelta(days=14)
+            if self.fecha_vencimiento < limite:
+                raise ValidationError({'fecha_vencimiento': 'La fecha de vencimiento debe ser al menos 2 semanas en el futuro (mínimo 14 días desde hoy).'})
 
     def save(self, *args, **kwargs):
         self.full_clean()
