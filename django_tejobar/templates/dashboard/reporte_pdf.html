@@ -180,9 +180,119 @@
             </td>
         </tr>
     </table>
+ 
+    <!-- SECCIÓN ANÁLISIS DE VENTAS Y PÉRDIDAS -->
+    <h2 class="page-break-before">2. Análisis de Ventas y Pérdidas de Inventario</h2>
+    <table class="metrics-table">
+        <tr>
+            <td>
+                <span class="metric-value">{{ tasa_perdida_global }}%</span>
+                <span class="metric-label">TASA PÉRDIDA GLOBAL</span><br>
+                <span class="metric-sub">(Total pérdidas: {{ total_perdidas_cant }} u)</span>
+            </td>
+            <td>
+                <span class="metric-value">
+                    {% if producto_mas_perdido %}
+                        {{ producto_mas_perdido.nombre }}
+                    {% else %}
+                        Ninguno
+                    {% endif %}
+                </span>
+                <span class="metric-label">PRODUCTO MÁS PERDIDO</span><br>
+                <span class="metric-sub">({% if producto_mas_perdido %}{{ producto_mas_perdido.perdidas }}{% else %}0{% endif %} u perdidas)</span>
+            </td>
+            <td>
+                <span class="metric-value">{{ total_ventas_fisicas_cant }} u</span>
+                <span class="metric-label">VENTAS FÍSICAS (POS)</span><br>
+                <span class="metric-sub">(Online: {{ total_ventas_online_cant }} u)</span>
+            </td>
+        </tr>
+    </table>
 
+    <h3 style="font-size: 11pt; color: #333; margin-top: 15px; margin-bottom: 5px;">Ranking de Productos Estrella (Más Vendidos)</h3>
+    <table class="data-table" style="margin-bottom: 20px;">
+        <thead>
+            <tr>
+                <th width="50%">PRODUCTO</th>
+                <th width="25%" style="text-align: center;">STOCK ACT.</th>
+                <th width="25%" style="text-align: center;">CANT. VENDIDA</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in productos_mas_vendidos %}
+            <tr>
+                <td>{{ p.nombre }}</td>
+                <td style="text-align: center;">{{ p.stock }}</td>
+                <td style="text-align: center; font-weight: bold; color: #155724;">{{ p.ventas }} u</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" style="text-align: center; color: #777;">Sin datos de ventas en este periodo.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h3 style="font-size: 11pt; color: #333; margin-top: 15px; margin-bottom: 5px;">Productos con Mayor Pérdida / Merma</h3>
+    <table class="data-table" style="margin-bottom: 20px;">
+        <thead>
+            <tr>
+                <th width="50%">PRODUCTO</th>
+                <th width="25%" style="text-align: center;">CANT. PERDIDA</th>
+                <th width="25%" style="text-align: center;">TASA DE PÉRDIDA</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in productos_perdidas %}
+            <tr>
+                <td>{{ p.nombre }}</td>
+                <td style="text-align: center; font-weight: bold; color: #721c24;">{{ p.perdidas }} u</td>
+                <td style="text-align: center; font-weight: bold; color: #721c24;">{{ p.tasa_perdida }}%</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" style="text-align: center; color: #777;">Sin registros de pérdidas.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h3 style="font-size: 11pt; color: #333; margin-top: 15px; margin-bottom: 5px;">Comparativa de Ventas de Producto (Mes Actual vs Anterior)</h3>
+    <table class="data-table" style="margin-bottom: 20px;">
+        <thead>
+            <tr>
+                <th width="40%">PRODUCTO</th>
+                <th width="20%" style="text-align: center;">V. ANTERIOR</th>
+                <th width="20%" style="text-align: center;">V. ACTUAL</th>
+                <th width="20%" style="text-align: center;">TENDENCIA</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in productos_todos %}
+            <tr>
+                <td>{{ p.nombre }}</td>
+                <td style="text-align: center;">{{ p.sales_prev }} u</td>
+                <td style="text-align: center; font-weight: bold;">{{ p.sales_actual }} u</td>
+                <td style="text-align: center; font-weight: bold; {% if p.diferencia > 0 %}color: #155724;{% elif p.diferencia < 0 %}color: #721c24;{% else %}color: #555;{% endif %}">
+                    {% if p.diferencia > 0 %}
+                        ▲ (+{{ p.diferencia }})
+                    {% elif p.diferencia < 0 %}
+                        ▼ ({{ p.diferencia }})
+                    {% else %}
+                        = (0)
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" style="text-align: center; color: #777;">Sin datos comparativos.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+ 
     <!-- APARTADOS -->
-    <h2 class="page-break-before">2. Apartados {% if fecha_inicio or fecha_fin %}Filtrados{% else %}Recientes{% endif %}</h2>
+    <h2 class="page-break-before">3. Apartados {% if fecha_inicio or fecha_fin %}Filtrados{% else %}Recientes{% endif %}</h2>
     
     {% if apartados %}
     <!-- repeat="1" es la directiva especifica de xhtml2pdf para repetir thead -->

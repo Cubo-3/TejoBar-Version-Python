@@ -2081,43 +2081,197 @@ def equipo_reinvite_member(request: HttpRequest, pk: int, jugador_pk: int) -> Ht
             
     return redirect("tejobar_app:equipos_show", pk=equipo.pk)
 
+def obtener_metricas_reporte(dt_start=None, dt_end=None):
+    from django.db.models import Sum, Q
+    from django.db.models.functions import TruncMonth
+    from datetime import date, timedelta
+    import datetime
+    from django.utils import timezone
+    from .models import Producto, MovimientoInventario, Apartado, Categoria, Equipo, Jugador, Partido, Cancha
+    from django.contrib.auth.models import User
+
+    # 1. Base querysets with date filter if applicable
+    movimientos_base = MovimientoInventario.objects.all()
+    if dt_start:
+        movimientos_base = movimientos_base.filter(fecha__gte=dt_start)
+    if dt_end:
+        movimientos_base = movimientos_base.filter(fecha__lte=dt_end)
+
+    apartados_base = Apartado.objects.all()
+    if dt_start:
+        apartados_base = apartados_base.filter(fecha_apartado__gte=dt_start)
+    if dt_end:
+        apartados_base = apartados_base.filter(fecha_apartado__lte=dt_end)
+
+    # 2. General metrics
+    total_ventas_cant = movimientos_base.filter(tipo_movimiento=MovimientoInventario.TIPO_VENTA).aggregate(Sum('cantidad'))['cantidad__sum'] or 0
+    total_perdidas_cant = movimientos_base.filter(tipo_movimiento=MovimientoInventario.TIPO_PERDIDA).aggregate(Sum('cantidad'))['cantidad__sum'] or 0
+    total_ingresos_cant = movimientos_base.filter(tipo_movimiento=MovimientoInventario.TIPO_INGRESO).aggregate(Sum('cantidad'))['cantidad__sum'] or 0
+    
+    total_movimientos = total_ventas_cant + total_perdidas_cant
+    tasa_perdida_global = round((total_perdidas_cant / total_movimientos * 100), 1) if total_movimientos > 0 else 0
+
+    # Physical vs Online sales
+    ventas_fisicas_qs = movimientos_base.filter(
+        tipo_movimiento=MovimientoInventario.TIPO_VENTA
+    ).filter(
+        Q(motivo__icontains="Venta Directa") | Q(motivo__icontains="POS")
+    )
+    total_ventas_fisicas_cant = ventas_fisicas_qs.aggregate(Sum('cantidad'))['cantidad__sum'] or 0
+    total_ventas_fisicas_monto = sum(item.cantidad * item.producto.precio for item in ventas_fisicas_qs.select_related('producto'))
+
+    ventas_online_qs = movimientos_base.filter(
+        tipo_movimiento=MovimientoInventario.TIPO_VENTA
+    ).filter(
+        motivo__icontains="Apartado online"
+    )
+    total_ventas_online_cant = ventas_online_qs.aggregate(Sum('cantidad'))['cantidad__sum'] or 0
+    total_ventas_online_monto = sum(item.cantidad * item.producto.precio for item in ventas_online_qs.select_related('producto'))
+
+    # 3. Product performance ranking
+    productos_ranking = []
+    productos = Producto.objects.all()
+    for p in productos:
+        p_ventas = movimientos_base.filter(producto=p, tipo_movimiento=MovimientoInventario.TIPO_VENTA).aggregate(Sum('cantidad'))['cantidad__sum'] or 0
+        p_perdidas = movimientos_base.filter(producto=p, tipo_movimiento=MovimientoInventario.TIPO_PERDIDA).aggregate(Sum('cantidad'))['cantidad__sum'] or 0
+        
+        p_total = p_ventas + p_perdidas
+        p_tasa_perdida = round((p_perdidas / p_total * 100), 1) if p_total > 0 else 0
+        
+        # Monthly comparison: current vs previous month
+        hoy = timezone.now().date()
+        mes_actual = hoy.month
+        ano_actual = hoy.year
+        
+        primer_dia_actual = date(ano_actual, mes_actual, 1)
+        if mes_actual == 1:
+            primer_dia_prev = date(ano_actual - 1, 12, 1)
+            ultimo_dia_prev = date(ano_actual, 1, 1) - timedelta(days=1)
+        else:
+            primer_dia_prev = date(ano_actual, mes_actual - 1, 1)
+            ultimo_dia_prev = primer_dia_actual - timedelta(days=1)
+            
+        sales_actual = p.movimientos.filter(
+            tipo_movimiento=MovimientoInventario.TIPO_VENTA,
+            fecha__date__gte=primer_dia_actual
+        ).aggregate(Sum('cantidad'))['cantidad__sum'] or 0
+        
+        sales_prev = p.movimientos.filter(
+            tipo_movimiento=MovimientoInventario.TIPO_VENTA,
+            fecha__date__gte=primer_dia_prev,
+            fecha__date__lte=ultimo_dia_prev
+        ).aggregate(Sum('cantidad'))['cantidad__sum'] or 0
+        
+        diferencia = sales_actual - sales_prev
+        
+        productos_ranking.append({
+            'id': p.id,
+            'nombre': p.nombre,
+            'precio': float(p.precio),
+            'stock': p.stock,
+            'ventas': p_ventas,
+            'perdidas': p_perdidas,
+            'tasa_perdida': p_tasa_perdida,
+            'sales_actual': sales_actual,
+            'sales_prev': sales_prev,
+            'diferencia': diferencia,
+            'crecio': sales_actual > sales_prev
+        })
+
+    # Sort rankings
+    productos_mas_vendidos = sorted([p for p in productos_ranking if p['ventas'] > 0], key=lambda x: x['ventas'], reverse=True)
+    productos_menos_vendidos = sorted(productos_ranking, key=lambda x: x['ventas'])
+    
+    productos_mas_perdidos = sorted([p for p in productos_ranking if p['perdidas'] > 0], key=lambda x: x['perdidas'], reverse=True)
+    producto_mas_perdido = productos_mas_perdidos[0] if productos_mas_perdidos else None
+
+    # 4. Monthly sales trend (last 6 months)
+    MESES = {
+        1: "Ene", 2: "Feb", 3: "Mar", 4: "Abr", 5: "May", 6: "Jun",
+        7: "Jul", 8: "Ago", 9: "Sep", 10: "Oct", 11: "Nov", 12: "Dic"
+    }
+    
+    ventas_mensuales = MovimientoInventario.objects.filter(
+        tipo_movimiento=MovimientoInventario.TIPO_VENTA
+    ).annotate(
+        mes=TruncMonth('fecha')
+    ).values('mes').annotate(
+        total=Sum('cantidad')
+    ).order_by('mes')
+    
+    ventas_mensuales_formateadas = []
+    for vm in ventas_mensuales:
+        if vm['mes']:
+            m_num = vm['mes'].month
+            y_num = vm['mes'].year
+            ventas_mensuales_formateadas.append({
+                'label': f"{MESES[m_num]} {y_num}",
+                'cantidad': vm['total'] or 0
+            })
+            
+    if not ventas_mensuales_formateadas:
+        hoy = timezone.now().date()
+        ventas_mensuales_formateadas.append({
+            'label': f"{MESES[hoy.month]} {hoy.year}",
+            'cantidad': 0
+        })
+
+    return {
+        'total_ventas_cant': total_ventas_cant,
+        'total_perdidas_cant': total_perdidas_cant,
+        'total_ingresos_cant': total_ingresos_cant,
+        'tasa_perdida_global': tasa_perdida_global,
+        'total_ventas_fisicas_cant': total_ventas_fisicas_cant,
+        'total_ventas_fisicas_monto': total_ventas_fisicas_monto,
+        'total_ventas_online_cant': total_ventas_online_cant,
+        'total_ventas_online_monto': total_ventas_online_monto,
+        'productos_mas_vendidos': productos_mas_vendidos[:10],
+        'productos_menos_vendidos': productos_menos_vendidos[:10],
+        'producto_mas_perdido': producto_mas_perdido,
+        'productos_perdidas': productos_mas_perdidos[:10],
+        'ventas_mensuales': ventas_mensuales_formateadas[-6:],
+        'productos_todos': productos_ranking
+    }
+
 @login_required
 @admin_required
 def generar_reportes(request: HttpRequest) -> HttpResponse:
     from .utils import generar_pdf
+    from datetime import datetime, time
+    from django.utils import timezone
+    
+    fecha_inicio = request.GET.get("fecha_inicio") or request.POST.get("fecha_inicio")
+    fecha_fin = request.GET.get("fecha_fin") or request.POST.get("fecha_fin")
+    
+    dt_start = None
+    dt_end = None
+    if fecha_inicio:
+        try:
+            ini_dt = datetime.strptime(fecha_inicio, "%Y-%m-%d").date()
+            dt_start = timezone.make_aware(datetime.combine(ini_dt, time.min))
+        except ValueError:
+            pass
+    if fecha_fin:
+        try:
+            fin_dt = datetime.strptime(fecha_fin, "%Y-%m-%d").date()
+            dt_end = timezone.make_aware(datetime.combine(fin_dt, time.max))
+        except ValueError:
+            pass
+            
     if request.method == "POST":
         tipo = request.POST.get("tipo")
         modulo = request.POST.get("modulo")
-        fecha_inicio = request.POST.get("fecha_inicio")
-        fecha_fin = request.POST.get("fecha_fin")
         
         persona = getattr(request.user, "persona", None)
         generado_por = persona.nombre if persona else "Administrador"
 
-        # Configurar filtros de fecha
-        from datetime import datetime, time
-        from django.utils import timezone
-        dt_start = None
-        dt_end = None
-        if fecha_inicio:
-            ini_dt = datetime.strptime(fecha_inicio, "%Y-%m-%d").date()
-            dt_start = timezone.make_aware(datetime.combine(ini_dt, time.min))
-        if fecha_fin:
-            try:
-                fin_dt = datetime.strptime(fecha_fin, "%Y-%m-%d").date()
-                dt_end = timezone.make_aware(datetime.combine(fin_dt, time.max))
-            except ValueError:
-                pass
-
         if tipo == "General":
-            # Repetir lógica de dashboard_reporte_pdf para reusabilidad
             apartados = Apartado.objects.select_related("persona", "producto").order_by("-fecha_apartado").all()
             if dt_start:
                 apartados = apartados.filter(fecha_apartado__gte=dt_start)
             if dt_end:
                 apartados = apartados.filter(fecha_apartado__lte=dt_end)
             
-            from django.db.models import Sum    
             context = {
                 "tipo_reporte": "General",
                 "total_productos": Producto.objects.count(),
@@ -2133,6 +2287,8 @@ def generar_reportes(request: HttpRequest) -> HttpResponse:
                 "fecha_fin": fecha_fin or "",
                 "generado_por": generado_por,
             }
+            metrics = obtener_metricas_reporte(dt_start, dt_end)
+            context.update(metrics)
             return generar_pdf(context, "dashboard/reporte_pdf.html", "reporte_general")
 
         elif tipo == "Especifico":
@@ -2196,4 +2352,9 @@ def generar_reportes(request: HttpRequest) -> HttpResponse:
             context["datos"] = datos
             return generar_pdf(context, "dashboard/reporte_pdf.html", f"reporte_{modulo.lower()}")
 
-    return render(request, "dashboard/generar_reportes.html")
+    metrics = obtener_metricas_reporte(dt_start, dt_end)
+    return render(request, "dashboard/generar_reportes.html", {
+        "metrics": metrics,
+        "fecha_inicio": fecha_inicio or "",
+        "fecha_fin": fecha_fin or ""
+    })
