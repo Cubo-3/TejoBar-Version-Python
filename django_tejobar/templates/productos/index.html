@@ -96,9 +96,11 @@
             <div class="card h-100">
                 <a href="{% url 'tejobar_app:productos_show' producto.pk %}" class="text-decoration-none text-light">
                     <img src="{{ producto.imagen_url }}"
+                         data-fallback="{{ producto.imagen_placeholder }}"
                          class="card-img-top catalog-img"
                          alt="{{ producto.nombre }}"
-                         loading="lazy">
+                         loading="lazy"
+                         onerror="if(this.dataset.fallback){this.onerror=null;this.src=this.dataset.fallback;}">
                 </a>
                     
                 <div class="card-body d-flex flex-column text-center p-3">

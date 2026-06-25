@@ -2,6 +2,18 @@ from datetime import timedelta
 from django.utils import timezone
 from .models import Producto, Novedad
 
+from django.conf import settings
+
+from .media_utils import cloudinary_status_message
+
+
+def cloudinary_status(request):
+    return {
+        "use_cloudinary": settings.USE_CLOUDINARY,
+        "cloudinary_status_message": cloudinary_status_message(),
+    }
+
+
 def admin_notifications(request):
     if not request.user.is_authenticated:
         return {}

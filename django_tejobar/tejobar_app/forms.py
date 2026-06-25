@@ -166,6 +166,15 @@ class ProductoForm(forms.ModelForm):
                 raise forms.ValidationError("La fecha de vencimiento debe ser al menos 2 semanas en el futuro (mínimo 14 días desde hoy).")
         return fecha_vencimiento
 
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.instance.pk and not self.files.get("imagen"):
+            instance.imagen = self.instance.imagen
+        if commit:
+            instance.save()
+            self.save_m2m()
+        return instance
+
 
 class EquipoForm(forms.ModelForm):
     class Meta:

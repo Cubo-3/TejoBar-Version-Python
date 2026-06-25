@@ -78,7 +78,21 @@
                 <div class="card-body p-4 p-md-5">
                     <form method="post" enctype="multipart/form-data" id="productoForm" novalidate>
                         {% csrf_token %}
-                        
+                        {% if not use_cloudinary %}
+                        <div class="alert alert-warning border-warning mb-4" role="alert">
+                            <i class="fas fa-exclamation-triangle mr-1"></i>
+                            <strong>Cloudinary no está activo.</strong>
+                            Las fotos se guardan en el servidor local y se pierden al redeploy en Railway.
+                            Configura <code>CLOUDINARY_URL</code> o
+                            <code>CLOUDINARY_CLOUD_NAME</code> + <code>CLOUDINARY_API_KEY</code> + <code>CLOUDINARY_API_SECRET</code>
+                            en las variables del servicio.
+                        </div>
+                        {% else %}
+                        <div class="alert alert-success border-success mb-4 py-2" role="alert">
+                            <i class="fas fa-cloud-upload-alt mr-1"></i>
+                            {{ cloudinary_status_message }}
+                        </div>
+                        {% endif %}
                         <div class="row">
                             <!-- Nombre -->
                             <div class="col-12 mb-4">

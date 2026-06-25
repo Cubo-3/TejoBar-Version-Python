@@ -223,8 +223,10 @@
                             <img
                                 id="producto-img"
                                 src="{{ producto.imagen_url }}"
+                                data-fallback="{{ producto.imagen_placeholder }}"
                                 alt="{{ producto.nombre }}"
                                 class="producto-img"
+                                onerror="if(this.dataset.fallback){this.onerror=null;this.src=this.dataset.fallback;}"
                             >
                         </div>
                     </div>

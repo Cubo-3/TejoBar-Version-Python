@@ -1,11 +1,12 @@
 import logging
+import os
 from urllib.parse import urlparse
 
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-PRODUCTO_IMAGEN_PLACEHOLDER = (
+PRODUCTO_IMAGEN_PLACEHOLDER_DATA = (
     "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='480' "
     "viewBox='0 0 640 480'%3E%3Crect width='640' height='480' fill='%231a1a24'/%3E"
     "%3Crect x='48' y='48' width='544' height='384' rx='24' fill='%23252530' "
@@ -14,21 +15,46 @@ PRODUCTO_IMAGEN_PLACEHOLDER = (
 )
 
 
+def producto_imagen_placeholder() -> str:
+    return PRODUCTO_IMAGEN_PLACEHOLDER_DATA
+
+
+def _is_production_deploy() -> bool:
+    return bool(os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("RAILWAY_PUBLIC_DOMAIN"))
+
+
 def producto_imagen_url(producto) -> str:
     imagen = getattr(producto, "imagen", None)
-    if not imagen:
-        return PRODUCTO_IMAGEN_PLACEHOLDER
+    name = (getattr(imagen, "name", None) or "").strip()
+    if not imagen or not name:
+        return producto_imagen_placeholder()
 
     try:
-        url = imagen.url
-        if url.startswith("http://") or url.startswith("https://"):
+        url = (imagen.url or "").strip()
+        if not url:
+            return producto_imagen_placeholder()
+
+        if url.startswith(("http://", "https://")):
             return url
-        if imagen.name and imagen.storage.exists(imagen.name):
+
+        # /media/... solo funciona en local o con volumen persistente en Railway.
+        if url.startswith(settings.MEDIA_URL):
+            if settings.USE_CLOUDINARY or (
+                _is_production_deploy() and not settings.RAILWAY_VOLUME_MOUNT_PATH
+            ):
+                return producto_imagen_placeholder()
+            if imagen.storage.exists(name):
+                return url
+            return producto_imagen_placeholder()
+
+        if imagen.storage.exists(name):
             return url
     except Exception:
-        logger.exception("No se pudo resolver la imagen del producto %s", getattr(producto, "pk", "?"))
+        logger.exception(
+            "No se pudo resolver la imagen del producto %s", getattr(producto, "pk", "?")
+        )
 
-    return PRODUCTO_IMAGEN_PLACEHOLDER
+    return producto_imagen_placeholder()
 
 
 def save_producto_imagen(producto, uploaded_file) -> None:
@@ -43,11 +69,17 @@ def save_producto_imagen(producto, uploaded_file) -> None:
 
     producto.imagen = uploaded_file
     producto.save(update_fields=["imagen"])
+    logger.info(
+        "Imagen guardada para producto %s: %s",
+        producto.pk,
+        producto.imagen.url if producto.imagen else "sin url",
+    )
 
 
 def apply_producto_imagen(producto, uploaded_file):
     if uploaded_file:
         producto.imagen = uploaded_file
+
 
 def cloudinary_status_message() -> str:
     if not settings.USE_CLOUDINARY:

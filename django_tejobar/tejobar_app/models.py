@@ -275,6 +275,12 @@ class Producto(models.Model):
         return producto_imagen_url(self)
 
     @property
+    def imagen_placeholder(self) -> str:
+        from .media_utils import producto_imagen_placeholder
+
+        return producto_imagen_placeholder()
+
+    @property
     def can_be_deleted(self) -> bool:
         tiene_historial = self.historial.exists()
         tiene_apartados = self.apartados.exists()

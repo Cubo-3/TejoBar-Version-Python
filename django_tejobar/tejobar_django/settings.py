@@ -54,6 +54,8 @@ def _resolve_cloudinary_config():
         "CLOUD_NAME": cloud_name,
         "API_KEY": api_key,
         "API_SECRET": api_secret,
+        "SECURE": True,
+        "MEDIA_TAG": "tejobar_media",
     }
     return True, cloudinary_url, storage
 
@@ -120,6 +122,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "tejobar_app.context_processors.admin_notifications",
+                "tejobar_app.context_processors.cloudinary_status",
             ],
         },
     },
@@ -212,6 +215,16 @@ else:
     }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+if USE_CLOUDINARY:
+    import cloudinary
+
+    cloudinary.config(
+        cloud_name=CLOUDINARY_STORAGE["CLOUD_NAME"],
+        api_key=CLOUDINARY_STORAGE["API_KEY"],
+        api_secret=CLOUDINARY_STORAGE["API_SECRET"],
+        secure=True,
+    )
 
 LOGIN_URL = "tejobar_app:login"
 LOGIN_REDIRECT_URL = "tejobar_app:dashboard"

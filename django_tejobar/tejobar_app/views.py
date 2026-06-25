@@ -23,7 +23,7 @@ from .forms import (
     JugadorEquipoForm,
 )
 from .models import Apartado, Equipo, Historial, Jugador, Persona, Producto, JugadorEquipo, Novedad, Partido, Cancha, Categoria
-from .media_utils import apply_producto_imagen, cloudinary_status_message
+from .media_utils import cloudinary_status_message
 
 
 def admin_required(view_func):
@@ -942,9 +942,7 @@ def admin_product_create(request: HttpRequest) -> HttpResponse:
         form = ProductoForm(request.POST, request.FILES)
         if form.is_valid():
             try:
-                nuevo_prod = form.save(commit=False)
-                apply_producto_imagen(nuevo_prod, request.FILES.get("imagen"))
-                nuevo_prod.save()
+                nuevo_prod = form.save()
             except Exception as exc:
                 messages.error(
                     request,
@@ -973,9 +971,7 @@ def admin_product_update(request: HttpRequest, pk: int) -> HttpResponse:
         form = ProductoForm(request.POST, request.FILES, instance=producto)
         if form.is_valid():
             try:
-                prod_actualizado = form.save(commit=False)
-                apply_producto_imagen(prod_actualizado, request.FILES.get("imagen"))
-                prod_actualizado.save()
+                prod_actualizado = form.save()
             except Exception as exc:
                 messages.error(
                     request,

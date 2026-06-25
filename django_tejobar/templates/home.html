@@ -84,7 +84,7 @@
         <p>${{ producto.precio|floatformat:0 }}</p>
       </div>
       
-      <div class="card-image" style="background-image: url('{{ producto.imagen_url }}');"></div>
+      <div class="card-image" style="background-image: url('{{ producto.imagen_url }}'), url('{{ producto.imagen_placeholder }}');"></div>
     </a>
     {% empty %}
     <p>No hay productos disponibles por ahora.</p>
