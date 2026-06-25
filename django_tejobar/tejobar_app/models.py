@@ -253,16 +253,13 @@ class Producto(models.Model):
             raise ValidationError({'precio': 'El precio debe ser mayor a 0.'})
         if self.stock is not None and self.stock < 0:
             raise ValidationError({'stock': 'El stock no puede ser negativo.'})
-        if self.fecha_vencimiento:
-            from django.utils import timezone
-            from datetime import timedelta
-            limite = timezone.now().date() + timedelta(days=14)
-            if self.fecha_vencimiento < limite:
-                raise ValidationError({'fecha_vencimiento': 'La fecha de vencimiento debe ser al menos 2 semanas en el futuro (mínimo 14 días desde hoy).'})
+        # Nota: la validación de fecha_vencimiento (mínimo 2 semanas)
+        # se realiza en ProductoForm.clean_fecha_vencimiento() para evitar
+        # mostrar el error duplicado en el formulario.
 
     def save(self, *args, **kwargs):
-        self.full_clean()
         super().save(*args, **kwargs)
+
 
     @property
     def is_expired(self) -> bool:
