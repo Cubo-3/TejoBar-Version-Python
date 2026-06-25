@@ -23,6 +23,7 @@ from .forms import (
     JugadorEquipoForm,
 )
 from .models import Apartado, Equipo, Historial, Jugador, Persona, Producto, JugadorEquipo, Novedad, Partido, Cancha, Categoria
+from .media_utils import apply_producto_imagen, cloudinary_status_message
 
 
 def admin_required(view_func):
@@ -940,7 +941,16 @@ def admin_product_create(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         form = ProductoForm(request.POST, request.FILES)
         if form.is_valid():
-            nuevo_prod = form.save()
+            try:
+                nuevo_prod = form.save(commit=False)
+                apply_producto_imagen(nuevo_prod, request.FILES.get("imagen"))
+                nuevo_prod.save()
+            except Exception as exc:
+                messages.error(
+                    request,
+                    f"No se pudo guardar la imagen del producto: {exc}. {cloudinary_status_message()}",
+                )
+                return render(request, "productos/form.html", {"form": form})
             Novedad.objects.create(
                 producto=nuevo_prod,
                 tipo_novedad=Novedad.TIPO_AGREGADO,
@@ -962,7 +972,16 @@ def admin_product_update(request: HttpRequest, pk: int) -> HttpResponse:
     if request.method == "POST":
         form = ProductoForm(request.POST, request.FILES, instance=producto)
         if form.is_valid():
-            prod_actualizado = form.save()
+            try:
+                prod_actualizado = form.save(commit=False)
+                apply_producto_imagen(prod_actualizado, request.FILES.get("imagen"))
+                prod_actualizado.save()
+            except Exception as exc:
+                messages.error(
+                    request,
+                    f"Producto actualizado, pero la imagen no se guardó: {exc}. {cloudinary_status_message()}",
+                )
+                return render(request, "productos/form.html", {"form": form, "producto": producto})
             if prod_actualizado.stock > stock_anterior:
                 Novedad.objects.create(
                     producto=prod_actualizado,

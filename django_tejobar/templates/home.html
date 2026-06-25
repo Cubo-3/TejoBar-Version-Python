@@ -77,7 +77,6 @@
 
     <div class="grid">
 
-    {% static 'img/productos/no-image.svg' as default_img_url %}
     {% for producto in productos %}
     <a href="{% url 'tejobar_app:productos_show' producto.id %}" class="card">
       <div class="card-content">

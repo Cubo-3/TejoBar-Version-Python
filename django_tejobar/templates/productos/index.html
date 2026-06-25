@@ -57,7 +57,6 @@
 {% endblock %}
 
 {% block content %}
-{% static 'img/productos/no-image.svg' as placeholder_img %}
 <div class="row mb-5 mt-3">
     <div class="col-12 text-center">
         <h1 class="font-weight-bold" style="color: #e67e22;">Nuestro Menú</h1>
@@ -99,8 +98,7 @@
                     <img src="{{ producto.imagen_url }}"
                          class="card-img-top catalog-img"
                          alt="{{ producto.nombre }}"
-                         loading="lazy"
-                         onerror="this.onerror=null; this.src='{{ placeholder_img }}';">
+                         loading="lazy">
                 </a>
                     
                 <div class="card-body d-flex flex-column text-center p-3">

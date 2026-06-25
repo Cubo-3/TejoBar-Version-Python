@@ -233,7 +233,7 @@ class Producto(models.Model):
             MaxLengthValidator(500, message="La descripción no puede superar los 500 caracteres.")
         ]
     )
-    imagen = models.ImageField(upload_to="productos", blank=True, null=True)
+    imagen = models.ImageField(upload_to="productos", blank=True, null=True, max_length=255)
     categoria = models.ForeignKey(
         Categoria,
         on_delete=models.SET_NULL,
@@ -270,11 +270,9 @@ class Producto(models.Model):
 
     @property
     def imagen_url(self) -> str:
-        from django.templatetags.static import static
+        from .media_utils import producto_imagen_url
 
-        if self.imagen:
-            return self.imagen.url
-        return static("img/productos/no-image.svg")
+        return producto_imagen_url(self)
 
     @property
     def can_be_deleted(self) -> bool:

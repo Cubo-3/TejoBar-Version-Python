@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from urllib.parse import quote, unquote, urlparse
 from dotenv import load_dotenv
 # pyrefly: ignore [missing-import]
 import dj_database_url
@@ -9,8 +10,56 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Cargar variables de entorno desde el archivo .env
 load_dotenv(BASE_DIR / '.env')
 
-CLOUDINARY_URL = os.getenv("CLOUDINARY_URL")
-RAILWAY_VOLUME_MOUNT_PATH = os.getenv("RAILWAY_VOLUME_MOUNT_PATH")
+
+def _env(name: str) -> str:
+    value = os.getenv(name, "")
+    return value.strip().strip('"').strip("'")
+
+
+def _resolve_cloudinary_config():
+    cloudinary_url = _env("CLOUDINARY_URL")
+    cloud_name = _env("CLOUDINARY_CLOUD_NAME")
+    api_key = _env("CLOUDINARY_API_KEY")
+    api_secret = _env("CLOUDINARY_API_SECRET")
+
+    if cloudinary_url and not cloudinary_url.startswith("cloudinary://"):
+        if "@" not in cloudinary_url and "://" not in cloudinary_url:
+            if not cloud_name:
+                cloud_name = cloudinary_url
+            cloudinary_url = ""
+
+    if not cloudinary_url and cloud_name and api_key and api_secret:
+        cloudinary_url = (
+            f"cloudinary://{quote(api_key, safe='')}:{quote(api_secret, safe='')}@{cloud_name}"
+        )
+
+    if not cloudinary_url.startswith("cloudinary://"):
+        os.environ.pop("CLOUDINARY_URL", None)
+        return False, "", {}
+
+    parsed = urlparse(cloudinary_url)
+    cloud_name = cloud_name or unquote(parsed.hostname or "")
+    api_key = api_key or unquote(parsed.username or "")
+    api_secret = api_secret or unquote(parsed.password or "")
+
+    if not (cloud_name and api_key and api_secret):
+        os.environ.pop("CLOUDINARY_URL", None)
+        return False, "", {}
+
+    cloudinary_url = (
+        f"cloudinary://{quote(api_key, safe='')}:{quote(api_secret, safe='')}@{cloud_name}"
+    )
+    os.environ["CLOUDINARY_URL"] = cloudinary_url
+    storage = {
+        "CLOUD_NAME": cloud_name,
+        "API_KEY": api_key,
+        "API_SECRET": api_secret,
+    }
+    return True, cloudinary_url, storage
+
+
+USE_CLOUDINARY, CLOUDINARY_URL, CLOUDINARY_STORAGE = _resolve_cloudinary_config()
+RAILWAY_VOLUME_MOUNT_PATH = _env("RAILWAY_VOLUME_MOUNT_PATH")
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-tejobar-dev-secret-key-no-uso-produccion")
 
@@ -41,7 +90,7 @@ INSTALLED_APPS = [
     "tejobar_app",
 ]
 
-if CLOUDINARY_URL:
+if USE_CLOUDINARY:
     staticfiles_index = INSTALLED_APPS.index("django.contrib.staticfiles")
     INSTALLED_APPS.insert(staticfiles_index, "cloudinary_storage")
     INSTALLED_APPS.append("cloudinary")
@@ -135,7 +184,6 @@ else:
     MEDIA_ROOT = BASE_DIR / "media"
 
 # Railway borra el disco local en cada deploy; Cloudinary persiste las fotos subidas.
-USE_CLOUDINARY = bool(CLOUDINARY_URL)
 if USE_CLOUDINARY:
     STORAGES = {
         "default": {
