@@ -1,7 +1,15 @@
 {
   "$schema": "https://schema.railpack.com",
   "buildAptPackages": ["libcairo2-dev", "pkg-config"],
+  "steps": {
+    "build": {
+      "commands": [
+        "python manage.py collectstatic --noinput --no-post-process"
+      ]
+    }
+  },
   "deploy": {
-    "aptPackages": ["libcairo2"]
+    "aptPackages": ["libcairo2"],
+    "startCommand": "python manage.py migrate --noinput && python manage.py collectstatic --noinput --no-post-process && gunicorn tejobar_django.wsgi:application --bind 0.0.0.0:$PORT --workers 2"
   }
 }
