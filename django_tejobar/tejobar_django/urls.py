@@ -9,9 +9,11 @@ urlpatterns = [
     path("", include(("tejobar_app.urls", "tejobar_app"), namespace="tejobar_app")),
 ]
 
-# Servir archivos estáticos solo en DEBUG (WhiteNoise los maneja en producción)
+# Servir archivos estáticos en desarrollo desde STATICFILES_DIRS y apps.
 if settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+
+    urlpatterns += staticfiles_urlpatterns()
 
 # Servir media local solo cuando no se usa Cloudinary (p. ej. desarrollo o volumen en Railway).
 if not settings.USE_CLOUDINARY:

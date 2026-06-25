@@ -190,7 +190,7 @@ if USE_CLOUDINARY:
             "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
         },
         "staticfiles": {
-            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+            "BACKEND": "tejobar_django.storage.SequentialCompressedStaticFilesStorage",
         },
     }
 else:
@@ -203,7 +203,7 @@ else:
             },
         },
         "staticfiles": {
-            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+            "BACKEND": "tejobar_django.storage.SequentialCompressedStaticFilesStorage",
         },
     }
 
