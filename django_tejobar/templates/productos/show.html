@@ -3,110 +3,340 @@
 
 {% block title %}{{ producto.nombre }} - TejoBar{% endblock %}
 
-{% block content %}
 {% block extra_styles %}
 <style>
-    /* === RESPONSIVE producto detalle === */
-    @media (max-width: 768px) {
-        /* Imagen arriba, info abajo */
-        .row.g-0.p-4 > .col-md-5,
-        .row.g-0.p-4 > .col-md-7 {
-            width: 100% !important;
-            max-width: 100% !important;
-            flex: 0 0 100% !important;
+    /* ═══════════════════════════════════
+       PRODUCTO DETALLE — DISEÑO MODERNO
+    ═══════════════════════════════════ */
+
+    .producto-hero {
+        background: linear-gradient(135deg, rgba(30,30,40,0.98) 0%, rgba(20,20,30,0.98) 100%);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 1.5rem;
+        overflow: hidden;
+        box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+    }
+
+    /* ── Imagen ── */
+    .producto-img-wrap {
+        background: linear-gradient(145deg, rgba(255,123,0,0.06), rgba(0,0,0,0.3));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 380px;
+        padding: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .producto-img-wrap::before {
+        content: '';
+        position: absolute;
+        top: -40%;
+        left: -40%;
+        width: 180%;
+        height: 180%;
+        background: radial-gradient(ellipse at center, rgba(255,123,0,0.08) 0%, transparent 65%);
+        pointer-events: none;
+    }
+    .producto-img {
+        max-height: 320px;
+        max-width: 100%;
+        width: auto;
+        object-fit: contain;
+        border-radius: 1rem;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        transition: transform 0.4s ease;
+        position: relative;
+        z-index: 1;
+    }
+    .producto-img:hover { transform: scale(1.03); }
+
+    /* ── Info Panel ── */
+    .producto-info {
+        padding: 2.5rem 2rem 2rem 2rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .producto-nombre {
+        font-size: clamp(1.5rem, 4vw, 2.2rem);
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: -0.5px;
+        line-height: 1.2;
+        margin-bottom: 0.25rem;
+    }
+
+    .producto-precio {
+        font-size: clamp(1.8rem, 5vw, 2.5rem);
+        font-weight: 900;
+        color: #28a745;
+        letter-spacing: -1px;
+    }
+
+    /* ── Meta badges ── */
+    .meta-row {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.55rem 0;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        font-size: 0.95rem;
+    }
+    .meta-row:last-of-type { border-bottom: none; }
+    .meta-label {
+        color: rgba(255,255,255,0.5);
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        min-width: 90px;
+    }
+    .meta-value { color: #fff; font-weight: 500; }
+
+    /* ── Cantidad form ── */
+    .cantidad-form {
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 1rem;
+        padding: 1.25rem 1.5rem;
+        margin-top: 1.5rem;
+    }
+    .cantidad-label {
+        color: rgba(255,255,255,0.7);
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-bottom: 0.75rem;
+        display: block;
+    }
+    .cantidad-controls {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+    .cantidad-input {
+        width: 90px;
+        background: rgba(0,0,0,0.4) !important;
+        color: #fff !important;
+        border: 1px solid #ff7b00 !important;
+        border-radius: 0.5rem !important;
+        padding: 0.55rem 0.75rem !important;
+        font-weight: 700;
+        font-size: 1rem;
+        text-align: center;
+        outline: none !important;
+        box-shadow: none !important;
+        flex-shrink: 0;
+    }
+    .cantidad-input:focus { border-color: #ff9933 !important; box-shadow: 0 0 0 3px rgba(255,123,0,0.2) !important; }
+    .btn-carrito {
+        flex: 1;
+        min-width: 160px;
+        background: linear-gradient(135deg, #ff7b00, #e06800);
+        color: #fff !important;
+        border: none;
+        border-radius: 0.5rem;
+        padding: 0.6rem 1.5rem;
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        white-space: nowrap;
+        box-shadow: 0 4px 15px rgba(255,123,0,0.3);
+    }
+    .btn-carrito:hover {
+        background: linear-gradient(135deg, #ff9933, #ff7b00);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(255,123,0,0.4);
+        color: #fff !important;
+        text-decoration: none;
+    }
+
+    /* ── Footer ── */
+    .producto-footer {
+        padding: 1.25rem 2rem;
+        border-top: 1px solid rgba(255,255,255,0.07);
+        background: rgba(0,0,0,0.15);
+    }
+    .btn-volver {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        color: #ff7b00;
+        border: 1px solid rgba(255,123,0,0.4);
+        border-radius: 0.5rem;
+        padding: 0.5rem 1.25rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+        background: transparent;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+    .btn-volver:hover {
+        background: rgba(255,123,0,0.1);
+        border-color: #ff7b00;
+        color: #ff9933;
+        text-decoration: none;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 767.98px) {
+        .producto-img-wrap {
+            min-height: 240px;
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
         }
-        .row.g-0.p-4 > .col-md-5 img {
-            max-height: 260px !important;
-            width: 100% !important;
+        .producto-img { max-height: 220px; }
+        .producto-info { padding: 1.5rem 1.25rem 1.25rem; }
+        .cantidad-controls { flex-direction: column; align-items: stretch; }
+        .cantidad-input { width: 100%; }
+        .btn-carrito { width: 100%; min-width: unset; }
+        .producto-footer { padding: 1rem 1.25rem; }
+    }
+
+    @media (min-width: 768px) {
+        .producto-img-wrap {
+            border-right: 1px solid rgba(255,255,255,0.06);
+            min-height: 480px;
         }
-        /* Formulario de cantidad: en columna */
-        form.d-flex.flex-wrap {
-            flex-direction: column !important;
-            gap: 12px !important;
-        }
-        form.d-flex input[type="number"] {
-            width: 100% !important;
-            margin-right: 0 !important;
-        }
-        .boton {
-            width: 100%;
-            text-align: center;
-        }
-        /* Card header / footer padding */
-        .card-header, .card-footer { padding: 16px !important; }
-        .card-body, .row.g-0.p-4 { padding: 16px !important; }
     }
 </style>
 {% endblock %}
-<div class="row justify-content-center mt-5">
-    <div class="col-md-10">
-        <div class="card p-0 m-0" style="height: auto !important; overflow: visible !important;">
-            <div class="card-header border-bottom border-secondary p-4 pb-0" style="background: transparent;">
-                <h3 class="mb-0 text-white" style="font-weight: 700;"><i class="fas fa-beer mr-2" style="color: #ff7b00;"></i> Detalles del Producto</h3>
-            </div>
-            <div class="row g-0 p-4">
-                <div class="col-md-5 d-flex align-items-center justify-content-center p-3">
-                    {% if producto.imagen %}
-                        <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="img-fluid rounded shadow" style="max-height: 350px; object-fit: contain;">
-                    {% else %}
-                        <img src="{% static 'img/productos/no-image.png' %}" alt="{{ producto.nombre }}" class="img-fluid rounded shadow" style="max-height: 350px; object-fit: contain;">
-                    {% endif %}
-                </div>
-                <div class="col-md-7 p-4">
-                    <h2 class="mb-3 border-bottom border-secondary pb-2">{{ producto.nombre }}</h2>
-                    
-                    <div class="mb-4">
-                        <h3 class="text-success font-weight-bold mb-3">💲 {{ producto.precio|floatformat:0 }}</h3>
-                        
-                        <p class="mb-2">
-                            <i class="fas fa-boxes text-info mr-2"></i> 
-                            <span class="text-light">Stock disponible:</span> 
-                            <strong class="text-white">{{ producto.stock }}</strong>
-                        </p>
-                        
-                        <p class="mb-2">
-                            <i class="fas fa-calendar-alt text-warning mr-2"></i>
-                            <span class="text-light">Vencimiento:</span> 
-                            {% if not producto.fecha_vencimiento %}
-                                <span class="badge badge-secondary">Sin caducidad</span>
-                            {% elif producto.is_expired %}
-                                <span class="badge badge-danger">Vencido ({{ producto.fecha_vencimiento }})</span>
-                            {% else %}
-                                <span class="badge badge-success">Válido hasta {{ producto.fecha_vencimiento }}</span>
-                            {% endif %}
-                        </p>
-                        
-                        <p class="mb-2">
-                            <i class="fas fa-tag text-primary mr-2"></i>
-                            <span class="text-light">Categoría:</span> 
-                            <strong class="text-white">{{ producto.categoria.nombre|default:"Sin categoría" }}</strong>
-                        </p>
+
+{% block content %}
+<div class="container-fluid px-3 px-md-4 mt-4 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-10 col-xl-9">
+
+            <div class="producto-hero">
+                <div class="row g-0">
+
+                    <!-- ── Columna Imagen ── -->
+                    <div class="col-md-5">
+                        <div class="producto-img-wrap h-100">
+                            <img
+                                id="producto-img"
+                                src="{% if producto.imagen %}{{ producto.imagen.url }}{% else %}{% static 'img/productos/no-image.png' %}{% endif %}"
+                                alt="{{ producto.nombre }}"
+                                class="producto-img"
+                                onerror="this.onerror=null; this.src='{% static 'img/productos/no-image.png' %}';"
+                            >
+                        </div>
                     </div>
 
-                    {% if user.is_authenticated %}
-                        <form method="post" action="{% url 'tejobar_app:productos_apartar' producto.pk %}" class="mt-4 p-4 rounded d-flex align-items-center flex-wrap gap-3" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);">
-                            {% csrf_token %}
-                            <label for="cantidad" class="mb-0 mr-3 text-light font-weight-bold" style="font-size: 1.1rem;">Cantidad a añadir:</label>
-                            <input type="number" name="cantidad" id="cantidad" min="1" max="{{ producto.stock }}" value="1" class="form-control mr-3" style="width: 100px; background: rgba(0,0,0,0.5); color: #fff; border: 1px solid #ff7b00;">
-                            <button type="submit" class="boton m-0">
-                                <i class="fas fa-cart-plus mr-1"></i> Añadir al Carrito
-                            </button>
-                        </form>
-                    {% else %}
-                        <div class="alert alert-info mt-4">
-                            <i class="fas fa-info-circle mr-2"></i>
-                            Debes iniciar sesión para apartar este producto.
+                    <!-- ── Columna Info ── -->
+                    <div class="col-md-7">
+                        <div class="producto-info h-100">
+
+                            <!-- Nombre y Precio -->
+                            <div>
+                                <p class="text-muted small mb-1 text-uppercase" style="letter-spacing:1px; font-size:0.75rem;">
+                                    {{ producto.categoria.nombre|default:"Sin categoría" }}
+                                </p>
+                                <h1 class="producto-nombre">{{ producto.nombre }}</h1>
+                                <div class="producto-precio mt-2 mb-3">
+                                    $ {{ producto.precio|floatformat:0 }}
+                                </div>
+
+                                <!-- Meta info -->
+                                <div class="my-3">
+                                    <div class="meta-row">
+                                        <span class="meta-label"><i class="fas fa-boxes text-info mr-1"></i> Stock</span>
+                                        <span class="meta-value">
+                                            {% if producto.stock > 0 %}
+                                                <span class="badge badge-success px-2 py-1">{{ producto.stock }} disponible{{ producto.stock|pluralize:"s" }}</span>
+                                            {% else %}
+                                                <span class="badge badge-danger px-2 py-1">Agotado</span>
+                                            {% endif %}
+                                        </span>
+                                    </div>
+
+                                    <div class="meta-row">
+                                        <span class="meta-label"><i class="fas fa-calendar-alt text-warning mr-1"></i> Vence</span>
+                                        <span class="meta-value">
+                                            {% if not producto.fecha_vencimiento %}
+                                                <span class="badge badge-secondary px-2 py-1">Sin caducidad</span>
+                                            {% elif producto.is_expired %}
+                                                <span class="badge badge-danger px-2 py-1"><i class="fas fa-exclamation-triangle mr-1"></i> Vencido el {{ producto.fecha_vencimiento|date:"d/m/Y" }}</span>
+                                            {% else %}
+                                                <span class="badge badge-success px-2 py-1">Válido hasta {{ producto.fecha_vencimiento|date:"d/m/Y" }}</span>
+                                            {% endif %}
+                                        </span>
+                                    </div>
+
+                                    {% if producto.descripcion %}
+                                    <div class="meta-row" style="align-items:flex-start;">
+                                        <span class="meta-label" style="padding-top:2px;"><i class="fas fa-info-circle text-muted mr-1"></i> Info</span>
+                                        <span class="meta-value" style="color:rgba(255,255,255,0.7); font-size:0.9rem;">{{ producto.descripcion }}</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Acción -->
+                            {% if user.is_authenticated %}
+                                {% if producto.stock > 0 and not producto.is_expired %}
+                                    <form method="post" action="{% url 'tejobar_app:productos_apartar' producto.pk %}">
+                                        {% csrf_token %}
+                                        <div class="cantidad-form">
+                                            <label for="cantidad" class="cantidad-label">
+                                                <i class="fas fa-shopping-cart mr-1" style="color:#ff7b00;"></i>
+                                                Selecciona la cantidad
+                                            </label>
+                                            <div class="cantidad-controls">
+                                                <input
+                                                    type="number"
+                                                    name="cantidad"
+                                                    id="cantidad"
+                                                    min="1"
+                                                    max="{{ producto.stock }}"
+                                                    value="1"
+                                                    class="cantidad-input"
+                                                >
+                                                <button type="submit" class="btn-carrito">
+                                                    <i class="fas fa-cart-plus"></i>
+                                                    Añadir al Carrito
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                {% else %}
+                                    <div class="cantidad-form text-center">
+                                        <i class="fas fa-ban fa-2x text-danger mb-2 d-block"></i>
+                                        <span class="text-danger font-weight-bold">
+                                            {% if producto.is_expired %}Producto vencido{% else %}Sin stock disponible{% endif %}
+                                        </span>
+                                    </div>
+                                {% endif %}
+                            {% else %}
+                                <div class="cantidad-form text-center">
+                                    <i class="fas fa-lock fa-2x text-warning mb-2 d-block"></i>
+                                    <p class="text-muted mb-2">Debes iniciar sesión para apartar productos.</p>
+                                    <a href="{% url 'tejobar_app:login' %}" class="btn-carrito" style="display:inline-flex; text-decoration:none;">
+                                        <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                                    </a>
+                                </div>
+                            {% endif %}
+
                         </div>
-                    {% endif %}
+                    </div>
+                </div><!-- /row -->
+
+                <!-- Footer -->
+                <div class="producto-footer">
+                    <a href="{% url 'tejobar_app:productos_index' %}" class="btn-volver">
+                        <i class="fas fa-arrow-left"></i> Volver al Catálogo
+                    </a>
                 </div>
-            </div>
-            <div class="card-footer border-top border-secondary p-4" style="background: transparent;">
-                <a href="{% url 'tejobar_app:productos_index' %}" class="boton" style="padding: 10px 20px; font-size: 14px; background: transparent; border: 1px solid #ff7b00; color: #ff7b00 !important; margin: 0;">
-                    <i class="fas fa-arrow-left mr-1"></i> Volver al Catálogo
-                </a>
-            </div>
+
+            </div><!-- /producto-hero -->
         </div>
     </div>
 </div>
 {% endblock %}
-
