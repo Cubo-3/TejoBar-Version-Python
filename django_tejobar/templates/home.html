@@ -77,7 +77,7 @@
 
     <div class="grid">
 
-    {% static 'img/productos/no-image.png' as default_img_url %}
+    {% static 'img/productos/no-image.svg' as default_img_url %}
     {% for producto in productos %}
     <a href="{% url 'tejobar_app:productos_show' producto.id %}" class="card">
       <div class="card-content">
@@ -85,7 +85,7 @@
         <p>${{ producto.precio|floatformat:0 }}</p>
       </div>
       
-      <div class="card-image" style="background-image: url('{% if producto.imagen %}{{ producto.imagen.url }}{% else %}{{ default_img_url }}{% endif %}');"></div>
+      <div class="card-image" style="background-image: url('{{ producto.imagen_url }}');"></div>
     </a>
     {% empty %}
     <p>No hay productos disponibles por ahora.</p>

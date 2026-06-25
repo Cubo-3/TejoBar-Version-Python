@@ -9,6 +9,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Cargar variables de entorno desde el archivo .env
 load_dotenv(BASE_DIR / '.env')
 
+CLOUDINARY_URL = os.getenv("CLOUDINARY_URL")
+RAILWAY_VOLUME_MOUNT_PATH = os.getenv("RAILWAY_VOLUME_MOUNT_PATH")
+
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-tejobar-dev-secret-key-no-uso-produccion")
 
 DEBUG = os.getenv("RAILWAY_ENVIRONMENT") is None
@@ -37,6 +40,11 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "tejobar_app",
 ]
+
+if CLOUDINARY_URL:
+    staticfiles_index = INSTALLED_APPS.index("django.contrib.staticfiles")
+    INSTALLED_APPS.insert(staticfiles_index, "cloudinary_storage")
+    INSTALLED_APPS.append("cloudinary")
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -120,12 +128,36 @@ STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Esto evita que el despliegue falle si hay alguna referencia rota en el CSS/Bootstrap
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
-
-
 MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
+if RAILWAY_VOLUME_MOUNT_PATH:
+    MEDIA_ROOT = Path(RAILWAY_VOLUME_MOUNT_PATH) / "media"
+else:
+    MEDIA_ROOT = BASE_DIR / "media"
+
+# Railway borra el disco local en cada deploy; Cloudinary persiste las fotos subidas.
+USE_CLOUDINARY = bool(CLOUDINARY_URL)
+if USE_CLOUDINARY:
+    STORAGES = {
+        "default": {
+            "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        },
+    }
+else:
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+            "OPTIONS": {
+                "location": MEDIA_ROOT,
+                "base_url": MEDIA_URL,
+            },
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        },
+    }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

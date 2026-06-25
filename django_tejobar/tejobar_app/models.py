@@ -269,6 +269,14 @@ class Producto(models.Model):
         return False
 
     @property
+    def imagen_url(self) -> str:
+        from django.templatetags.static import static
+
+        if self.imagen:
+            return self.imagen.url
+        return static("img/productos/no-image.svg")
+
+    @property
     def can_be_deleted(self) -> bool:
         tiene_historial = self.historial.exists()
         tiene_apartados = self.apartados.exists()

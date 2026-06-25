@@ -13,7 +13,7 @@ urlpatterns = [
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
-# Servir archivos de media SIEMPRE (imágenes de productos subidas por usuarios).
-# WhiteNoise NO sirve archivos de media, por eso se registra la ruta incluso en producción.
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Servir media local solo cuando no se usa Cloudinary (p. ej. desarrollo o volumen en Railway).
+if not settings.USE_CLOUDINARY:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
