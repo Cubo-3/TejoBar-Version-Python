@@ -41,7 +41,7 @@
                         <td class="font-weight-bold text-dark">{{ producto.nombre }}</td>
                         <td class="text-dark">${{ producto.precio }}</td>
                         <td class="text-dark">{{ producto.stock }}</td>
-                        <td class="text-dark">{{ producto.categoria.nombre|default:"Sin Categoría" }}</td>
+                        <td class="text-dark">{% if producto.categoria %}{{ producto.categoria.emoji }} {{ producto.categoria.nombre }}{% else %}Sin Categoría{% endif %}</td>
                         <td>
                             {% if producto.is_expired %}
                             <span class="badge badge-danger text-dark">Vencido: {{ producto.fecha_vencimiento }}</span>

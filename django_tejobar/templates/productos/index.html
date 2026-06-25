@@ -77,7 +77,7 @@
                 </option>
                 {% for cat in categorias %}
                     <option value="?categoria_id={{ cat.id }}" {% if categoria_seleccionada == cat.id %}selected{% endif %}>
-                         🍕 {{ cat.nombre }}
+                         {{ cat.emoji }} {{ cat.nombre }}
                     </option>
                 {% endfor %}
             </select>
@@ -105,7 +105,7 @@
                     
                 <div class="card-body d-flex flex-column text-center p-3">
                     {% if producto.categoria %}
-                        <span class="badge mb-2 align-self-center border" style="background: rgba(255,123,0,0.2); color: #ff7b00; border-color: #ff7b00 !important;">{{ producto.categoria.nombre }}</span>
+                        <span class="badge mb-2 align-self-center border" style="background: rgba(255,123,0,0.2); color: #ff7b00; border-color: #ff7b00 !important;">{{ producto.categoria.emoji }} {{ producto.categoria.nombre }}</span>
                     {% endif %}
                     
                     <a href="{% url 'tejobar_app:productos_show' producto.pk %}" class="text-decoration-none">

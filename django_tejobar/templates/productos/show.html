@@ -238,7 +238,7 @@
                             <!-- Nombre y Precio -->
                             <div>
                                 <p class="text-muted small mb-1 text-uppercase" style="letter-spacing:1px; font-size:0.75rem;">
-                                    {{ producto.categoria.nombre|default:"Sin categoría" }}
+                                    {% if producto.categoria %}{{ producto.categoria.emoji }} {{ producto.categoria.nombre }}{% else %}Sin categoría{% endif %}
                                 </p>
                                 <h1 class="producto-nombre">{{ producto.nombre }}</h1>
                                 <div class="producto-precio mt-2 mb-3">

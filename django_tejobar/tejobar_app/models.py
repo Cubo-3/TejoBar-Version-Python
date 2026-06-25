@@ -202,6 +202,25 @@ class Categoria(models.Model):
     def __str__(self):
         return self.nombre
 
+    @property
+    def emoji(self) -> str:
+        nombre_lower = self.nombre.lower() if self.nombre else ""
+        if "alcohol" in nombre_lower:
+            return "🍺"
+        elif "papa" in nombre_lower:
+            return "🍟"
+        elif "bebida" in nombre_lower:
+            return "🥤"
+        elif "licor" in nombre_lower:
+            return "🥃"
+        elif "comida" in nombre_lower:
+            return "🍔"
+        elif "snack" in nombre_lower:
+            return "🍿"
+        elif "otro" in nombre_lower:
+            return "🏷️"
+        return "🍕"
+
 class Producto(models.Model):
     activo = models.BooleanField(default=True)
     nombre = models.CharField(
