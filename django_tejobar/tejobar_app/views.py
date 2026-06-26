@@ -1395,8 +1395,9 @@ def finalizar_partido(request: HttpRequest, pk: int) -> HttpResponse:
     partido = get_object_or_404(Partido, pk=pk)
     if partido.hora_inicio and not partido.hora_fin:
         partido.hora_fin = timezone.now()
+        partido.estado = Partido.ESTADO_FINALIZADO
         partido.save()
-        messages.success(request, "Cronómetro detenido. Ya puede ver el total a pagar.")
+        messages.success(request, "Partido finalizado. Ya puede ver el total a pagar.")
         _notificar_capitanes_partido(partido, f"El Partido #{partido.pk} ha finalizado. Puedes revisar el total a pagar.")
     else:
         messages.warning(request, "No se puede finalizar este partido.")
@@ -2890,4 +2891,74 @@ def admin_partido_novedad_eliminar(request: HttpRequest, novedad_pk: int) -> Htt
     novedad.delete()
     messages.success(request, "Novedad eliminada.")
     return redirect("tejobar_app:admin_partido_novedades", pk=partido_pk)
+
+
+# ─── Consumos en Partido ─────────────────────────────────────────────────────
+
+@admin_required
+@require_POST
+def admin_partido_agregar_consumo(request: HttpRequest, pk: int) -> HttpResponse:
+    """Añade un producto a la cuenta del partido (equipo o jugador específico).
+    Accesible desde el modal de consumo durante el partido activo.
+    """
+    partido = get_object_or_404(Partido, pk=pk)
+
+    if not partido.hora_inicio:
+        messages.error(request, "El partido no ha iniciado aún.")
+        return redirect("tejobar_app:admin_partidos_index")
+
+    producto_id = request.POST.get("producto_id")
+    cantidad_str = request.POST.get("cantidad", "1")
+    asignado_a = request.POST.get("asignado_a", "cancha")
+
+    try:
+        cantidad = max(1, int(cantidad_str))
+        producto = get_object_or_404(Producto, pk=producto_id, activo=True)
+    except (ValueError, TypeError):
+        messages.error(request, "Producto o cantidad no válidos.")
+        return redirect("tejobar_app:admin_partidos_index")
+
+    if producto.stock < cantidad:
+        messages.error(request, f"Stock insuficiente para '{producto.nombre}' (disponible: {producto.stock}).")
+        return redirect("tejobar_app:admin_partidos_index")
+
+    # Determinar equipo y/o jugador
+    equipo_obj = None
+    if asignado_a == "equipo1":
+        equipo_obj = partido.equipo1
+    elif asignado_a == "equipo2":
+        equipo_obj = partido.equipo2
+    elif asignado_a == "cancha":
+        equipo_obj = None  # cuenta general del partido
+    elif asignado_a.startswith("jugador_"):
+        try:
+            je_id = int(asignado_a.replace("jugador_", ""))
+            je = JugadorEquipo.objects.get(pk=je_id)
+            equipo_obj = je.equipo
+        except (JugadorEquipo.DoesNotExist, ValueError):
+            messages.error(request, "Jugador no encontrado.")
+            return redirect("tejobar_app:admin_partidos_index")
+
+    Apartado.objects.create(
+        persona=None,
+        producto=producto,
+        cantidad=cantidad,
+        partido=partido,
+        equipo=equipo_obj,
+        estado=Apartado.ESTADO_PENDIENTE,  # Pendiente: se cobra al finalizar
+    )
+
+    from .models import MovimientoInventario
+    MovimientoInventario.objects.create(
+        producto=producto,
+        tipo_movimiento=MovimientoInventario.TIPO_VENTA,
+        cantidad=cantidad,
+        motivo=f"Consumo en partido #{partido.pk}",
+        usuario=request.user,
+    )
+
+    etiqueta = equipo_obj.nombre_equipo if equipo_obj else "cuenta general"
+    messages.success(request, f"{cantidad}× '{producto.nombre}' añadido a la cuenta de {etiqueta}.")
+    return redirect("tejobar_app:admin_partidos_index")
+
 

@@ -553,11 +553,13 @@ class Partido(models.Model):
     ESTADO_PENDIENTE = "Pendiente"
     ESTADO_CONFIRMADA = "Confirmada"
     ESTADO_CANCELADA = "Cancelada"
+    ESTADO_FINALIZADO = "Finalizado"
 
     ESTADO_CHOICES = [
         (ESTADO_PENDIENTE, "Pendiente"),
-        (ESTADO_CONFIRMADA, "Confirmada"),
+        (ESTADO_CONFIRMADA, "En Curso"),
         (ESTADO_CANCELADA, "Cancelada"),
+        (ESTADO_FINALIZADO, "Finalizado"),
     ]
 
     fecha = models.DateField()

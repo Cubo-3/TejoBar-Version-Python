@@ -4,10 +4,10 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="fas fa-trophy mr-2"></i> Administrar Partidos</h2>
+    <h2 class="text-dark"><i class="fas fa-trophy mr-2"></i> Administrar Partidos</h2>
     <div>
         <a href="{% url 'tejobar_app:partidos_index' %}" class="btn btn-secondary shadow-sm mr-2">
-            <i class="fas fa-history"></i> Historial Partidos
+            <i class="fas fa-history"></i> Historial
         </a>
         <a href="{% url 'tejobar_app:admin_partidos_create' %}" class="btn btn-primary shadow-sm">
             <i class="fas fa-plus"></i> Nuevo Partido
@@ -21,26 +21,29 @@
             <table class="table table-hover table-striped mb-0 text-center align-middle bg-white text-dark">
                 <thead class="thead-dark">
                     <tr>
-                        <th class="text-white">ID</th>
+                        <th class="text-white">#</th>
                         <th class="text-white">Equipos</th>
                         <th class="text-white">Fecha</th>
                         <th class="text-white">Hora</th>
                         <th class="text-white">Cancha</th>
                         <th class="text-white">Estado</th>
-                        <th class="text-white">Tiempo / Pago</th>
+                        <th class="text-white">Tiempo / Cobro</th>
                         <th class="text-white">Opciones</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for partido in partidos %}
+                    {% for item in partidos_data %}
+                    {% with partido=item.partido %}
                     <tr>
-                        <td class="text-dark">{{ partido.id }}</td>
-                        <td class="font-weight-bold text-dark">
-                            {{ partido.equipo1.nombre_equipo|default:"--" }}
-                            {% if partido.equipo1 %}<div class="small text-muted"><i class="fas fa-crown text-warning mr-1"></i>{{ partido.equipo1.capitan_nombre }}</div>{% endif %}
-                            <span class="font-weight-bolder text-secondary mx-1">vs</span>
-                            {{ partido.equipo2.nombre_equipo|default:"--" }}
-                            {% if partido.equipo2 %}<div class="small text-muted"><i class="fas fa-crown text-warning mr-1"></i>{{ partido.equipo2.capitan_nombre }}</div>{% endif %}
+                        <td class="text-dark font-weight-bold">{{ partido.id }}</td>
+                        <td class="font-weight-bold text-dark text-left px-3">
+                            <div>🔵 {{ partido.equipo1.nombre_equipo|default:"--" }}
+                                {% if partido.equipo1 %}<div class="small text-muted"><i class="fas fa-crown text-warning mr-1"></i>{{ partido.equipo1.capitan_nombre }}</div>{% endif %}
+                            </div>
+                            <span class="font-weight-bolder text-secondary small">vs</span>
+                            <div>🔴 {{ partido.equipo2.nombre_equipo|default:"--" }}
+                                {% if partido.equipo2 %}<div class="small text-muted"><i class="fas fa-crown text-warning mr-1"></i>{{ partido.equipo2.capitan_nombre }}</div>{% endif %}
+                            </div>
                         </td>
                         <td class="text-dark">{{ partido.fecha|date:"d/M/Y" }}</td>
                         <td class="text-dark">{{ partido.hora }}</td>
@@ -48,7 +51,7 @@
                             {% if partido.hora_inicio and partido.hora_fin and not partido.pago_cancha %}
                                 <button type="button" class="btn btn-link p-0 font-weight-bold text-dark text-decoration-none"
                                     data-toggle="modal" data-target="#pagoCanchaModal{{ partido.pk }}"
-                                    title="Pagar cancha">
+                                    title="Cobrar cancha">
                                     <i class="fas fa-map-marker-alt text-primary mr-1"></i>
                                     {{ partido.cancha.disponibilidad|default:partido.cancha|default:"--" }}
                                 </button>
@@ -56,32 +59,42 @@
                                 {{ partido.cancha.disponibilidad|default:partido.cancha|default:"--" }}
                             {% endif %}
                         </td>
+
+                        <!-- ESTADO BADGE -->
                         <td>
                             {% if partido.estado == 'Pendiente' %}
-                                <span class="badge badge-warning text-dark">{{ partido.estado }}</span>
-                            {% elif partido.estado == 'Confirmada' %}
-                                <span class="badge badge-success">{{ partido.estado }}</span>
+                                <span class="badge badge-warning text-dark px-2 py-1">⏳ Pendiente</span>
+                            {% elif partido.estado == 'Confirmada' and partido.hora_inicio and not partido.hora_fin %}
+                                <span class="badge badge-primary px-2 py-1">▶️ En Curso</span>
+                            {% elif partido.estado == 'Finalizado' or partido.hora_fin %}
+                                {% if partido.pago_cancha %}
+                                    <span class="badge badge-success px-2 py-1">✅ Pagado</span>
+                                {% else %}
+                                    <span class="badge badge-info px-2 py-1">🏁 Finalizado</span>
+                                {% endif %}
                             {% elif partido.estado == 'Cancelada' %}
-                                <span class="badge badge-danger">{{ partido.estado }}</span>
+                                <span class="badge badge-danger px-2 py-1">❌ Cancelado</span>
                             {% else %}
-                                <span class="badge badge-secondary">{{ partido.estado }}</span>
+                                <span class="badge badge-secondary px-2 py-1">{{ partido.estado }}</span>
                             {% endif %}
                         </td>
+
+                        <!-- TIEMPO / COBRO -->
                         <td class="text-dark">
                             {% if not partido.hora_inicio %}
                                 <a href="{% url 'tejobar_app:admin_partidos_iniciar' partido.pk %}" class="btn btn-sm btn-success shadow-sm">
                                     <i class="fas fa-play"></i> Iniciar
                                 </a>
                             {% elif partido.hora_inicio and not partido.hora_fin %}
-                                <span class="text-primary font-weight-bold d-block mb-1">En curso...</span>
+                                <span class="text-primary font-weight-bold d-block mb-1 small">▶️ En curso...</span>
                                 <a href="{% url 'tejobar_app:admin_partidos_finalizar' partido.pk %}" class="btn btn-sm btn-danger shadow-sm">
                                     <i class="fas fa-stop"></i> Finalizar
                                 </a>
                             {% elif partido.hora_inicio and partido.hora_fin %}
+                                <div class="mb-1 text-muted small">
+                                    ⏱️ {{ partido.horas_jugadas }}h &mdash; <strong>${{ partido.gran_total|floatformat:0 }}</strong>
+                                </div>
                                 {% if not partido.pago_cancha %}
-                                    <div class="mb-1 text-muted small">
-                                        ⏱️ {{ partido.horas_jugadas }}h = <strong>${{ partido.gran_total|floatformat:0 }}</strong>
-                                    </div>
                                     {% if partido.pago_cancha_equipo1 or partido.pago_cancha_equipo2 %}
                                     <span class="badge badge-info px-2 py-1 mb-1 d-block"><i class="fas fa-star-half-alt"></i> Pago Parcial</span>
                                     {% endif %}
@@ -90,28 +103,44 @@
                                         <i class="fas fa-hand-holding-usd"></i> Cobrar
                                     </button>
                                 {% else %}
-                                    <div class="mb-1 text-muted small">
-                                        ⏱️ {{ partido.horas_jugadas }}h = <strong>${{ partido.gran_total|floatformat:0 }}</strong>
-                                    </div>
-                                    <span class="badge badge-success px-2 py-1"><i class="fas fa-check-circle"></i> Pagada</span>
+                                    <span class="badge badge-success px-2 py-1"><i class="fas fa-check-circle"></i> Pagado</span>
                                 {% endif %}
                             {% endif %}
                         </td>
+
+                        <!-- OPCIONES -->
                         <td>
-                            <a href="{% url 'tejobar_app:admin_partido_novedades' partido.pk %}" class="btn btn-sm btn-secondary" title="Novedades de Jugadores">
-                                <i class="fas fa-clipboard-list"></i>
-                            </a>
-                            <a href="{% url 'tejobar_app:admin_partidos_update' partido.pk %}" class="btn btn-sm btn-info text-white" title="Editar">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                            <a href="{% url 'tejobar_app:admin_partidos_delete' partido.pk %}" class="btn btn-sm btn-danger" title="Eliminar">
-                                <i class="fas fa-trash-alt"></i>
-                            </a>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{% url 'tejobar_app:admin_partido_novedades' partido.pk %}"
+                                    class="btn btn-outline-secondary" title="Novedades de Jugadores">
+                                    <i class="fas fa-clipboard-list"></i>
+                                </a>
+                                {% if partido.hora_inicio and not partido.pago_cancha %}
+                                <button type="button"
+                                    class="btn btn-outline-success"
+                                    data-toggle="modal" data-target="#consumoModal{{ partido.pk }}"
+                                    title="Añadir consumo a la cuenta del partido">
+                                    <i class="fas fa-shopping-basket"></i>
+                                </button>
+                                {% endif %}
+                                <a href="{% url 'tejobar_app:admin_partidos_update' partido.pk %}"
+                                    class="btn btn-outline-info" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'tejobar_app:admin_partidos_delete' partido.pk %}"
+                                    class="btn btn-outline-danger" title="Eliminar">
+                                    <i class="fas fa-trash-alt"></i>
+                                </a>
+                            </div>
                         </td>
                     </tr>
+                    {% endwith %}
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="text-center py-4 text-muted bg-light">No hay partidos registrados</td>
+                        <td colspan="8" class="text-center py-5 text-muted bg-light">
+                            <i class="fas fa-futbol fa-2x mb-2 d-block text-muted" style="opacity:0.4;"></i>
+                            No hay partidos registrados
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -120,11 +149,102 @@
     </div>
 </div>
 
-{% for partido in partidos %}
-    {% if partido.hora_inicio and partido.hora_fin and not partido.pago_cancha %}
-        {% include "partidos/pago_cancha_modal.html" with partido=partido modal_id_suffix=partido.pk modo="admin" %}
-    {% endif %}
+<!-- ── Modales de pago y consumo por partido ────────────────────────────────── -->
+{% for item in partidos_data %}
+{% with partido=item.partido %}
+
+{% if partido.hora_inicio and partido.hora_fin and not partido.pago_cancha %}
+    {% include "partidos/pago_cancha_modal.html" with partido=partido modal_id_suffix=partido.pk modo="admin" jugadores_e1=item.jugadores_e1 jugadores_e2=item.jugadores_e2 productos_activos=productos_activos %}
+{% endif %}
+
+<!-- Modal: Añadir Consumo en cualquier momento del partido activo -->
+{% if partido.hora_inicio and not partido.pago_cancha %}
+<div class="modal fade" id="consumoModal{{ partido.pk }}" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-success text-white border-0">
+                <h5 class="modal-title font-weight-bold">
+                    <i class="fas fa-shopping-basket mr-2"></i>
+                    Añadir Consumo — Partido #{{ partido.pk }}
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <form method="post" action="{% url 'tejobar_app:admin_partido_agregar_consumo' partido.pk %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="small font-weight-bold text-muted text-uppercase">Producto</label>
+                        <select name="producto_id" class="form-control" required>
+                            <option value="">-- Seleccionar producto --</option>
+                            {% for prod in productos_activos %}
+                            <option value="{{ prod.pk }}" data-precio="{{ prod.precio }}">
+                                {{ prod.nombre }} — ${{ prod.precio|floatformat:0 }} (stock: {{ prod.stock }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="small font-weight-bold text-muted text-uppercase">Cantidad</label>
+                        <input type="number" name="cantidad" class="form-control" value="1" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="small font-weight-bold text-muted text-uppercase">Asignar a</label>
+                        <select name="asignado_a" class="form-control" required>
+                            <optgroup label="Equipo completo">
+                                <option value="equipo1">🔵 {{ partido.equipo1.nombre_equipo|default:"Equipo 1" }} (cuenta del equipo)</option>
+                                <option value="equipo2">🔴 {{ partido.equipo2.nombre_equipo|default:"Equipo 2" }} (cuenta del equipo)</option>
+                                <option value="cancha">🏟️ Cuenta general del partido</option>
+                            </optgroup>
+                            {% if item.jugadores_e1 %}
+                            <optgroup label="🔵 Jugadores {{ partido.equipo1.nombre_equipo }}">
+                                {% for je in item.jugadores_e1 %}
+                                <option value="jugador_{{ je.pk }}">{{ je.get_nombre }}{% if je.es_capitan %} ⭐ Capitán{% endif %}</option>
+                                {% endfor %}
+                            </optgroup>
+                            {% endif %}
+                            {% if item.jugadores_e2 %}
+                            <optgroup label="🔴 Jugadores {{ partido.equipo2.nombre_equipo }}">
+                                {% for je in item.jugadores_e2 %}
+                                <option value="jugador_{{ je.pk }}">{{ je.get_nombre }}{% if je.es_capitan %} ⭐ Capitán{% endif %}</option>
+                                {% endfor %}
+                            </optgroup>
+                            {% endif %}
+                        </select>
+                    </div>
+                    <!-- Consumos existentes pendientes -->
+                    {% with consumos=partido.consumos.all %}
+                    {% if consumos %}
+                    <hr>
+                    <p class="small text-muted font-weight-bold text-uppercase mb-2">Consumos ya registrados en este partido:</p>
+                    <ul class="list-group list-group-flush">
+                        {% for c in consumos %}
+                        <li class="list-group-item px-0 py-1 small d-flex justify-content-between">
+                            <span>{{ c.cantidad }}× <strong>{{ c.producto.nombre }}</strong></span>
+                            <span class="text-muted">
+                                {% if c.equipo %}{{ c.equipo.nombre_equipo }}{% else %}General{% endif %}
+                                — <span class="{% if c.estado == 'comprado' %}text-success{% else %}text-warning{% endif %}">{{ c.estado|title }}</span>
+                            </span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                    {% endwith %}
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success font-weight-bold">
+                        <i class="fas fa-plus mr-1"></i> Registrar Consumo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endwith %}
 {% endfor %}
+
 {% endblock %}
 
 {% block extra_scripts %}
@@ -132,16 +252,8 @@
 (function () {
     document.querySelectorAll('.form-pago-efectivo-cancha').forEach(function (form) {
         form.addEventListener('submit', function (e) {
-            if (!confirm('¿Confirmas el pago en EFECTIVO de esta cancha?')) {
+            if (!confirm('¿Confirmas el cobro de este partido?')) {
                 e.preventDefault();
-            }
-        });
-    });
-    document.querySelectorAll('.btn-pago-tarjeta-cancha').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            var modal = btn.closest('.modal');
-            if (modal && typeof jQuery !== 'undefined') {
-                jQuery(modal).modal('hide');
             }
         });
     });

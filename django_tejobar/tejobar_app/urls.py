@@ -106,5 +106,8 @@ urlpatterns = [
     path("administracion/partidos/<int:pk>/novedades/", views.admin_partido_novedades, name="admin_partido_novedades"),
     path("administracion/partidos/<int:pk>/novedades/agregar/", views.admin_partido_novedad_crear, name="admin_partido_novedad_crear"),
     path("administracion/partidos/novedades/<int:novedad_pk>/eliminar/", views.admin_partido_novedad_eliminar, name="admin_partido_novedad_eliminar"),
+
+    # Consumos en partido
+    path("administracion/partidos/<int:pk>/consumo/agregar/", views.admin_partido_agregar_consumo, name="admin_partido_agregar_consumo"),
 ]
 
