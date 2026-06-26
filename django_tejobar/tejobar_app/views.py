@@ -1341,19 +1341,39 @@ def _partido_listo_para_pago(partido: Partido) -> bool:
     return bool(
         partido.hora_inicio
         and partido.hora_fin
-        and not partido.pago_cancha
-        and partido.total_cancha > 0
+        and not (partido.pago_cancha_equipo1 and partido.pago_cancha_equipo2)
+        and partido.total_por_equipo >= 0
     )
 
 
-def _registrar_pago_cancha_efectivo(partido: Partido, descripcion_extra: str = "") -> bool:
+def _registrar_pago_cancha_efectivo(partido: Partido, equipo_paga: str = "ambos", descripcion_extra: str = "") -> bool:
     if not _partido_listo_para_pago(partido):
         return False
-    partido.pago_cancha = True
+        
+    monto_pagado = 0
+    procesado = False
+    if equipo_paga in ["equipo1", "ambos"] and not partido.pago_cancha_equipo1:
+        partido.pago_cancha_equipo1 = True
+        monto_pagado += partido.total_por_equipo
+        procesado = True
+        
+    if equipo_paga in ["equipo2", "ambos"] and not partido.pago_cancha_equipo2:
+        partido.pago_cancha_equipo2 = True
+        monto_pagado += partido.total_por_equipo
+        procesado = True
+        
+    if not procesado:
+        return False
+
+    if partido.pago_cancha_equipo1 and partido.pago_cancha_equipo2:
+        partido.pago_cancha = True
+
     partido.save()
-    descripcion = f"Pago de cancha para el partido #{partido.pk} - Total: ${partido.total_cancha}"
+    
+    descripcion = f"Pago de cancha para el partido #{partido.pk} - Monto pagado: ${monto_pagado}"
     if descripcion_extra:
         descripcion = f"{descripcion} ({descripcion_extra})"
+        
     Novedad.objects.create(
         producto=None,
         tipo_novedad=Novedad.TIPO_CANCHA,
@@ -1368,10 +1388,18 @@ def pagar_partido(request: HttpRequest, pk: int) -> HttpResponse:
     if request.method != "POST":
         return redirect("tejobar_app:admin_partidos_index")
     partido = get_object_or_404(Partido, pk=pk)
-    if _registrar_pago_cancha_efectivo(partido, descripcion_extra="Efectivo en caja"):
-        messages.success(request, "Pago de cancha en efectivo registrado exitosamente.")
+    
+    equipo_paga = request.POST.get("equipo_paga", "ambos")
+    notas = request.POST.get("notas", "").strip()
+    
+    desc_extra = f"Efectivo en caja. Equipo(s): {equipo_paga}"
+    if notas:
+        desc_extra += f". Notas: {notas}"
+        
+    if _registrar_pago_cancha_efectivo(partido, equipo_paga=equipo_paga, descripcion_extra=desc_extra):
+        messages.success(request, "Pago de cancha registrado exitosamente.")
     else:
-        messages.error(request, "No se puede registrar el pago para este partido.")
+        messages.error(request, "No se pudo registrar el pago. Puede que el equipo ya haya pagado o el partido no esté listo.")
     return redirect("tejobar_app:admin_partidos_index")
 
 
@@ -1660,15 +1688,40 @@ def crear_preferencia_cancha(request, pk):
         messages.warning(request, "El partido aún no está finalizado o no tiene costo de cancha.")
         return redirect("tejobar_app:partidos_index")
 
-    monto_total = partido.total_cancha
+    # Determinar a qué equipo pertenece el jugador actual
+    persona = getattr(request.user, "persona", None)
+    equipo_del_jugador = None
+    if persona:
+        mi_equipo_rel = JugadorEquipo.objects.filter(jugador__persona=persona).first()
+        if mi_equipo_rel:
+            if partido.equipo1_id == mi_equipo_rel.equipo_id:
+                equipo_del_jugador = "equipo1"
+            elif partido.equipo2_id == mi_equipo_rel.equipo_id:
+                equipo_del_jugador = "equipo2"
+                
+    if not equipo_del_jugador:
+        messages.error(request, "No se pudo determinar a qué equipo perteneces para procesar tu pago.")
+        return redirect("tejobar_app:partidos_index")
+        
+    # Verificar si su equipo ya pagó
+    if (equipo_del_jugador == "equipo1" and partido.pago_cancha_equipo1) or \
+       (equipo_del_jugador == "equipo2" and partido.pago_cancha_equipo2):
+        messages.warning(request, "Tu equipo ya ha pagado su parte de la cancha.")
+        return redirect("tejobar_app:partidos_index")
+
+    monto_total = partido.total_por_equipo
+    
+    if monto_total <= 0:
+        messages.warning(request, "No se puede pagar por MercadoPago porque el monto a cobrar es $0.")
+        return redirect("tejobar_app:partidos_index")
         
     sdk = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
     
     preference_data = {
         "items": [
             {
-                "id": str(partido.pk),
-                "title": f"Cancha para Partido #{partido.pk}",
+                "id": f"{partido.pk}_{equipo_del_jugador}",
+                "title": f"Cancha (Tu parte) - Partido #{partido.pk}",
                 "quantity": 1,
                 "currency_id": "COP",
                 "unit_price": float(monto_total)
@@ -1680,7 +1733,7 @@ def crear_preferencia_cancha(request, pk):
             "pending": "https://tejobar-version-python-production.up.railway.app/pago-pendiente/"
         },
         "auto_return": "approved",
-        "external_reference": f"cancha_{partido.pk}"
+        "external_reference": f"cancha_{partido.pk}_{equipo_del_jugador}"
     }
 
     preference_response = sdk.preference().create(preference_data)
@@ -1750,20 +1803,18 @@ def pago_exitoso(request):
             messages.success(request, f"Pago de carrito exitoso. ¡Gracias por tu compra!")
                 
         elif external_reference.startswith("cancha_"):
-            partido_id = external_reference.split("_")[1]
+            parts = external_reference.split("_")
+            partido_id = parts[1]
+            equipo_paga = parts[2] if len(parts) > 2 else "ambos"
+            
             partido = get_object_or_404(Partido, pk=partido_id)
-            if not partido.pago_cancha:
-                partido.pago_cancha = True
-                partido.save()
-                
-                Novedad.objects.create(
-                    producto=None,
-                    tipo_novedad=Novedad.TIPO_CANCHA,
-                    cantidad=1,
-                    descripcion=f"Pago Cancha MercadoPago (ID: {payment_id}) - Partido #{partido.pk}"
-                )
-                messages.success(request, "Pago de cancha exitoso. Se ha registrado en novedades.")
-                
+            
+            # Use the existing function to process the team's payment
+            desc = f"MercadoPago (ID: {payment_id})"
+            if _registrar_pago_cancha_efectivo(partido, equipo_paga=equipo_paga, descripcion_extra=desc):
+                messages.success(request, f"Pago de cancha exitoso ({equipo_paga}). Se ha registrado en novedades.")
+            else:
+                messages.warning(request, "Pago verificado, pero el sistema indica que ya estaba pagado o hubo un error al registrarlo.")
     return redirect("tejobar_app:dashboard")
 
 @login_required

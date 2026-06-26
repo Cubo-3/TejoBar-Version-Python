@@ -45,7 +45,7 @@
                         <td class="text-dark">{{ partido.fecha|date:"d/M/Y" }}</td>
                         <td class="text-dark">{{ partido.hora }}</td>
                         <td class="text-dark">
-                            {% if partido.hora_inicio and partido.hora_fin and not partido.pago_cancha and partido.total_cancha %}
+                            {% if partido.hora_inicio and partido.hora_fin and not partido.pago_cancha %}
                                 <button type="button" class="btn btn-link p-0 font-weight-bold text-dark text-decoration-none"
                                     data-toggle="modal" data-target="#pagoCanchaModal{{ partido.pk }}"
                                     title="Pagar cancha">
@@ -82,6 +82,9 @@
                                     <div class="mb-1 text-muted small">
                                         ⏱️ {{ partido.horas_jugadas }}h = <strong>${{ partido.total_cancha|floatformat:0 }}</strong>
                                     </div>
+                                    {% if partido.pago_cancha_equipo1 or partido.pago_cancha_equipo2 %}
+                                    <span class="badge badge-info px-2 py-1 mb-1 d-block"><i class="fas fa-star-half-alt"></i> Pago Parcial</span>
+                                    {% endif %}
                                     <button type="button" class="btn btn-sm btn-warning font-weight-bold text-dark shadow-sm"
                                         data-toggle="modal" data-target="#pagoCanchaModal{{ partido.pk }}">
                                         <i class="fas fa-hand-holding-usd"></i> Cobrar
@@ -115,7 +118,7 @@
 </div>
 
 {% for partido in partidos %}
-    {% if partido.hora_inicio and partido.hora_fin and not partido.pago_cancha and partido.total_cancha %}
+    {% if partido.hora_inicio and partido.hora_fin and not partido.pago_cancha %}
         {% include "partidos/pago_cancha_modal.html" with partido=partido modal_id_suffix=partido.pk modo="admin" %}
     {% endif %}
 {% endfor %}

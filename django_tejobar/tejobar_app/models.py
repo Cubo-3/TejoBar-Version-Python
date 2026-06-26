@@ -541,7 +541,16 @@ class Partido(models.Model):
     hora_reserva_fin = models.CharField(max_length=20, blank=True, null=True) # User-input reservation end time
     hora_inicio = models.DateTimeField(blank=True, null=True)
     hora_fin = models.DateTimeField(blank=True, null=True)
-    pago_cancha = models.BooleanField(default=False)
+    pago_cancha_equipo1 = models.BooleanField(default=False)
+    pago_cancha_equipo2 = models.BooleanField(default=False)
+    pago_cancha = models.BooleanField(default=False) # True when both have paid
+
+    @property
+    def total_por_equipo(self):
+        if not self.cancha or not self.cancha.precio_por_hora:
+            return 0.0
+        # If total_cancha calculates total base matching the rate, each pays that exact amount since the rate is per captain
+        return round(self.horas_jugadas * self.cancha.precio_por_hora, 2)
 
     def is_overlapping_time(self, other) -> bool:
         """Helper para determinar si dos partidos cruzan en horarios basados en strings (HH:MM)."""
@@ -656,7 +665,8 @@ class Partido(models.Model):
     def total_cancha(self):
         if not self.cancha or not self.cancha.precio_por_hora:
             return 0.0
-        return round(self.horas_jugadas * self.cancha.precio_por_hora, 2)
+        # La tarifa base es por equipo. El total del partido es el doble.
+        return round(self.horas_jugadas * self.cancha.precio_por_hora * 2, 2)
 
 
 class Torneo(models.Model):

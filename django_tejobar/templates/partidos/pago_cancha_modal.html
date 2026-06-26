@@ -33,14 +33,33 @@
                     Selecciona el método de pago para continuar:
                 </p>
                 <div class="row">
-                    <div class="col-12 col-sm-6 mb-3 mb-sm-0">
+                    <div class="col-12">
                         <form method="post"
                             action="{% if modo == 'admin' %}{% url 'tejobar_app:admin_partidos_pagar' partido.pk %}{% else %}{% url 'tejobar_app:pago_cancha_efectivo' partido.pk %}{% endif %}"
                             class="h-100 form-pago-efectivo-cancha" data-partido-id="{{ partido.pk }}">
                             {% csrf_token %}
+                            {% if modo == 'admin' %}
+                            <div class="form-group mb-2 text-left">
+                                <label for="equipo_paga_{{ partido.pk }}" class="small font-weight-bold text-muted text-uppercase mb-1">¿A quién se le cobra?</label>
+                                <select name="equipo_paga" id="equipo_paga_{{ partido.pk }}" class="form-control mb-2" required>
+                                    {% if not partido.pago_cancha_equipo1 and not partido.pago_cancha_equipo2 %}
+                                    <option value="ambos">Cobrar a Ambos (${{ partido.total_cancha|floatformat:0 }})</option>
+                                    {% endif %}
+                                    {% if not partido.pago_cancha_equipo1 %}
+                                    <option value="equipo1">{{ partido.equipo1.nombre_equipo|default:"Equipo 1" }} (Capitán: {{ partido.equipo1.capitan_nombre }}) - ${{ partido.total_por_equipo|floatformat:0 }}</option>
+                                    {% endif %}
+                                    {% if not partido.pago_cancha_equipo2 %}
+                                    <option value="equipo2">{{ partido.equipo2.nombre_equipo|default:"Equipo 2" }} (Capitán: {{ partido.equipo2.capitan_nombre }}) - ${{ partido.total_por_equipo|floatformat:0 }}</option>
+                                    {% endif %}
+                                </select>
+                            </div>
+                            <div class="form-group mb-3 text-left">
+                                <input type="text" name="notas" id="notas_{{ partido.pk }}" class="form-control form-control-sm" placeholder="Notas (Opcional, ej. Transferencia)">
+                            </div>
+                            {% endif %}
                             <button type="submit" class="btn btn-success btn-lg btn-block font-weight-bold shadow-sm py-3">
                                 <i class="fas fa-money-bill-wave fa-2x d-block mb-2"></i>
-                                Efectivo
+                                {% if modo == 'admin' %}Cobrar{% else %}Avisar Pago en Caja{% endif %}
                             </button>
                         </form>
                         {% if modo == 'jugador' %}
@@ -48,15 +67,6 @@
                         {% else %}
                         <small class="text-muted d-block text-center mt-2">Registro en caja / efectivo</small>
                         {% endif %}
-                    </div>
-                    <div class="col-12 col-sm-6">
-                        <a href="{% url 'tejobar_app:pago_crear_cancha' partido.pk %}"
-                            class="btn btn-primary btn-lg btn-block font-weight-bold shadow-sm py-3 btn-pago-tarjeta-cancha"
-                            data-partido-id="{{ partido.pk }}">
-                            <i class="fas fa-credit-card fa-2x d-block mb-2"></i>
-                            Tarjeta (Mercado Pago)
-                        </a>
-                        <small class="text-muted d-block text-center mt-2">Pasarela Mercado Pago</small>
                     </div>
                 </div>
             </div>
