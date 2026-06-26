@@ -1003,26 +1003,29 @@ def admin_product_update(request: HttpRequest, pk: int) -> HttpResponse:
 def admin_product_delete(request: HttpRequest, pk: int) -> HttpResponse:
     producto = get_object_or_404(Producto, pk=pk)
     
+    esta_activo = producto.activo
     tiene_historial = producto.historial.exists()
     tiene_apartados = producto.apartados.exists()
-    tiene_stock = producto.activo and producto.stock > 0
+    tiene_stock = producto.stock > 0
     
-    if tiene_historial or tiene_apartados or tiene_stock:
+    if esta_activo or tiene_historial or tiene_apartados or tiene_stock:
         motivos = []
+        if esta_activo:
+            motivos.append("está activo")
+        if tiene_stock and not esta_activo:
+            motivos.append("tiene stock disponible")
         if tiene_historial:
-            motivos.append("historial de ventas")
+            motivos.append("tiene historial de ventas")
         if tiene_apartados:
-            motivos.append("apartados activos")
-        if tiene_stock:
-            motivos.append("stock disponible")
+            motivos.append("tiene apartados")
             
         motivos_str = " y ".join([", ".join(motivos[:-1]), motivos[-1]] if len(motivos) > 1 else motivos)
-        toggle_url = reverse('tejobar_app:admin_productos_toggle_active', args=[producto.pk])
-        messages.error(
-            request, 
-            f"No se puede eliminar el producto porque tiene {motivos_str}. "
-            f"¿Deseas <a href='{toggle_url}'>desactivarlo</a> en su lugar?"
-        )
+        
+        msg = f"No se puede eliminar el producto porque {motivos_str}."
+        if esta_activo:
+            msg += " Si desea inhabilitar el producto, por favor cambie su estado usando el botón correspondiente en la tabla."
+            
+        messages.error(request, msg)
         return redirect("tejobar_app:admin_productos_index")
 
     if request.method == "POST":
