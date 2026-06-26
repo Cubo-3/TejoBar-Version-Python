@@ -2,6 +2,84 @@
 
 {% block title %}Equipos - TejoBar{% endblock %}
 
+{% block extra_styles %}
+<style>
+    /* ===== CÁPSULA DE ACCIÓN - ESTILO SELECTOR DE CANTIDAD ===== */
+    .capsule-action {
+        display: inline-flex;
+        align-items: center;
+        border: 2.5px solid #FFC107;
+        border-radius: 50px;
+        background: #ffffff;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(255, 193, 7, 0.35);
+        transition: box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .capsule-action:hover {
+        box-shadow: 0 4px 16px rgba(255, 193, 7, 0.55);
+        transform: translateY(-1px);
+    }
+
+    .capsule-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 34px;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        color: #212529;
+        font-size: 0.95rem;
+        transition: background 0.2s ease, color 0.2s ease;
+        text-decoration: none;
+        padding: 0;
+    }
+
+    .capsule-btn:hover {
+        background: #FFC107;
+        color: #212529;
+        text-decoration: none;
+    }
+
+    .capsule-btn.delete-btn:hover {
+        background: #dc3545;
+        color: #fff;
+    }
+
+    .capsule-btn.edit-btn:hover {
+        background: #FFC107;
+        color: #212529;
+    }
+
+    .capsule-divider {
+        width: 1px;
+        height: 22px;
+        background: #FFC107;
+        opacity: 0.7;
+    }
+
+    .capsule-count {
+        min-width: 42px;
+        text-align: center;
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: #212529;
+        padding: 0 4px;
+        letter-spacing: 0.5px;
+    }
+
+    .capsule-count .count-label {
+        font-size: 0.65rem;
+        font-weight: 500;
+        color: #6c757d;
+        display: block;
+        line-height: 1;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
     <h1 class="mb-0"><i class="fas fa-users mr-2"></i> Equipos</h1>
@@ -63,15 +141,41 @@
                     {% endif %}
 
                     {% if request.user.persona.rol == 'admin' %}
-                        <a href="{% url 'tejobar_app:equipos_update' e.pk %}" class="btn btn-sm btn-secondary mr-2">
-                            <i class="fas fa-edit"></i> Editar
-                        </a>
-                        <form method="post" action="{% url 'tejobar_app:equipos_delete' e.pk %}" class="m-0" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este equipo? Todos los jugadores quedarán sin equipo.');">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-sm btn-danger">
-                                <i class="fas fa-trash"></i> Eliminar
+                        {# ===== CÁPSULA DE ACCIÓN AMARILLA ===== #}
+                        <div class="capsule-action" title="Acciones del equipo">
+                            {# Botón Izquierdo: Eliminar #}
+                            <button
+                                type="button"
+                                class="capsule-btn delete-btn"
+                                title="Eliminar equipo"
+                                data-toggle="modal"
+                                data-target="#deleteModal{{ e.pk }}"
+                                aria-label="Eliminar equipo {{ e.nombre_equipo }}"
+                            >
+                                <i class="fas fa-trash-alt"></i>
                             </button>
-                        </form>
+
+                            <div class="capsule-divider"></div>
+
+                            {# Centro: Métrica jugadores #}
+                            <div class="capsule-count" title="{{ e.num_jugadores }} jugadores en el equipo">
+                                {{ e.num_jugadores }}
+                                <span class="count-label">jugadores</span>
+                            </div>
+
+                            <div class="capsule-divider"></div>
+
+                            {# Botón Derecho: Editar/Renombrar #}
+                            <a
+                                href="{% url 'tejobar_app:equipos_update' e.pk %}"
+                                class="capsule-btn edit-btn"
+                                title="Editar / Renombrar equipo"
+                                aria-label="Editar equipo {{ e.nombre_equipo }}"
+                            >
+                                <i class="fas fa-pen"></i>
+                            </a>
+                        </div>
+                        {# ===== FIN CÁPSULA ===== #}
                     {% endif %}
                 </td>
             </tr>
@@ -81,4 +185,41 @@
     </tbody>
     </table>
 </div>
+
+{# ===== MODALES DE CONFIRMACIÓN DE ELIMINACIÓN ===== #}
+{% for e in equipos %}
+{% if request.user.persona.rol == 'admin' %}
+<div class="modal fade" id="deleteModal{{ e.pk }}" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel{{ e.pk }}" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-danger text-white" style="border-radius: .3rem .3rem 0 0;">
+        <h5 class="modal-title font-weight-bold" id="deleteModalLabel{{ e.pk }}">
+            <i class="fas fa-exclamation-triangle mr-2"></i> Eliminar Equipo
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+            <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body text-center py-4">
+          <p class="mb-1">¿Estás seguro de que deseas eliminar el equipo</p>
+          <p class="font-weight-bold text-danger" style="font-size:1.1rem;">«{{ e.nombre_equipo }}»</p>
+          <p class="text-muted small mb-0">Todos los jugadores ({{ e.num_jugadores }}) quedarán sin equipo y esta acción no se puede deshacer.</p>
+      </div>
+      <div class="modal-footer justify-content-center">
+        <button type="button" class="btn btn-secondary px-4" data-dismiss="modal">
+            <i class="fas fa-times mr-1"></i> Cancelar
+        </button>
+        <form method="post" action="{% url 'tejobar_app:equipos_delete' e.pk %}" class="m-0">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger px-4">
+                <i class="fas fa-trash-alt mr-1"></i> Sí, eliminar
+            </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endfor %}
+
 {% endblock %}

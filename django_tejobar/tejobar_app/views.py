@@ -814,17 +814,24 @@ def equipo_remove_member(request: HttpRequest, pk: int, jugador_pk: int) -> Http
     assert persona is not None
 
     if request.method == "POST":
-        miembro_a_expulsar = get_object_or_404(JugadorEquipo, equipo=equipo, jugador__persona__pk=jugador_pk)
-        
+        is_invitado = request.POST.get("is_invitado") == "1"
+
+        if is_invitado:
+            # Jugador invitado: el pk enviado es el pk de JugadorEquipo
+            miembro_a_expulsar = get_object_or_404(JugadorEquipo, equipo=equipo, pk=jugador_pk)
+        else:
+            # Jugador registrado: el pk enviado es el pk de Persona
+            miembro_a_expulsar = get_object_or_404(JugadorEquipo, equipo=equipo, jugador__persona__pk=jugador_pk)
+
         # Prevent captain from removing themselves through this view, they should use delete team
         if miembro_a_expulsar.es_capitan and persona.rol != Persona.ROL_ADMIN:
             messages.error(request, "El capitán no puede ser expulsado. Elimina el equipo si deseas salir.")
             return redirect("tejobar_app:equipos_show", pk=equipo.pk)
-            
+
         miembro_a_expulsar.delete()
         messages.success(request, "Jugador expulsado del equipo.")
         return redirect("tejobar_app:equipos_show", pk=equipo.pk)
-        
+
     return redirect("tejobar_app:equipos_show", pk=equipo.pk)
 
 
@@ -1607,24 +1614,30 @@ def api_disponibilidad_partido(request: HttpRequest) -> JsonResponse:
 # CATEGORIAS CRUD (Admin)
 # ==========================================
 
+@login_required
 @admin_required
 def admin_categorias_index(request):
     categorias = Categoria.objects.all()
     return render(request, "categorias/admin_index.html", {"categorias": categorias})
 
+@login_required
 @admin_required
 def admin_categorias_create(request):
     if request.method == "POST":
         form = CategoriaForm(request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(request, "Categoría creada con éxito.")
-            return redirect("tejobar_app:admin_categorias_index")
+            try:
+                form.save()
+                messages.success(request, "Categoría creada con éxito.")
+                return redirect("tejobar_app:admin_categorias_index")
+            except Exception as e:
+                messages.error(request, f"Error al guardar la categoría: {e}")
     else:
         form = CategoriaForm()
 
     return render(request, "categorias/form.html", {"form": form})
 
+@login_required
 @admin_required
 def admin_categorias_update(request, pk):
     categoria = get_object_or_404(Categoria, pk=pk)
@@ -1632,21 +1645,28 @@ def admin_categorias_update(request, pk):
     if request.method == "POST":
         form = CategoriaForm(request.POST, instance=categoria)
         if form.is_valid():
-            form.save()
-            messages.success(request, "Categoría editada con éxito.")
-            return redirect("tejobar_app:admin_categorias_index")
+            try:
+                form.save()
+                messages.success(request, "Categoría editada con éxito.")
+                return redirect("tejobar_app:admin_categorias_index")
+            except Exception as e:
+                messages.error(request, f"Error al actualizar la categoría: {e}")
     else:
         form = CategoriaForm(instance=categoria)
 
     return render(request, "categorias/form.html", {"form": form, "categoria": categoria})
 
+@login_required
 @admin_required
 def admin_categorias_delete(request, pk):
     categoria = get_object_or_404(Categoria, pk=pk)
 
     if request.method == "POST":
-        categoria.delete()
-        messages.success(request, "Categoría eliminada.")
+        try:
+            categoria.delete()
+            messages.success(request, "Categoría eliminada.")
+        except Exception as e:
+            messages.error(request, f"No se puede eliminar esta categoría porque tiene productos asociados: {e}")
         return redirect("tejobar_app:admin_categorias_index")
 
     return render(request, "categorias/confirm_delete.html", {"categoria": categoria})
@@ -1941,6 +1961,8 @@ def admin_despachar_pedido(request: HttpRequest, pk: int) -> HttpResponse:
 
 @login_required
 def editar_item_carrito(request: HttpRequest, pk: int) -> HttpResponse:
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
     if request.method == "POST":
         persona = getattr(request.user, "persona", None)
         apartado = get_object_or_404(
@@ -1952,31 +1974,50 @@ def editar_item_carrito(request: HttpRequest, pk: int) -> HttpResponse:
         try:
             nueva_cantidad = int(request.POST.get("cantidad", ""))
         except (TypeError, ValueError):
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': 'Ingresa una cantidad válida.'}, status=400)
             messages.error(request, "Ingresa una cantidad válida.")
             return redirect("tejobar_app:dashboard")
 
         max_cantidad = apartado.cantidad + apartado.producto.stock
 
         if nueva_cantidad < 1:
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': 'La cantidad mínima es 1.'}, status=400)
             messages.error(request, "La cantidad mínima es 1.")
             return redirect("tejobar_app:dashboard")
 
         if nueva_cantidad > max_cantidad:
-            messages.error(
-                request,
-                f"La cantidad no puede superar el stock disponible ({max_cantidad} unidades).",
-            )
+            msg = f"La cantidad no puede superar el stock disponible ({max_cantidad} unidades)."
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': msg}, status=400)
+            messages.error(request, msg)
             return redirect("tejobar_app:dashboard")
 
         diferencia = nueva_cantidad - apartado.cantidad
         if diferencia > 0 and apartado.producto.stock < diferencia:
-            messages.error(request, f"Stock insuficiente. Disponible adicional: {apartado.producto.stock}")
+            msg = f"Stock insuficiente. Disponible adicional: {apartado.producto.stock}"
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': msg}, status=400)
+            messages.error(request, msg)
             return redirect("tejobar_app:dashboard")
 
         apartado.producto.stock -= diferencia
         apartado.producto.save()
         apartado.cantidad = nueva_cantidad
         apartado.save()
+
+        if is_ajax:
+            subtotal = float(apartado.producto.precio) * nueva_cantidad
+            # Recalculate cart total
+            apartados_pendientes = Apartado.objects.filter(persona=persona, estado=Apartado.ESTADO_PENDIENTE).select_related('producto')
+            total_carrito = sum(float(a.producto.precio) * a.cantidad for a in apartados_pendientes)
+            return JsonResponse({
+                'success': True,
+                'nueva_cantidad': nueva_cantidad,
+                'subtotal': f"{subtotal:,.0f}",
+                'total_carrito': f"{total_carrito:,.0f}",
+            })
 
         messages.success(request, "Apartado actualizado correctamente.")
 
@@ -1985,18 +2026,66 @@ def editar_item_carrito(request: HttpRequest, pk: int) -> HttpResponse:
 
 @login_required
 def eliminar_item_carrito(request: HttpRequest, pk: int) -> HttpResponse:
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
     if request.method == "POST":
         persona = getattr(request.user, "persona", None)
         apartado = get_object_or_404(Apartado, pk=pk, persona=persona, estado=Apartado.ESTADO_PENDIENTE)
-        
+
         # Restore stock
         apartado.producto.stock += apartado.cantidad
         apartado.producto.save()
-        
         apartado.delete()
+
+        if is_ajax:
+            apartados_pendientes = Apartado.objects.filter(persona=persona, estado=Apartado.ESTADO_PENDIENTE).select_related('producto')
+            total_carrito = sum(float(a.producto.precio) * a.cantidad for a in apartados_pendientes)
+            return JsonResponse({
+                'success': True,
+                'total_carrito': f"{total_carrito:,.0f}",
+                'num_items': apartados_pendientes.count(),
+            })
+
         messages.success(request, "Producto eliminado del carrito.")
-        
+
     return redirect("tejobar_app:dashboard")
+
+
+@login_required
+def carrito_resumen(request: HttpRequest) -> JsonResponse:
+    """API JSON: retorna el contenido completo del carrito del usuario autenticado."""
+    persona = getattr(request.user, "persona", None)
+    if not persona:
+        return JsonResponse({'success': False, 'items': [], 'total': '0', 'num_items': 0})
+
+    apartados = Apartado.objects.filter(
+        persona=persona, estado=Apartado.ESTADO_PENDIENTE
+    ).select_related('producto', 'producto__categoria')
+
+    items = []
+    total = 0.0
+    for ap in apartados:
+        precio = float(ap.producto.precio)
+        subtotal = precio * ap.cantidad
+        total += subtotal
+        items.append({
+            'id': ap.pk,
+            'nombre': ap.producto.nombre,
+            'precio_unitario': f"{precio:,.0f}",
+            'cantidad': ap.cantidad,
+            'subtotal': f"{subtotal:,.0f}",
+            'imagen_url': ap.producto.imagen_url,
+            'max_cantidad': ap.cantidad + ap.producto.stock,
+            'editar_url': f"/carrito/editar/{ap.pk}/",
+            'eliminar_url': f"/carrito/eliminar/{ap.pk}/",
+        })
+
+    return JsonResponse({
+        'success': True,
+        'items': items,
+        'total': f"{total:,.0f}",
+        'num_items': len(items),
+    })
 
 
 @login_required

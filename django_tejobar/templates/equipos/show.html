@@ -35,12 +35,22 @@
                     </div>
                     {% if es_capitan or es_admin %}
                         {% if not miembro.es_capitan %}
-                            <form method="post" action="{% url 'tejobar_app:equipos_remove_member' equipo.pk miembro.pk %}" class="m-0" onsubmit="return confirm('¿Seguro de expulsar a este jugador?');">
+                            {% if miembro.tipo_usuario == 'registrado' and miembro.jugador %}
+                            <form method="post" action="{% url 'tejobar_app:equipos_remove_member' equipo.pk miembro.jugador.persona.pk %}" class="m-0" onsubmit="return confirm('\u00bfSeguro de expulsar a este jugador?');">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-sm btn-outline-danger">
                                     <i class="fas fa-user-times"></i> Expulsar
                                 </button>
                             </form>
+                            {% else %}
+                            <form method="post" action="{% url 'tejobar_app:equipos_remove_member' equipo.pk miembro.pk %}" class="m-0" onsubmit="return confirm('\u00bfSeguro de expulsar a este jugador invitado?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="is_invitado" value="1">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-user-times"></i> Expulsar
+                                </button>
+                            </form>
+                            {% endif %}
                         {% endif %}
                     {% endif %}
                 </div>

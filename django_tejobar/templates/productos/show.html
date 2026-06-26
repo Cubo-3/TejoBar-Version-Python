@@ -282,38 +282,49 @@
 
                             <!-- Acción -->
                             {% if user.is_authenticated %}
-                                {% if producto.stock > 0 and not producto.is_expired %}
-                                    <form method="post" action="{% url 'tejobar_app:productos_apartar' producto.pk %}">
-                                        {% csrf_token %}
-                                        <div class="cantidad-form">
-                                            <label for="cantidad" class="cantidad-label">
-                                                <i class="fas fa-shopping-cart mr-1" style="color:#ff7b00;"></i>
-                                                Selecciona la cantidad
-                                            </label>
-                                            <div class="cantidad-controls">
-                                                <input
-                                                    type="number"
-                                                    name="cantidad"
-                                                    id="cantidad"
-                                                    min="1"
-                                                    max="{{ producto.stock }}"
-                                                    value="1"
-                                                    class="cantidad-input"
-                                                >
-                                                <button type="submit" class="btn-carrito">
-                                                    <i class="fas fa-cart-plus"></i>
-                                                    Añadir al Carrito
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </form>
-                                {% else %}
+                                {% if user.is_staff %}
                                     <div class="cantidad-form text-center">
-                                        <i class="fas fa-ban fa-2x text-danger mb-2 d-block"></i>
-                                        <span class="text-danger font-weight-bold">
-                                            {% if producto.is_expired %}Producto vencido{% else %}Sin stock disponible{% endif %}
-                                        </span>
+                                        <h5 class="mb-3 text-white-50 font-weight-bold" style="font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px;">
+                                            <i class="fas fa-user-shield text-info mr-1"></i> Modo Administrador
+                                        </h5>
+                                        <a href="{% url 'tejobar_app:admin_productos_update' producto.pk %}" class="w-100 py-3 d-flex align-items-center justify-content-center text-white font-weight-bold" style="background: linear-gradient(135deg, #6f42c1, #5a32a3); border-radius: 0.5rem; text-decoration:none; box-shadow: 0 4px 15px rgba(111, 66, 193, 0.3); transition: all 0.25s ease; border: none;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(111, 66, 193, 0.4)'; this.style.background='linear-gradient(135deg, #7b4fc6, #673ab7)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 4px 15px rgba(111, 66, 193, 0.3)'; this.style.background='linear-gradient(135deg, #6f42c1, #5a32a3)';" title="Editar este producto">
+                                            <i class="fas fa-edit mr-2"></i> Editar Producto
+                                        </a>
                                     </div>
+                                {% else %}
+                                    {% if producto.stock > 0 and not producto.is_expired %}
+                                        <form method="post" action="{% url 'tejobar_app:productos_apartar' producto.pk %}">
+                                            {% csrf_token %}
+                                            <div class="cantidad-form">
+                                                <label for="cantidad" class="cantidad-label">
+                                                    <i class="fas fa-shopping-cart mr-1" style="color:#ff7b00;"></i>
+                                                    Selecciona la cantidad
+                                                </label>
+                                                <div class="cantidad-controls">
+                                                    <input
+                                                        type="number"
+                                                        name="cantidad"
+                                                        id="cantidad"
+                                                        min="1"
+                                                        max="{{ producto.stock }}"
+                                                        value="1"
+                                                        class="cantidad-input"
+                                                    >
+                                                    <button type="submit" class="btn-carrito">
+                                                        <i class="fas fa-cart-plus"></i>
+                                                        Añadir al Carrito
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    {% else %}
+                                        <div class="cantidad-form text-center">
+                                            <i class="fas fa-ban fa-2x text-danger mb-2 d-block"></i>
+                                            <span class="text-danger font-weight-bold">
+                                                {% if producto.is_expired %}Producto vencido{% else %}Sin stock disponible{% endif %}
+                                            </span>
+                                        </div>
+                                    {% endif %}
                                 {% endif %}
                             {% else %}
                                 <div class="cantidad-form text-center">

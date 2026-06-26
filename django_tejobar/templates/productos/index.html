@@ -118,14 +118,33 @@
                         <a href="{% url 'tejobar_app:productos_show' producto.pk %}" class="btn w-50 rounded-left-pill shadow-sm d-flex align-items-center justify-content-center border-0" style="border-radius: 50px 0 0 50px; background: rgba(255,255,255,0.1); color: #fff;" title="Ver Detalles">
                             <i class="fas fa-eye mx-1"></i><span class="d-none d-sm-inline">Detalles</span>
                         </a>
-                        <form action="{% url 'tejobar_app:productos_apartar' producto.pk %}" method="POST" class="w-50 mb-0">
-                            {% csrf_token %}
-                            <input type="hidden" name="cantidad" value="1">
-                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                            <button type="submit" class="btn w-100 h-100 rounded-right-pill font-weight-bold shadow-sm d-flex align-items-center justify-content-center" style="border-radius: 0 50px 50px 0; background: #ff7b00; color: #fff; border: none;" title="Añadir rápido al carrito">
-                                <i class="fas fa-cart-plus mx-1"></i><span class="d-none d-sm-inline">Añadir</span>
-                            </button>
-                        </form>
+                        {% if user.is_staff %}
+                            {# ── ADMIN: botón de Editar Producto ── #}
+                            <a href="{% url 'tejobar_app:admin_productos_update' producto.pk %}"
+                               class="btn w-50 h-100 rounded-right-pill font-weight-bold shadow-sm d-flex align-items-center justify-content-center"
+                               style="border-radius: 0 50px 50px 0; background: #6f42c1; color: #fff; border: none;"
+                               title="Editar este producto">
+                                <i class="fas fa-pen mx-1"></i><span class="d-none d-sm-inline">Editar</span>
+                            </a>
+                        {% elif user.is_authenticated %}
+                            {# ── CLIENTE AUTENTICADO: Añadir al carrito ── #}
+                            <form action="{% url 'tejobar_app:productos_apartar' producto.pk %}" method="POST" class="w-50 mb-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="cantidad" value="1">
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button type="submit" class="btn w-100 h-100 rounded-right-pill font-weight-bold shadow-sm d-flex align-items-center justify-content-center" style="border-radius: 0 50px 50px 0; background: #ff7b00; color: #fff; border: none;" title="Añadir rápido al carrito">
+                                    <i class="fas fa-cart-plus mx-1"></i><span class="d-none d-sm-inline">Añadir</span>
+                                </button>
+                            </form>
+                        {% else %}
+                            {# ── VISITANTE: Iniciar sesión para comprar ── #}
+                            <a href="{% url 'tejobar_app:login' %}?next={{ request.get_full_path }}"
+                               class="btn w-50 h-100 rounded-right-pill font-weight-bold shadow-sm d-flex align-items-center justify-content-center"
+                               style="border-radius: 0 50px 50px 0; background: #6c757d; color: #fff; border: none;"
+                               title="Inicia sesión para comprar">
+                                <i class="fas fa-lock mx-1"></i><span class="d-none d-sm-inline">Login</span>
+                            </a>
+                        {% endif %}
                     </div>
                 </div>
             </div>

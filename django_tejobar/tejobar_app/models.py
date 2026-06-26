@@ -261,6 +261,38 @@ class Producto(models.Model):
         related_name="productos",
     )
 
+    # ── Relaciones opcionales con escenarios deportivos ──────────────────────
+    # Un producto puede estar vinculado opcionalmente a una cancha, partido
+    # o equipo para segmentar el inventario por escenario. Ninguno es obligatorio.
+    cancha_asociada = models.ForeignKey(
+        "Cancha",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="productos_asociados",
+        verbose_name="Cancha asociada (opcional)",
+        help_text="Deja vacío si este producto está disponible de forma general."
+    )
+    partido_asociado = models.ForeignKey(
+        "Partido",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="productos_asociados",
+        verbose_name="Partido asociado (opcional)",
+        help_text="Asigna este producto a un partido específico si aplica."
+    )
+    equipo_asociado = models.ForeignKey(
+        "Equipo",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="productos_asociados",
+        verbose_name="Equipo asociado (opcional)",
+        help_text="Asigna este producto a un equipo específico si aplica."
+    )
+    # ─────────────────────────────────────────────────────────────────────────
+
     objects = ProductoQuerySet.as_manager()
 
     def __str__(self) -> str:
@@ -272,9 +304,11 @@ class Producto(models.Model):
             raise ValidationError({'precio': 'El precio debe ser mayor a 0.'})
         if self.stock is not None and self.stock < 0:
             raise ValidationError({'stock': 'El stock no puede ser negativo.'})
-        # Nota: la validación de fecha_vencimiento (mínimo 2 semanas)
-        # se realiza en ProductoForm.clean_fecha_vencimiento() para evitar
-        # mostrar el error duplicado en el formulario.
+        if self.fecha_vencimiento:
+            from django.utils import timezone
+            from datetime import timedelta
+            if self.fecha_vencimiento < timezone.now().date() + timedelta(days=14):
+                raise ValidationError({'fecha_vencimiento': 'La fecha de vencimiento debe ser al menos 2 semanas en el futuro.'})
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)

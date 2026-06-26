@@ -71,6 +71,7 @@ urlpatterns = [
     path("api/disponibilidad-partido/", views.api_disponibilidad_partido, name="api_disponibilidad_partido"),
 
     # Carrito
+    path("carrito/resumen/", views.carrito_resumen, name="carrito_resumen"),
     path("carrito/editar/<int:pk>/", views.editar_item_carrito, name="carrito_editar"),
     path("carrito/eliminar/<int:pk>/", views.eliminar_item_carrito, name="carrito_eliminar"),
 
