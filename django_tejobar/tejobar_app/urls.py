@@ -97,5 +97,7 @@ urlpatterns = [
 
     # Ventas directas (sin cuenta)
     path("administracion/venta-directa/", views.admin_venta_directa, name="admin_venta_directa"),
+    # Descartar Notificaciones
+    path("notificaciones/descartar/<str:notif_id>/", views.descartar_notificacion, name="descartar_notificacion"),
 ]
 

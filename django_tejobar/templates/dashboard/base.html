@@ -196,21 +196,31 @@
                             {% if notificaciones_vencimiento %}
                                 <div class="dropdown-item bg-light font-weight-bold text-danger border-bottom">⚠️ Por vencer / Vencidos</div>
                                 {% for prod in notificaciones_vencimiento %}
-                                <a class="dropdown-item text-wrap border-bottom" href="{% url 'tejobar_app:admin_productos_index' %}">
-                                    <small><strong>{{ prod.nombre }}</strong> (Stock: {{ prod.stock }})</small><br>
-                                    <small class="text-muted">Vence: {{ prod.fecha_vencimiento|date:"d/m/Y" }}</small>
-                                </a>
+                                <div class="notif-row dropdown-item d-flex align-items-center border-bottom px-3 py-2" data-notif-id="vencimiento_{{ prod.id }}">
+                                    <a class="text-wrap text-decoration-none text-dark flex-grow-1 pr-2" href="{% url 'tejobar_app:admin_productos_index' %}">
+                                        <small class="d-block"><strong>{{ prod.nombre }}</strong> (Stock: {{ prod.stock }})</small>
+                                        <small class="text-muted d-block">Vence: {{ prod.fecha_vencimiento|date:"d/m/Y" }}</small>
+                                    </a>
+                                    <button type="button" class="close dismiss-notif-btn ml-auto" data-notif-id="vencimiento_{{ prod.id }}" aria-label="Dismiss" style="font-size: 1.2rem; cursor: pointer; padding: 5px; outline: none;">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
                                 {% endfor %}
                             {% endif %}
                             
                             {% if notificaciones_pagos %}
                                 <div class="dropdown-item bg-light font-weight-bold text-success border-bottom">💰 Pagos recientes</div>
                                 {% for pago in notificaciones_pagos %}
-                                <a class="dropdown-item text-wrap border-bottom" href="{% url 'tejobar_app:admin_novedades_index' %}">
-                                    <small><strong>{{ pago.get_tipo_novedad_display }}</strong></small><br>
-                                    <small class="text-muted">{{ pago.descripcion|truncatechars:50 }}</small><br>
-                                    <small class="text-muted">{{ pago.fecha|date:"d/m/Y H:i" }}</small>
-                                </a>
+                                <div class="notif-row dropdown-item d-flex align-items-center border-bottom px-3 py-2" data-notif-id="pago_{{ pago.id }}">
+                                    <a class="text-wrap text-decoration-none text-dark flex-grow-1 pr-2" href="{% url 'tejobar_app:admin_novedades_index' %}">
+                                        <small class="d-block"><strong>{{ pago.get_tipo_novedad_display }}</strong></small>
+                                        <small class="text-muted d-block">{{ pago.descripcion|truncatechars:50 }}</small>
+                                        <small class="text-muted d-block" style="font-size: 0.75rem;">{{ pago.fecha|date:"d/m/Y H:i" }}</small>
+                                    </a>
+                                    <button type="button" class="close dismiss-notif-btn ml-auto" data-notif-id="pago_{{ pago.id }}" aria-label="Dismiss" style="font-size: 1.2rem; cursor: pointer; padding: 5px; outline: none;">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
                                 {% endfor %}
                             {% endif %}
                             
@@ -393,6 +403,70 @@
             if (window.innerWidth > 768) closeSidebar();
         });
     })();
+    </script>
+
+    <!-- Script para descartar notificaciones -->
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Global click delegation - captura el click en la X antes que Bootstrap
+        document.addEventListener("click", function (e) {
+            var button = e.target.closest('.dismiss-notif-btn');
+            if (!button) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+
+            var notifId = button.getAttribute('data-notif-id');
+            // Buscar el contenedor .notif-row (no el botón mismo que también tiene data-notif-id)
+            var container = button.closest('.notif-row');
+
+            // ELIMINAR del DOM de forma INSTANTÁNEA y SINCRÓNICA
+            if (container) {
+                container.remove();
+
+                // Actualizar el badge del contador
+                var badge = document.querySelector('#notifDropdown .badge');
+                if (badge) {
+                    var count = parseInt(badge.textContent, 10) - 1;
+                    if (count > 0) {
+                        badge.textContent = count;
+                    } else {
+                        badge.remove();
+                    }
+                }
+
+                cleanDropdownIfEmpty();
+            }
+
+            // Guardar en sesión del servidor en segundo plano
+            fetch("/notificaciones/descartar/" + notifId + "/", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                }
+            }).catch(function (error) {
+                console.error('Error al descartar notificación:', error);
+            });
+        }, true); // <- useCapture=true para capturar ANTES que Bootstrap
+
+        function cleanDropdownIfEmpty() {
+            var dropdownMenu = document.querySelector('.dropdown-menu[aria-labelledby="notifDropdown"]');
+            if (!dropdownMenu) return;
+
+            var remainingItems = dropdownMenu.querySelectorAll('[data-notif-id]');
+            if (remainingItems.length === 0) {
+                dropdownMenu.querySelectorAll('.dropdown-item.bg-light').forEach(function (el) { el.remove(); });
+                if (!dropdownMenu.querySelector('.empty-notif-msg')) {
+                    var emptyMsg = document.createElement('div');
+                    emptyMsg.className = 'dropdown-item text-center text-muted py-3 empty-notif-msg';
+                    emptyMsg.textContent = 'Sin novedades recientes';
+                    dropdownMenu.appendChild(emptyMsg);
+                }
+            }
+        }
+    });
     </script>
 
     {% block extra_scripts %}{% endblock %}

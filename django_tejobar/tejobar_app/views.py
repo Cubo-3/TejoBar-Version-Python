@@ -2373,3 +2373,19 @@ def generar_reportes(request: HttpRequest) -> HttpResponse:
         "fecha_inicio": fecha_inicio or "",
         "fecha_fin": fecha_fin or ""
     })
+
+
+@login_required
+@require_POST
+def descartar_notificacion(request, notif_id):
+    dismissed = request.session.get('dismissed_notifications', [])
+    print("SESSION DISMISSED NOTIFS IN VIEW BEFORE:", dismissed)
+    if notif_id not in dismissed:
+        # Convert to list if it was something else, just to be safe
+        if not isinstance(dismissed, list):
+            dismissed = list(dismissed)
+        dismissed.append(notif_id)
+        request.session['dismissed_notifications'] = dismissed
+        request.session.modified = True
+    print("SESSION DISMISSED NOTIFS IN VIEW AFTER:", request.session.get('dismissed_notifications'))
+    return JsonResponse({"success": True})
