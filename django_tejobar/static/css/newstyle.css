@@ -297,6 +297,36 @@ footer {
   transform: scale(1.1);
 }
 
+.user-profile-item {
+  display: flex;
+  align-items: center;
+}
+
+.user-profile-link {
+  color: #ff7b00 !important;
+  font-weight: 600;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: rgba(255, 123, 0, 0.15);
+  border: 1px solid rgba(255, 123, 0, 0.3);
+  white-space: nowrap;
+}
+
+.role-badge {
+  font-size: 10px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(90deg, #ff7b00 0%, #e65c00 100%);
+  padding: 2px 8px;
+  border-radius: 10px;
+  letter-spacing: 0.5px;
+}
+
 .logo {
   display: inline-block;
   cursor: pointer;
@@ -487,6 +517,21 @@ footer {
     background: rgba(255, 123, 0, 0.12);
     color: #fff !important;
     text-shadow: none;
+  }
+
+  .user-profile-item {
+    width: 100%;
+    padding: 16px 24px;
+    border-bottom: 1px solid rgba(255, 123, 0, 0.2);
+    display: flex;
+    align-items: center;
+  }
+
+  .user-profile-link {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 15px;
   }
 
   /* Hero */

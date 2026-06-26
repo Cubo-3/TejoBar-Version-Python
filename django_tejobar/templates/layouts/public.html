@@ -27,6 +27,11 @@
                 <li><a href="{% url 'tejobar_app:partidos_index' %}">🥇Partidos</a></li>
                 <li><a href="{% url 'tejobar_app:productos_index' %}">🍻Comida y Bebida</a></li>
                 {% if user.is_authenticated %}
+                    <li class="user-profile-item">
+                        <span class="user-profile-link">
+                            👤 {% if user.persona %}{{ user.persona.nombre }} <span class="role-badge">{{ user.persona.get_rol_display }}</span>{% else %}{{ user.username }}{% endif %}
+                        </span>
+                    </li>
                     <li><a href="{% url 'tejobar_app:dashboard' %}">📊Dashboard</a></li>
                     <li>
                         <form method="post" action="{% url 'tejobar_app:logout' %}" style="display:inline;">
