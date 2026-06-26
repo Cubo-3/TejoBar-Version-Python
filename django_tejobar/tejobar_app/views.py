@@ -1452,6 +1452,7 @@ def _registrar_pago_cancha_efectivo(partido: Partido, equipo_paga: str = "ambos"
 
     if partido.pago_cancha_equipo1 and partido.pago_cancha_equipo2:
         partido.pago_cancha = True
+        partido.estado = Partido.ESTADO_FINALIZADO  # Forzar liberación
 
     partido.save()
     
@@ -1699,8 +1700,8 @@ def api_disponibilidad_partido(request: HttpRequest) -> JsonResponse:
     if not fecha or not hora_inicio:
         return JsonResponse({"canchas_ocupadas": {}, "equipos_ocupados": {}})
 
-    # Traer partidos del mismo día para evaluar empalme (excluyendo cancelados y finalizados)
-    qs = Partido.objects.filter(fecha=fecha).exclude(estado__in=[Partido.ESTADO_CANCELADA, Partido.ESTADO_FINALIZADO])
+    # Traer partidos del mismo día para evaluar empalme (excluyendo cancelados, finalizados y pagados)
+    qs = Partido.objects.filter(fecha=fecha).exclude(estado__in=[Partido.ESTADO_CANCELADA, Partido.ESTADO_FINALIZADO]).exclude(pago_cancha=True)
     if partido_id:
         qs = qs.exclude(pk=partido_id)
         
@@ -1708,16 +1709,23 @@ def api_disponibilidad_partido(request: HttpRequest) -> JsonResponse:
     equipos_ocupados = {}
 
     for p in qs:
-        # Check overlap
         start_b = p.hora
-        end_b = p.hora_reserva_fin if p.hora_reserva_fin else ("23:59" if p.estado != Partido.ESTADO_CONFIRMADA else "23:59")
+        if p.hora_reserva_fin:
+            end_b = p.hora_reserva_fin
+        else:
+            try:
+                h, m = map(int, start_b.split(':'))
+                h = min(23, h + 2)
+                end_b = f"{h:02d}:{m:02d}"
+            except:
+                end_b = "23:59"
         
         start_a = hora_inicio
         end_a = hora_reserva_fin if hora_reserva_fin else "23:59"
 
         if start_a < end_b and start_b < end_a:
             # Hay cruce, registrar motivo
-            motivo = f"hasta {p.hora_reserva_fin}" if p.hora_reserva_fin else "En curso"
+            motivo = f"hasta las {end_b}"
             
             if p.cancha_id:
                 canchas_ocupadas[p.cancha_id] = motivo

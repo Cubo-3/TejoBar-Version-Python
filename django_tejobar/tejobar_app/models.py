@@ -625,18 +625,25 @@ class Partido(models.Model):
         if self.fecha != other.fecha:
             return False
 
-        if other.estado in [Partido.ESTADO_CANCELADA, Partido.ESTADO_FINALIZADO]:
+        if other.estado in [Partido.ESTADO_CANCELADA, Partido.ESTADO_FINALIZADO] or getattr(other, 'pago_cancha', False):
             return False
 
-        def parse_time(time_str, is_end=False):
+        def parse_time(time_str, is_end=False, start_time_str=None):
             if not time_str:
+                if is_end and start_time_str:
+                    try:
+                        h, m = map(int, start_time_str.split(':'))
+                        h = min(23, h + 2)
+                        return f"{h:02d}:{m:02d}"
+                    except:
+                        pass
                 return "23:59" if is_end else "00:00"
             return time_str.zfill(5)  # Ensure "9:00" becomes "09:00"
 
         start_a = parse_time(self.hora)
-        end_a = parse_time(self.hora_reserva_fin, is_end=True)
+        end_a = parse_time(self.hora_reserva_fin, is_end=True, start_time_str=self.hora)
         start_b = parse_time(other.hora)
-        end_b = parse_time(other.hora_reserva_fin, is_end=True)
+        end_b = parse_time(other.hora_reserva_fin, is_end=True, start_time_str=other.hora)
 
         if start_a < end_b and start_b < end_a:
             return True
