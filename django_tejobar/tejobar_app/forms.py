@@ -169,10 +169,9 @@ class ProductoForm(forms.ModelForm):
         fecha_vencimiento = self.cleaned_data.get("fecha_vencimiento")
         if fecha_vencimiento:
             from django.utils import timezone
-            from datetime import timedelta
-            limite = timezone.now().date() + timedelta(days=14)
-            if fecha_vencimiento < limite:
-                raise forms.ValidationError("La fecha de vencimiento debe ser al menos 2 semanas en el futuro (mínimo 14 días desde hoy).")
+            hoy = timezone.now().date()
+            if fecha_vencimiento < hoy:
+                raise forms.ValidationError("No puedes registrar productos que ya están vencidos.")
         return fecha_vencimiento
 
     def save(self, commit=True):
