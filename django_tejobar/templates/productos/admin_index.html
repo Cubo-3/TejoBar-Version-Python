@@ -18,6 +18,62 @@
     </div>
 </div>
 
+<!-- Filtros Avanzados -->
+<div class="card shadow-sm mb-4 border-0 bg-light">
+    <div class="card-body">
+        <form method="GET" action="{% url 'tejobar_app:admin_productos_index' %}" class="row align-items-end">
+            <!-- Row 1 -->
+            <div class="col-md-4 mb-3">
+                <label for="q" class="font-weight-bold text-muted small text-uppercase">Buscar Nombre</label>
+                <input type="text" name="q" id="q" class="form-control shadow-sm" placeholder="Ej. Cerveza..." value="{{ filtros.q }}">
+            </div>
+            <div class="col-md-4 mb-3">
+                <label for="categoria" class="font-weight-bold text-muted small text-uppercase">Categoría</label>
+                <select name="categoria" id="categoria" class="form-control shadow-sm">
+                    <option value="">Todas</option>
+                    {% for cat in categorias %}
+                    <option value="{{ cat.id }}" {% if filtros.categoria == cat.id %}selected{% endif %}>{{ cat.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label for="estado" class="font-weight-bold text-muted small text-uppercase">Estado</label>
+                <select name="estado" id="estado" class="form-control shadow-sm">
+                    <option value="">Todos</option>
+                    <option value="activo" {% if filtros.estado == 'activo' %}selected{% endif %}>Activos</option>
+                    <option value="inactivo" {% if filtros.estado == 'inactivo' %}selected{% endif %}>Inactivos</option>
+                </select>
+            </div>
+            <!-- Row 2 -->
+            <div class="col-md-4 mb-3 mb-md-0">
+                <label for="vencimiento" class="font-weight-bold text-muted small text-uppercase">Vencimiento</label>
+                <select name="vencimiento" id="vencimiento" class="form-control shadow-sm">
+                    <option value="">Todos</option>
+                    <option value="vigentes" {% if filtros.vencimiento == 'vigentes' %}selected{% endif %}>Vigentes</option>
+                    <option value="vencidos" {% if filtros.vencimiento == 'vencidos' %}selected{% endif %}>Vencidos</option>
+                    <option value="sin_fecha" {% if filtros.vencimiento == 'sin_fecha' %}selected{% endif %}>Sin fecha</option>
+                </select>
+            </div>
+            <div class="col-md-4 mb-3 mb-md-0">
+                <label for="orden" class="font-weight-bold text-muted small text-uppercase">Ordenar Por</label>
+                <select name="orden" id="orden" class="form-control shadow-sm">
+                    <option value="">Por defecto (ID)</option>
+                    <option value="nombre_asc" {% if filtros.orden == 'nombre_asc' %}selected{% endif %}>Nombre (A-Z)</option>
+                    <option value="nombre_desc" {% if filtros.orden == 'nombre_desc' %}selected{% endif %}>Nombre (Z-A)</option>
+                    <option value="precio_asc" {% if filtros.orden == 'precio_asc' %}selected{% endif %}>Precio (Menor a Mayor)</option>
+                    <option value="precio_desc" {% if filtros.orden == 'precio_desc' %}selected{% endif %}>Precio (Mayor a Menor)</option>
+                    <option value="stock_asc" {% if filtros.orden == 'stock_asc' %}selected{% endif %}>Stock (Menor a Mayor)</option>
+                    <option value="stock_desc" {% if filtros.orden == 'stock_desc' %}selected{% endif %}>Stock (Mayor a Menor)</option>
+                </select>
+            </div>
+            <div class="col-md-4 d-flex">
+                <button type="submit" class="btn btn-primary flex-grow-1 font-weight-bold shadow-sm mr-2" title="Aplicar Filtros"><i class="fas fa-search mr-2"></i> Aplicar</button>
+                <a href="{% url 'tejobar_app:admin_productos_index' %}" class="btn btn-secondary flex-grow-1 font-weight-bold shadow-sm" title="Limpiar Filtros"><i class="fas fa-eraser mr-2"></i> Limpiar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="card shadow-sm">
     <div class="card-body p-0">
         <div class="table-responsive">

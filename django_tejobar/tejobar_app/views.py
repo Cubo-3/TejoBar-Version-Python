@@ -932,8 +932,66 @@ def admin_product_template_download(request: HttpRequest) -> HttpResponse:
 @admin_required
 def admin_product_list(request: HttpRequest) -> HttpResponse:
     Producto.actualizar_stock_vencidos()
-    productos = Producto.objects.all()
-    return render(request, "productos/admin_index.html", {"productos": productos})
+    productos = Producto.objects.select_related('categoria').all()
+    categorias = Categoria.objects.all()
+
+    # Filtros
+    q = request.GET.get('q', '').strip()
+    categoria_id = request.GET.get('categoria', '')
+    estado = request.GET.get('estado', '')
+    vencimiento = request.GET.get('vencimiento', '')
+    orden = request.GET.get('orden', '')
+
+    if q:
+        productos = productos.filter(nombre__icontains=q)
+    
+    if categoria_id:
+        productos = productos.filter(categoria_id=categoria_id)
+
+    if estado == 'activo':
+        productos = productos.filter(activo=True)
+    elif estado == 'inactivo':
+        productos = productos.filter(activo=False)
+
+    if vencimiento:
+        from datetime import date
+        today = date.today()
+        if vencimiento == 'vencidos':
+            productos = productos.filter(fecha_vencimiento__lt=today)
+        elif vencimiento == 'vigentes':
+            productos = productos.filter(fecha_vencimiento__gte=today)
+        elif vencimiento == 'sin_fecha':
+            productos = productos.filter(fecha_vencimiento__isnull=True)
+
+    # Ordenamiento
+    if orden == 'nombre_asc':
+        productos = productos.order_by('nombre')
+    elif orden == 'nombre_desc':
+        productos = productos.order_by('-nombre')
+    elif orden == 'precio_asc':
+        productos = productos.order_by('precio')
+    elif orden == 'precio_desc':
+        productos = productos.order_by('-precio')
+    elif orden == 'stock_asc':
+        productos = productos.order_by('stock')
+    elif orden == 'stock_desc':
+        productos = productos.order_by('-stock')
+    else:
+        # Por defecto
+        productos = productos.order_by('-id')
+
+    context = {
+        "productos": productos,
+        "categorias": categorias,
+        "filtros": {
+            "q": q,
+            "categoria": int(categoria_id) if categoria_id.isdigit() else '',
+            "estado": estado,
+            "vencimiento": vencimiento,
+            "orden": orden
+        }
+    }
+    return render(request, "productos/admin_index.html", context)
 
 
 @admin_required
@@ -2100,7 +2158,7 @@ def equipo_reinvite_member(request: HttpRequest, pk: int, jugador_pk: int) -> Ht
             
     return redirect("tejobar_app:equipos_show", pk=equipo.pk)
 
-def obtener_metricas_reporte(dt_start=None, dt_end=None):
+def obtener_metricas_reporte(dt_start=None, dt_end=None, categoria_id=None):
     from django.db.models import Sum, Q
     from django.db.models.functions import TruncMonth
     from datetime import date, timedelta
@@ -2115,12 +2173,16 @@ def obtener_metricas_reporte(dt_start=None, dt_end=None):
         movimientos_base = movimientos_base.filter(fecha__gte=dt_start)
     if dt_end:
         movimientos_base = movimientos_base.filter(fecha__lte=dt_end)
+    if categoria_id:
+        movimientos_base = movimientos_base.filter(producto__categoria_id=categoria_id)
 
     apartados_base = Apartado.objects.all()
     if dt_start:
         apartados_base = apartados_base.filter(fecha_apartado__gte=dt_start)
     if dt_end:
         apartados_base = apartados_base.filter(fecha_apartado__lte=dt_end)
+    if categoria_id:
+        apartados_base = apartados_base.filter(producto__categoria_id=categoria_id)
 
     # 2. General metrics
     total_ventas_cant = movimientos_base.filter(tipo_movimiento=MovimientoInventario.TIPO_VENTA).aggregate(Sum('cantidad'))['cantidad__sum'] or 0
@@ -2150,6 +2212,9 @@ def obtener_metricas_reporte(dt_start=None, dt_end=None):
     # 3. Product performance ranking
     productos_ranking = []
     productos = Producto.objects.all()
+    if categoria_id:
+        productos = productos.filter(categoria_id=categoria_id)
+        
     for p in productos:
         p_ventas = movimientos_base.filter(producto=p, tipo_movimiento=MovimientoInventario.TIPO_VENTA).aggregate(Sum('cantidad'))['cantidad__sum'] or 0
         p_perdidas = movimientos_base.filter(producto=p, tipo_movimiento=MovimientoInventario.TIPO_PERDIDA).aggregate(Sum('cantidad'))['cantidad__sum'] or 0
@@ -2210,23 +2275,23 @@ def obtener_metricas_reporte(dt_start=None, dt_end=None):
         7: "Jul", 8: "Ago", 9: "Sep", 10: "Oct", 11: "Nov", 12: "Dic"
     }
     
-    ventas_mensuales = MovimientoInventario.objects.filter(
+    ventas_qs = movimientos_base.filter(
         tipo_movimiento=MovimientoInventario.TIPO_VENTA
-    ).annotate(
-        mes=TruncMonth('fecha')
-    ).values('mes').annotate(
-        total=Sum('cantidad')
-    ).order_by('mes')
+    ).values('fecha', 'cantidad')
     
+    monthly_sales = {}
+    for v in ventas_qs:
+        if v['fecha']:
+            key = (v['fecha'].year, v['fecha'].month)
+            monthly_sales[key] = monthly_sales.get(key, 0) + (v['cantidad'] or 0)
+            
     ventas_mensuales_formateadas = []
-    for vm in ventas_mensuales:
-        if vm['mes']:
-            m_num = vm['mes'].month
-            y_num = vm['mes'].year
-            ventas_mensuales_formateadas.append({
-                'label': f"{MESES[m_num]} {y_num}",
-                'cantidad': vm['total'] or 0
-            })
+    for key in sorted(monthly_sales.keys()):
+        y_num, m_num = key
+        ventas_mensuales_formateadas.append({
+            'label': f"{MESES[m_num]} {y_num}",
+            'cantidad': monthly_sales[key]
+        })
             
     if not ventas_mensuales_formateadas:
         hoy = timezone.now().date()
@@ -2261,6 +2326,7 @@ def generar_reportes(request: HttpRequest) -> HttpResponse:
     
     fecha_inicio = request.GET.get("fecha_inicio") or request.POST.get("fecha_inicio")
     fecha_fin = request.GET.get("fecha_fin") or request.POST.get("fecha_fin")
+    categoria_id = request.GET.get("categoria") or request.POST.get("categoria")
     
     dt_start = None
     dt_end = None
@@ -2277,12 +2343,29 @@ def generar_reportes(request: HttpRequest) -> HttpResponse:
         except ValueError:
             pass
             
+    categorias = Categoria.objects.all()
     if request.method == "POST":
         tipo = request.POST.get("tipo")
         modulo = request.POST.get("modulo")
         
         persona = getattr(request.user, "persona", None)
         generado_por = persona.nombre if persona else "Administrador"
+
+        base_context = {
+            "total_productos": Producto.objects.count(),
+            "productos_bajo_stock": Producto.objects.filter(stock__lt=10).count(),
+            "total_categorias": Categoria.objects.count(),
+            "total_equipos": Equipo.objects.count(),
+            "total_jugadores": Jugador.objects.count(),
+            "total_partidos": Partido.objects.count(),
+            "total_canchas": Cancha.objects.count(),
+            "total_usuarios": User.objects.filter(is_active=True).count(),
+            "fecha_inicio": fecha_inicio or "",
+            "fecha_fin": fecha_fin or "",
+            "generado_por": generado_por,
+        }
+        metrics = obtener_metricas_reporte(dt_start, dt_end, categoria_id)
+        base_context.update(metrics)
 
         if tipo == "General":
             apartados = Apartado.objects.select_related("persona", "producto").order_by("-fecha_apartado").all()
@@ -2291,23 +2374,10 @@ def generar_reportes(request: HttpRequest) -> HttpResponse:
             if dt_end:
                 apartados = apartados.filter(fecha_apartado__lte=dt_end)
             
-            context = {
-                "tipo_reporte": "General",
-                "total_productos": Producto.objects.count(),
-                "productos_bajo_stock": Producto.objects.filter(stock__lt=10).count(),
-                "total_categorias": Categoria.objects.count(),
-                "total_equipos": Equipo.objects.count(),
-                "total_jugadores": Jugador.objects.count(),
-                "total_partidos": Partido.objects.count(),
-                "total_canchas": Cancha.objects.count(),
-                "total_usuarios": User.objects.filter(is_active=True).count(),
-                "apartados": apartados,
-                "fecha_inicio": fecha_inicio or "",
-                "fecha_fin": fecha_fin or "",
-                "generado_por": generado_por,
-            }
-            metrics = obtener_metricas_reporte(dt_start, dt_end)
-            context.update(metrics)
+            context = base_context.copy()
+            context["tipo_reporte"] = "General"
+            context["apartados"] = apartados
+            
             return generar_pdf(context, "dashboard/reporte_pdf.html", "reporte_general")
 
         elif tipo == "Especifico":
@@ -2318,13 +2388,14 @@ def generar_reportes(request: HttpRequest) -> HttpResponse:
                 "fecha_fin": fecha_fin or "",
                 "generado_por": generado_por,
             }
-            
             datos = []
             columnas = []
             
             if modulo == "Productos":
                 columnas = ["ID", "Nombre", "Precio", "Stock", "Vencimiento"]
                 qs = Producto.objects.all().order_by("nombre")
+                if categoria_id:
+                    qs = qs.filter(categoria_id=categoria_id)
                 for item in qs:
                     datos.append([item.pk, item.nombre, f"${item.precio}", item.stock, item.fecha_vencimiento or "N/A"])
                     
@@ -2341,9 +2412,30 @@ def generar_reportes(request: HttpRequest) -> HttpResponse:
                 qs = MovimientoInventario.objects.filter(tipo_movimiento=t_mov).order_by("-fecha")
                 if dt_start: qs = qs.filter(fecha__gte=dt_start)
                 if dt_end: qs = qs.filter(fecha__lte=dt_end)
+                if categoria_id:
+                    qs = qs.filter(producto__categoria_id=categoria_id)
                 for item in qs:
                     u_nombre = item.usuario.username if item.usuario else "Sistema"
                     datos.append([item.fecha.strftime('%Y-%m-%d %H:%M'), item.producto.nombre, item.cantidad, item.motivo, u_nombre])
+
+            elif modulo == "Novedades":
+                from .models import Novedad
+                columnas = ["Fecha", "Tipo", "Movimiento", "Producto", "Cantidad", "Descripción"]
+                qs = Novedad.objects.select_related("producto").order_by("-fecha")
+                if dt_start: qs = qs.filter(fecha__gte=dt_start)
+                if dt_end: qs = qs.filter(fecha__lte=dt_end)
+                if categoria_id:
+                    qs = qs.filter(producto__categoria_id=categoria_id)
+                for item in qs:
+                    prod_nombre = item.producto.nombre if item.producto else "N/A"
+                    datos.append([
+                        item.fecha.strftime('%Y-%m-%d %H:%M'),
+                        item.get_tipo_novedad_display(),
+                        item.movimiento,
+                        prod_nombre,
+                        item.cantidad,
+                        item.descripcion or "—"
+                    ])
 
             elif modulo == "Partidos":
                 columnas = ["Fecha", "Hora", "Equipos", "Cancha", "Estado"]
@@ -2371,11 +2463,13 @@ def generar_reportes(request: HttpRequest) -> HttpResponse:
             context["datos"] = datos
             return generar_pdf(context, "dashboard/reporte_pdf.html", f"reporte_{modulo.lower()}")
 
-    metrics = obtener_metricas_reporte(dt_start, dt_end)
+    metrics = obtener_metricas_reporte(dt_start, dt_end, categoria_id)
     return render(request, "dashboard/generar_reportes.html", {
         "metrics": metrics,
         "fecha_inicio": fecha_inicio or "",
-        "fecha_fin": fecha_fin or ""
+        "fecha_fin": fecha_fin or "",
+        "categorias": categorias,
+        "categoria_seleccionada": int(categoria_id) if categoria_id and categoria_id.isdigit() else ""
     })
 
 
