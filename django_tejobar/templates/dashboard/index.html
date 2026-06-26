@@ -348,10 +348,10 @@
                 <tbody class="border-top-0">
                     {% for a in apartados %}
                     <tr>
-                        <td class="font-weight-bold text-light">{{ a.persona.nombre }}</td>
+                        <td class="font-weight-bold text-dark">{{ a.persona.nombre|default:a.cliente_nombre|default:"—" }}</td>
                         <td><span class="badge bg-white text-dark border px-2 py-1"><i
                                     class="fas fa-box-open text-primary mr-1"></i> {{ a.producto.nombre }}</span></td>
-                        <td><span class="font-weight-bold h5 mb-0 text-light">{{ a.cantidad }}</span></td>
+                        <td><span class="font-weight-bold h5 mb-0 text-dark">{{ a.cantidad }}</span></td>
                         <td class="text-muted"><i class="far fa-clock small mr-1"></i> {{ a.fecha_apartado|date:"d M Y, h:i A" }}</td>
                         <td>
                             {% if a.estado == 'pendiente' %}

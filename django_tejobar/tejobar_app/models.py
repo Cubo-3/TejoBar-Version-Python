@@ -947,19 +947,21 @@ class MovimientoInventario(models.Model):
 class NovedadJugador(models.Model):
     """Registro de eventos/novedades de jugadores durante un partido."""
 
-    TIPO_GOL = "gol"
-    TIPO_AMARILLA = "amarilla"
-    TIPO_ROJA = "roja"
+    TIPO_NO_ASISTIO = "no_asistio"
+    TIPO_LLEGO_TARDE = "llego_tarde"
     TIPO_LESION = "lesion"
-    TIPO_FALTA_ASISTENCIA = "falta_asistencia"
+    TIPO_SANCIONADO = "sancionado"
+    TIPO_AMONESTADO = "amonestado"
+    TIPO_ABANDONO = "abandono"
     TIPO_OTRO = "otro"
 
     TIPO_CHOICES = [
-        (TIPO_GOL, "⚽ Gol"),
-        (TIPO_AMARILLA, "🟨 Tarjeta Amarilla"),
-        (TIPO_ROJA, "🟥 Tarjeta Roja"),
-        (TIPO_LESION, "🤕 Lesión"),
-        (TIPO_FALTA_ASISTENCIA, "❌ Falta de Asistencia"),
+        (TIPO_NO_ASISTIO, "❌ No asistió"),
+        (TIPO_LLEGO_TARDE, "⏰ Llegó tarde"),
+        (TIPO_LESION, "🤕 Se lastimó / Lesión"),
+        (TIPO_SANCIONADO, "🚫 Sancionado"),
+        (TIPO_AMONESTADO, "⚠️ Amonestado"),
+        (TIPO_ABANDONO, "🚪 Abandonó el partido"),
         (TIPO_OTRO, "📝 Otro"),
     ]
 
@@ -976,9 +978,6 @@ class NovedadJugador(models.Model):
     )
     tipo_novedad = models.CharField(max_length=30, choices=TIPO_CHOICES)
     descripcion = models.TextField(blank=True, null=True)
-    minuto = models.PositiveSmallIntegerField(
-        blank=True, null=True, help_text="Minuto del partido en que ocurrió (opcional)"
-    )
     fecha_registro = models.DateTimeField(auto_now_add=True)
     registrado_por = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True,

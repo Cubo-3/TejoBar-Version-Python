@@ -1266,7 +1266,28 @@ def admin_novedades_index(request: HttpRequest) -> HttpResponse:
 @admin_required
 def admin_partidos_index(request: HttpRequest) -> HttpResponse:
     partidos = Partido.objects.select_related('equipo1', 'equipo2', 'cancha').order_by('-fecha', '-hora')
-    return render(request, "partidos/admin_index.html", {"partidos": partidos})
+    productos_activos = Producto.objects.filter(activo=True, stock__gt=0).order_by('nombre')
+
+    # Para cada partido, pre-cargar jugadores de ambos equipos (para el modal de consumo)
+    partidos_data = []
+    for p in partidos:
+        jugadores_e1 = []
+        jugadores_e2 = []
+        if p.equipo1:
+            jugadores_e1 = list(JugadorEquipo.objects.filter(equipo=p.equipo1).select_related('jugador__persona'))
+        if p.equipo2:
+            jugadores_e2 = list(JugadorEquipo.objects.filter(equipo=p.equipo2).select_related('jugador__persona'))
+        partidos_data.append({
+            'partido': p,
+            'jugadores_e1': jugadores_e1,
+            'jugadores_e2': jugadores_e2,
+        })
+
+    return render(request, "partidos/admin_index.html", {
+        "partidos": partidos,
+        "partidos_data": partidos_data,
+        "productos_activos": productos_activos,
+    })
 
 
 @admin_required
@@ -1470,14 +1491,76 @@ def pagar_partido(request: HttpRequest, pk: int) -> HttpResponse:
     if request.method != "POST":
         return redirect("tejobar_app:admin_partidos_index")
     partido = get_object_or_404(Partido, pk=pk)
-    
+
     equipo_paga = request.POST.get("equipo_paga", "ambos")
     notas = request.POST.get("notas", "").strip()
-    
+
+    # ── Procesar consumos enviados desde el modal ────────────────────────────
+    producto_ids = request.POST.getlist("consumo_producto_id")
+    cantidades   = request.POST.getlist("consumo_cantidad")
+    asignados    = request.POST.getlist("consumo_asignado")  # jugador_equipo_id | "equipo1" | "equipo2" | "cancha"
+
+    consumos_ok = []
+    consumos_err = []
+    for prod_id, cant_str, asignado in zip(producto_ids, cantidades, asignados):
+        try:
+            cantidad = int(cant_str or 0)
+            if cantidad <= 0:
+                continue
+            producto = Producto.objects.get(pk=prod_id, activo=True)
+            if producto.stock < cantidad:
+                consumos_err.append(f"{producto.nombre}: stock insuficiente (hay {producto.stock})")
+                continue
+
+            # Determinar equipo y persona asignada
+            equipo_obj = None
+            jugador_equipo_obj = None
+            if asignado == "equipo1":
+                equipo_obj = partido.equipo1
+            elif asignado == "equipo2":
+                equipo_obj = partido.equipo2
+            elif asignado == "cancha":
+                # Sin equipo específico, se registra contra el partido sin equipo
+                equipo_obj = None
+            else:
+                # Número: es un jugador_equipo_id
+                try:
+                    jugador_equipo_obj = JugadorEquipo.objects.get(pk=int(asignado))
+                    equipo_obj = jugador_equipo_obj.equipo
+                except (JugadorEquipo.DoesNotExist, ValueError):
+                    consumos_err.append(f"Jugador no encontrado para {prod_id}")
+                    continue
+
+            apartado = Apartado.objects.create(
+                persona=None,
+                producto=producto,
+                cantidad=cantidad,
+                partido=partido,
+                equipo=equipo_obj,
+                estado=Apartado.ESTADO_COMPRADO,
+            )
+            from .models import MovimientoInventario
+            MovimientoInventario.objects.create(
+                producto=producto,
+                tipo_movimiento=MovimientoInventario.TIPO_VENTA,
+                cantidad=cantidad,
+                motivo=f"Consumo partido #{partido.pk} - cobrado en caja",
+                usuario=request.user,
+            )
+            consumos_ok.append(f"{cantidad}x {producto.nombre}")
+        except (Producto.DoesNotExist, ValueError):
+            consumos_err.append(f"Producto ID {prod_id} no válido")
+
+    if consumos_ok:
+        messages.info(request, f"Consumos registrados: {', '.join(consumos_ok)}.")
+    for err in consumos_err:
+        messages.warning(request, f"Error en consumo: {err}")
+
+    # ── Registrar pago cancha ────────────────────────────────────────────────
     desc_extra = f"Efectivo en caja. Equipo(s): {equipo_paga}"
     if notas:
         desc_extra += f". Notas: {notas}"
-        
+
     if _registrar_pago_cancha_efectivo(partido, equipo_paga=equipo_paga, descripcion_extra=desc_extra):
         messages.success(request, "Pago de cancha registrado exitosamente.")
     else:
@@ -2769,7 +2852,6 @@ def admin_partido_novedad_crear(request: HttpRequest, pk: int) -> HttpResponse:
     nombre_libre = request.POST.get("nombre_jugador_libre", "").strip()
     tipo_novedad = request.POST.get("tipo_novedad")
     descripcion = request.POST.get("descripcion", "").strip()
-    minuto_str = request.POST.get("minuto", "").strip()
 
     if not tipo_novedad:
         messages.error(request, "El tipo de novedad es requerido.")
@@ -2787,20 +2869,12 @@ def admin_partido_novedad_crear(request: HttpRequest, pk: int) -> HttpResponse:
         messages.error(request, "Debes seleccionar un jugador o ingresar un nombre.")
         return redirect("tejobar_app:admin_partido_novedades", pk=pk)
 
-    minuto = None
-    if minuto_str:
-        try:
-            minuto = int(minuto_str)
-        except ValueError:
-            pass
-
     NovedadJugador.objects.create(
         partido=partido,
         jugador_equipo=jugador_equipo,
         nombre_jugador_libre=nombre_libre if not jugador_equipo else None,
         tipo_novedad=tipo_novedad,
         descripcion=descripcion or None,
-        minuto=minuto,
         registrado_por=request.user,
     )
     messages.success(request, "Novedad registrada correctamente.")

@@ -1,78 +1,194 @@
-{# Modal de pago de cancha. Requiere: partido, modal_id_suffix, url_efectivo, url_tarjeta, modo ("admin"|"jugador") #}
+{# Modal de pago de cancha + consumos. Variables: partido, modal_id_suffix, modo ("admin"|"jugador"), productos_activos, jugadores_e1, jugadores_e2 #}
 <div class="modal fade" id="pagoCanchaModal{{ modal_id_suffix }}" tabindex="-1" role="dialog"
     aria-labelledby="pagoCanchaModalLabel{{ modal_id_suffix }}" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content {% if modo == 'admin' %}bg-white text-dark{% else %}bg-dark text-white border-secondary{% endif %}">
-            <div class="modal-header {% if modo != 'admin' %}border-secondary{% endif %}">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content bg-white text-dark shadow-lg border-0">
+
+            <!-- HEADER -->
+            <div class="modal-header bg-dark text-white border-0">
                 <h5 class="modal-title font-weight-bold" id="pagoCanchaModalLabel{{ modal_id_suffix }}">
-                    <i class="fas fa-futbol {% if modo == 'admin' %}text-warning{% else %}text-info{% endif %} mr-2"></i>
-                    Pagar Cancha
+                    <i class="fas fa-futbol text-warning mr-2"></i>
+                    Cobro Partido #{{ partido.pk }} &mdash;
+                    <small class="font-weight-normal">{{ partido.equipo1.nombre_equipo|default:"E1" }} vs {{ partido.equipo2.nombre_equipo|default:"E2" }}</small>
                 </h5>
-                <button type="button" class="close {% if modo != 'admin' %}text-white{% endif %}" data-dismiss="modal" aria-label="Cerrar">
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <div class="modal-body">
-                <p class="mb-2">
-                    <strong>Cancha:</strong>
-                    {{ partido.cancha.disponibilidad|default:partido.cancha }}
-                </p>
-                <p class="mb-2">
-                    <strong>Partido #{{ partido.pk }}:</strong>
-                    {{ partido.equipo1.nombre_equipo|default:"—" }}
-                    <span class="text-muted mx-1">vs</span>
-                    {{ partido.equipo2.nombre_equipo|default:"—" }}
-                </p>
-                <p class="mb-4">
-                    <strong>Tiempo jugado:</strong> {{ partido.horas_jugadas }} h
-                    <span class="d-block mt-2 h4 mb-0 {% if modo == 'admin' %}text-success{% else %}text-warning{% endif %}">
-                        Total General: ${{ partido.gran_total|floatformat:0 }}
-                    </span>
-                </p>
-                <p class="small {% if modo == 'admin' %}text-muted{% else %}text-muted{% endif %} mb-4">
-                    Selecciona el método de pago para continuar:
-                </p>
-                <div class="row">
-                    <div class="col-12">
-                        <form method="post"
-                            action="{% if modo == 'admin' %}{% url 'tejobar_app:admin_partidos_pagar' partido.pk %}{% else %}{% url 'tejobar_app:pago_cancha_efectivo' partido.pk %}{% endif %}"
-                            class="h-100 form-pago-efectivo-cancha" data-partido-id="{{ partido.pk }}">
-                            {% csrf_token %}
-                            {% if modo == 'admin' %}
-                            <div class="form-group mb-2 text-left">
-                                <label for="equipo_paga_{{ partido.pk }}" class="small font-weight-bold text-muted text-uppercase mb-1">¿A quién se le cobra?</label>
-                                <select name="equipo_paga" id="equipo_paga_{{ partido.pk }}" class="form-control mb-2" required>
+
+            <form method="post"
+                action="{% if modo == 'admin' %}{% url 'tejobar_app:admin_partidos_pagar' partido.pk %}{% else %}{% url 'tejobar_app:pago_cancha_efectivo' partido.pk %}{% endif %}"
+                class="form-pago-efectivo-cancha" data-partido-id="{{ partido.pk }}" id="form-cobro-{{ partido.pk }}">
+                {% csrf_token %}
+
+                <div class="modal-body p-0">
+
+                    <!-- RESUMEN CANCHA -->
+                    <div class="px-4 pt-4 pb-3 border-bottom bg-light">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center mb-1">
+                                    <i class="fas fa-map-marker-alt text-primary mr-2"></i>
+                                    <span class="font-weight-bold">{{ partido.cancha.disponibilidad|default:partido.cancha }}</span>
+                                </div>
+                                <div class="text-muted small">
+                                    <i class="fas fa-clock mr-1"></i> Tiempo jugado: <strong>{{ partido.horas_jugadas }} h</strong>
+                                    &nbsp;|&nbsp; Tarifa/h: <strong>${{ partido.cancha.precio_por_hora|floatformat:0 }}</strong>
+                                </div>
+                            </div>
+                            <div class="col-md-6 text-md-right mt-2 mt-md-0">
+                                <div class="small text-muted">Cancha por equipo</div>
+                                <div class="font-weight-bold text-dark">${{ partido.total_por_equipo|floatformat:0 }} c/u</div>
+                                <div class="small text-muted mt-1">Total cancha (ambos)</div>
+                                <div class="h5 font-weight-bold text-primary mb-0">${{ partido.total_cancha|floatformat:0 }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if modo == 'admin' %}
+                    <!-- TABS: Cancha / Consumos -->
+                    <ul class="nav nav-tabs px-4 pt-3 border-0" id="cobroTabs{{ modal_id_suffix }}" role="tablist" style="border-bottom: 2px solid #dee2e6 !important;">
+                        <li class="nav-item">
+                            <a class="nav-link active font-weight-bold" id="tab-cancha-{{ modal_id_suffix }}"
+                                data-toggle="tab" href="#pane-cancha-{{ modal_id_suffix }}" role="tab">
+                                <i class="fas fa-futbol mr-1 text-warning"></i> Cancha & Pago
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link font-weight-bold" id="tab-consumos-{{ modal_id_suffix }}"
+                                data-toggle="tab" href="#pane-consumos-{{ modal_id_suffix }}" role="tab">
+                                <i class="fas fa-shopping-basket mr-1 text-success"></i> Añadir Consumos
+                                <span class="badge badge-success badge-pill ml-1 consumo-count-badge" id="cnt-{{ modal_id_suffix }}" style="display:none;">0</span>
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content px-4 py-3">
+
+                        <!-- TAB CANCHA -->
+                        <div class="tab-pane fade show active" id="pane-cancha-{{ modal_id_suffix }}" role="tabpanel">
+
+                            <!-- Resumen por equipo -->
+                            <div class="row mb-3">
+                                {% if not partido.pago_cancha_equipo1 %}
+                                <div class="col-md-6 mb-2">
+                                    <div class="card border-0 bg-light">
+                                        <div class="card-body py-2 px-3">
+                                            <div class="small font-weight-bold text-primary mb-1">
+                                                🔵 {{ partido.equipo1.nombre_equipo|default:"Equipo 1" }}
+                                                <span class="text-muted font-weight-normal">(Cap: {{ partido.equipo1.capitan_nombre }})</span>
+                                            </div>
+                                            <div class="small text-muted">Cancha: ${{ partido.total_por_equipo|floatformat:0 }}</div>
+                                            <div class="small text-muted">Consumos: ${{ partido.total_consumos_equipo1|floatformat:0 }}</div>
+                                            <div class="font-weight-bold text-success">Total: ${{ partido.gran_total_equipo1|floatformat:0 }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <div class="col-md-6 mb-2">
+                                    <div class="card border-0 bg-light opacity-50">
+                                        <div class="card-body py-2 px-3">
+                                            <div class="small text-muted">🔵 {{ partido.equipo1.nombre_equipo|default:"Equipo 1" }}</div>
+                                            <span class="badge badge-success"><i class="fas fa-check mr-1"></i>Pagado</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                {% if not partido.pago_cancha_equipo2 %}
+                                <div class="col-md-6 mb-2">
+                                    <div class="card border-0 bg-light">
+                                        <div class="card-body py-2 px-3">
+                                            <div class="small font-weight-bold text-danger mb-1">
+                                                🔴 {{ partido.equipo2.nombre_equipo|default:"Equipo 2" }}
+                                                <span class="text-muted font-weight-normal">(Cap: {{ partido.equipo2.capitan_nombre }})</span>
+                                            </div>
+                                            <div class="small text-muted">Cancha: ${{ partido.total_por_equipo|floatformat:0 }}</div>
+                                            <div class="small text-muted">Consumos: ${{ partido.total_consumos_equipo2|floatformat:0 }}</div>
+                                            <div class="font-weight-bold text-success">Total: ${{ partido.gran_total_equipo2|floatformat:0 }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <div class="col-md-6 mb-2">
+                                    <div class="card border-0 bg-light opacity-50">
+                                        <div class="card-body py-2 px-3">
+                                            <div class="small text-muted">🔴 {{ partido.equipo2.nombre_equipo|default:"Equipo 2" }}</div>
+                                            <span class="badge badge-success"><i class="fas fa-check mr-1"></i>Pagado</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Selector ¿a quién cobrar? -->
+                            <div class="form-group mb-2">
+                                <label class="small font-weight-bold text-muted text-uppercase mb-1">¿A quién se le cobra la cancha?</label>
+                                <select name="equipo_paga" class="form-control" required>
                                     {% if not partido.pago_cancha_equipo1 and not partido.pago_cancha_equipo2 %}
-                                    <option value="ambos">Cobrar a Ambos (${{ partido.gran_total|floatformat:0 }})</option>
+                                    <option value="ambos">Ambos equipos — ${{ partido.gran_total|floatformat:0 }} total</option>
                                     {% endif %}
                                     {% if not partido.pago_cancha_equipo1 %}
-                                    <option value="equipo1">{{ partido.equipo1.nombre_equipo|default:"Equipo 1" }} (Capitán: {{ partido.equipo1.capitan_nombre }}) - ${{ partido.gran_total_equipo1|floatformat:0 }} (Cancha: ${{ partido.total_por_equipo|floatformat:0 }}, Consumos: ${{ partido.total_consumos_equipo1|floatformat:0 }})</option>
+                                    <option value="equipo1">🔵 {{ partido.equipo1.nombre_equipo|default:"Equipo 1" }} — ${{ partido.gran_total_equipo1|floatformat:0 }}</option>
                                     {% endif %}
                                     {% if not partido.pago_cancha_equipo2 %}
-                                    <option value="equipo2">{{ partido.equipo2.nombre_equipo|default:"Equipo 2" }} (Capitán: {{ partido.equipo2.capitan_nombre }}) - ${{ partido.gran_total_equipo2|floatformat:0 }} (Cancha: ${{ partido.total_por_equipo|floatformat:0 }}, Consumos: ${{ partido.total_consumos_equipo2|floatformat:0 }})</option>
+                                    <option value="equipo2">🔴 {{ partido.equipo2.nombre_equipo|default:"Equipo 2" }} — ${{ partido.gran_total_equipo2|floatformat:0 }}</option>
                                     {% endif %}
                                 </select>
                             </div>
-                            <div class="form-group mb-3 text-left">
-                                <input type="text" name="notas" id="notas_{{ partido.pk }}" class="form-control form-control-sm" placeholder="Notas (Opcional, ej. Transferencia)">
+
+                            <div class="form-group mb-0">
+                                <input type="text" name="notas" class="form-control form-control-sm" placeholder="Notas opcionales (ej. Transferencia, Nequi...)">
                             </div>
-                            {% endif %}
-                            <button type="submit" class="btn btn-success btn-lg btn-block font-weight-bold shadow-sm py-3">
-                                <i class="fas fa-money-bill-wave fa-2x d-block mb-2"></i>
-                                {% if modo == 'admin' %}Cobrar{% else %}Avisar Pago en Caja{% endif %}
+                        </div>
+
+                        <!-- TAB CONSUMOS -->
+                        <div class="tab-pane fade" id="pane-consumos-{{ modal_id_suffix }}" role="tabpanel">
+                            <p class="text-muted small mb-3">
+                                Agrega productos consumidos durante el partido. Se descontará del inventario al cobrar.
+                            </p>
+
+                            <!-- Filas de consumo -->
+                            <div id="consumos-list-{{ modal_id_suffix }}">
+                                <!-- Las filas se insertan aquí por JS -->
+                            </div>
+
+                            <button type="button" class="btn btn-outline-success btn-sm mt-2 btn-add-consumo"
+                                data-target="{{ modal_id_suffix }}"
+                                data-equipo1="{{ partido.equipo1.nombre_equipo|default:'Equipo 1' }}"
+                                data-equipo2="{{ partido.equipo2.nombre_equipo|default:'Equipo 2' }}"
+                                data-jugadores-e1="{{ jugadores_e1_json }}"
+                                data-jugadores-e2="{{ jugadores_e2_json }}">
+                                <i class="fas fa-plus mr-1"></i> Añadir producto
                             </button>
-                        </form>
-                        {% if modo == 'jugador' %}
-                        <small class="text-muted d-block text-center mt-2">Paga en caja del bar</small>
-                        {% else %}
-                        <small class="text-muted d-block text-center mt-2">Registro en caja / efectivo</small>
-                        {% endif %}
+
+                            <div class="mt-3 p-2 bg-light rounded border" id="consumo-subtotal-{{ modal_id_suffix }}" style="display:none;">
+                                <span class="small text-muted">Subtotal consumos nuevos:</span>
+                                <span class="font-weight-bold text-success float-right" id="consumo-subtotal-val-{{ modal_id_suffix }}">$0</span>
+                            </div>
+                        </div>
+
+                    </div><!-- tab-content -->
+
+                    {% endif %}{# modo admin #}
+
+                </div><!-- modal-body -->
+
+                <!-- FOOTER -->
+                <div class="modal-footer border-top bg-light">
+                    <div class="mr-auto small text-muted">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Gran total (cancha+consumos):
+                        <strong class="text-dark">${{ partido.gran_total|floatformat:0 }}</strong>
                     </div>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success font-weight-bold px-4">
+                        <i class="fas fa-money-bill-wave mr-1"></i>
+                        {% if modo == 'admin' %}Registrar Cobro{% else %}Avisar Pago en Caja{% endif %}
+                    </button>
                 </div>
-            </div>
-            <div class="modal-footer {% if modo != 'admin' %}border-secondary{% endif %}">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-            </div>
+
+            </form>
         </div>
     </div>
 </div>
