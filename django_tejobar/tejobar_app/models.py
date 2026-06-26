@@ -625,7 +625,7 @@ class Partido(models.Model):
         if self.fecha != other.fecha:
             return False
 
-        if other.estado == Partido.ESTADO_CANCELADA:
+        if other.estado in [Partido.ESTADO_CANCELADA, Partido.ESTADO_FINALIZADO]:
             return False
 
         def parse_time(time_str, is_end=False):

@@ -1394,8 +1394,11 @@ def iniciar_partido(request: HttpRequest, pk: int) -> HttpResponse:
 def finalizar_partido(request: HttpRequest, pk: int) -> HttpResponse:
     partido = get_object_or_404(Partido, pk=pk)
     if partido.hora_inicio and not partido.hora_fin:
-        partido.hora_fin = timezone.now()
+        now = timezone.now()
+        partido.hora_fin = now
         partido.estado = Partido.ESTADO_FINALIZADO
+        # Actualizar hora_reserva_fin a la hora real de fin para liberar la agenda
+        partido.hora_reserva_fin = timezone.localtime(now).strftime("%H:%M")
         partido.save()
         messages.success(request, "Partido finalizado. Ya puede ver el total a pagar.")
         _notificar_capitanes_partido(partido, f"El Partido #{partido.pk} ha finalizado. Puedes revisar el total a pagar.")
@@ -1696,8 +1699,8 @@ def api_disponibilidad_partido(request: HttpRequest) -> JsonResponse:
     if not fecha or not hora_inicio:
         return JsonResponse({"canchas_ocupadas": {}, "equipos_ocupados": {}})
 
-    # Traer partidos del mismo día para evaluar empalme
-    qs = Partido.objects.filter(fecha=fecha).exclude(estado=Partido.ESTADO_CANCELADA)
+    # Traer partidos del mismo día para evaluar empalme (excluyendo cancelados y finalizados)
+    qs = Partido.objects.filter(fecha=fecha).exclude(estado__in=[Partido.ESTADO_CANCELADA, Partido.ESTADO_FINALIZADO])
     if partido_id:
         qs = qs.exclude(pk=partido_id)
         
