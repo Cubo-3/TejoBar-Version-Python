@@ -136,8 +136,17 @@ class ProductoForm(forms.ModelForm):
             self.fields['stock'].help_text = "Para modificar el stock, utilice el módulo de Inventario."
 
     def clean_nombre(self):
+        from django.db.models.functions import Replace
+        from django.db.models import Value
+        
         nombre = (self.cleaned_data.get("nombre") or "").strip()
-        qs = Producto.objects.filter(nombre__iexact=nombre)
+        nombre_sin_espacios = nombre.replace(" ", "").lower()
+        
+        # Anotar los productos con su nombre sin espacios para poder comparar
+        qs = Producto.objects.annotate(
+            nombre_limpio=Replace('nombre', Value(' '), Value(''))
+        ).filter(nombre_limpio__iexact=nombre_sin_espacios)
+        
         if self.instance and self.instance.pk:
             qs = qs.exclude(pk=self.instance.pk)
         if qs.exists():
