@@ -395,6 +395,12 @@ class Apartado(models.Model):
         Producto, on_delete=models.CASCADE, related_name="apartados"
     )
     cantidad = models.IntegerField()
+    partido = models.ForeignKey(
+        "Partido", on_delete=models.CASCADE, related_name="consumos", null=True, blank=True
+    )
+    equipo = models.ForeignKey(
+        "Equipo", on_delete=models.CASCADE, related_name="consumos", null=True, blank=True
+    )
     fecha_apartado = models.DateTimeField(auto_now_add=True)
     estado = models.CharField(
         max_length=20, choices=ESTADO_CHOICES, default=ESTADO_PENDIENTE
@@ -585,6 +591,32 @@ class Partido(models.Model):
             return 0.0
         # If total_cancha calculates total base matching the rate, each pays that exact amount since the rate is per captain
         return round(self.horas_jugadas * self.cancha.precio_por_hora, 2)
+
+    @property
+    def total_consumos_equipo1(self):
+        from .models import Apartado
+        if not self.equipo1: return 0.0
+        consumos = self.consumos.filter(equipo=self.equipo1, estado=Apartado.ESTADO_PENDIENTE)
+        return round(sum(float(c.cantidad * c.producto.precio) for c in consumos), 2)
+
+    @property
+    def total_consumos_equipo2(self):
+        from .models import Apartado
+        if not self.equipo2: return 0.0
+        consumos = self.consumos.filter(equipo=self.equipo2, estado=Apartado.ESTADO_PENDIENTE)
+        return round(sum(float(c.cantidad * c.producto.precio) for c in consumos), 2)
+
+    @property
+    def gran_total_equipo1(self):
+        return round(float(self.total_por_equipo) + float(self.total_consumos_equipo1), 2)
+
+    @property
+    def gran_total_equipo2(self):
+        return round(float(self.total_por_equipo) + float(self.total_consumos_equipo2), 2)
+
+    @property
+    def gran_total(self):
+        return round(self.gran_total_equipo1 + self.gran_total_equipo2, 2)
 
     def is_overlapping_time(self, other) -> bool:
         """Helper para determinar si dos partidos cruzan en horarios basados en strings (HH:MM)."""
@@ -910,3 +942,64 @@ class MovimientoInventario(models.Model):
 
     def __str__(self) -> str:
         return f"{self.get_tipo_movimiento_display()} - {self.producto.nombre} ({self.cantidad})"
+
+
+class NovedadJugador(models.Model):
+    """Registro de eventos/novedades de jugadores durante un partido."""
+
+    TIPO_GOL = "gol"
+    TIPO_AMARILLA = "amarilla"
+    TIPO_ROJA = "roja"
+    TIPO_LESION = "lesion"
+    TIPO_FALTA_ASISTENCIA = "falta_asistencia"
+    TIPO_OTRO = "otro"
+
+    TIPO_CHOICES = [
+        (TIPO_GOL, "⚽ Gol"),
+        (TIPO_AMARILLA, "🟨 Tarjeta Amarilla"),
+        (TIPO_ROJA, "🟥 Tarjeta Roja"),
+        (TIPO_LESION, "🤕 Lesión"),
+        (TIPO_FALTA_ASISTENCIA, "❌ Falta de Asistencia"),
+        (TIPO_OTRO, "📝 Otro"),
+    ]
+
+    partido = models.ForeignKey(
+        Partido, on_delete=models.CASCADE, related_name="novedades_jugadores"
+    )
+    jugador_equipo = models.ForeignKey(
+        JugadorEquipo, on_delete=models.CASCADE, related_name="novedades",
+        null=True, blank=True
+    )
+    nombre_jugador_libre = models.CharField(
+        max_length=150, blank=True, null=True,
+        help_text="Nombre si el jugador es invitado o no está registrado"
+    )
+    tipo_novedad = models.CharField(max_length=30, choices=TIPO_CHOICES)
+    descripcion = models.TextField(blank=True, null=True)
+    minuto = models.PositiveSmallIntegerField(
+        blank=True, null=True, help_text="Minuto del partido en que ocurrió (opcional)"
+    )
+    fecha_registro = models.DateTimeField(auto_now_add=True)
+    registrado_por = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="novedades_registradas"
+    )
+
+    class Meta:
+        ordering = ["fecha_registro"]
+        verbose_name = "Novedad de Jugador"
+        verbose_name_plural = "Novedades de Jugadores"
+
+    def get_nombre_jugador(self):
+        if self.jugador_equipo:
+            return self.jugador_equipo.get_nombre()
+        return self.nombre_jugador_libre or "Jugador desconocido"
+
+    def get_equipo(self):
+        if self.jugador_equipo:
+            return self.jugador_equipo.equipo
+        return None
+
+    def __str__(self) -> str:
+        return f"{self.get_tipo_novedad_display()} - {self.get_nombre_jugador()} (Partido #{self.partido_id})"
+

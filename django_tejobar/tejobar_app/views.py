@@ -22,7 +22,7 @@ from .forms import (
     CategoriaForm,
     JugadorEquipoForm,
 )
-from .models import Apartado, Equipo, Historial, Jugador, Persona, Producto, JugadorEquipo, Novedad, Partido, Cancha, Categoria
+from .models import Apartado, Equipo, Historial, Jugador, Persona, Producto, JugadorEquipo, Novedad, Partido, Cancha, Categoria, NovedadJugador
 from .media_utils import cloudinary_status_message
 
 
@@ -164,6 +164,26 @@ def apartar_producto(request: HttpRequest, pk: int) -> HttpResponse:
             messages.error(request, "No tienes un perfil de persona asociado.")
             return redirect("tejobar_app:productos_show", pk=pk)
 
+        # Buscar si el jugador tiene un partido activo hoy
+        partido_asociado = None
+        equipo_asociado = None
+        if hasattr(persona, 'jugador'):
+            from .models import Partido
+            from django.db import models
+            equipos_del_jugador = persona.jugador.jugador_equipos.values_list('equipo_id', flat=True)
+            if equipos_del_jugador:
+                partido = Partido.objects.filter(
+                    (models.Q(equipo1_id__in=equipos_del_jugador) | models.Q(equipo2_id__in=equipos_del_jugador)),
+                    estado=Partido.ESTADO_CONFIRMADA,
+                    fecha=timezone.localdate()
+                ).first()
+                if partido:
+                    partido_asociado = partido
+                    if partido.equipo1_id in equipos_del_jugador:
+                        equipo_asociado = partido.equipo1
+                    else:
+                        equipo_asociado = partido.equipo2
+
         try:
             with transaction.atomic():
                 producto = get_object_or_404(Producto.objects.select_for_update(), pk=pk)
@@ -176,7 +196,11 @@ def apartar_producto(request: HttpRequest, pk: int) -> HttpResponse:
                     messages.error(request, "Este producto está expirado y no puede ser apartado.")
                     return redirect("tejobar_app:productos_show", pk=producto.pk)
 
-                apartado = Apartado.objects.filter(persona=persona, producto=producto, estado='pendiente').first()
+                if partido_asociado and equipo_asociado:
+                    apartado = Apartado.objects.filter(persona=persona, producto=producto, estado='pendiente', partido=partido_asociado, equipo=equipo_asociado).first()
+                else:
+                    apartado = Apartado.objects.filter(persona=persona, producto=producto, estado='pendiente', partido__isnull=True).first()
+
                 if apartado:
                     apartado.cantidad += cantidad
                     apartado.save()
@@ -186,6 +210,8 @@ def apartar_producto(request: HttpRequest, pk: int) -> HttpResponse:
                         producto=producto,
                         cantidad=cantidad,
                         estado="pendiente",
+                        partido=partido_asociado,
+                        equipo=equipo_asociado
                     )
                 
                 Novedad.objects.create(
@@ -1325,6 +1351,13 @@ def _notificar_capitanes_partido(partido, mensaje):
 @admin_required
 def iniciar_partido(request: HttpRequest, pk: int) -> HttpResponse:
     partido = get_object_or_404(Partido, pk=pk)
+    hoy = timezone.localdate()
+    if partido.fecha != hoy:
+        messages.error(
+            request,
+            f"No puedes iniciar este partido. Está programado para el {partido.fecha.strftime('%d/%m/%Y')}, no para hoy ({hoy.strftime('%d/%m/%Y')})."
+        )
+        return redirect("tejobar_app:admin_partidos_index")
     if not partido.hora_inicio:
         partido.hora_inicio = timezone.now()
         partido.estado = Partido.ESTADO_CONFIRMADA
@@ -1379,12 +1412,14 @@ def _registrar_pago_cancha_efectivo(partido: Partido, equipo_paga: str = "ambos"
     procesado = False
     if equipo_paga in ["equipo1", "ambos"] and not partido.pago_cancha_equipo1:
         partido.pago_cancha_equipo1 = True
-        monto_pagado += partido.total_por_equipo
+        monto_pagado += partido.gran_total_equipo1
+        partido.consumos.filter(equipo=partido.equipo1, estado='pendiente').update(estado='comprado')
         procesado = True
         
     if equipo_paga in ["equipo2", "ambos"] and not partido.pago_cancha_equipo2:
         partido.pago_cancha_equipo2 = True
-        monto_pagado += partido.total_por_equipo
+        monto_pagado += partido.gran_total_equipo2
+        partido.consumos.filter(equipo=partido.equipo2, estado='pendiente').update(estado='comprado')
         procesado = True
         
     if not procesado:
@@ -2696,3 +2731,89 @@ def marcar_notificaciones_leidas(request):
         Notificacion.objects.filter(usuario=request.user, leida=False).update(leida=True)
         
     return JsonResponse({"success": True})
+
+
+# ─── Novedades de Jugadores por Partido ─────────────────────────────────────
+
+@admin_required
+def admin_partido_novedades(request: HttpRequest, pk: int) -> HttpResponse:
+    """Vista principal que lista las novedades de un partido y muestra el formulario para agregar."""
+    partido = get_object_or_404(Partido, pk=pk)
+    novedades = partido.novedades_jugadores.select_related("jugador_equipo__equipo", "jugador_equipo__jugador__persona", "registrado_por").order_by("fecha_registro")
+
+    # Construir lista de jugadores de ambos equipos para el selector
+    jugadores_equipo1 = []
+    jugadores_equipo2 = []
+    if partido.equipo1:
+        jugadores_equipo1 = JugadorEquipo.objects.filter(equipo=partido.equipo1).select_related("jugador__persona")
+    if partido.equipo2:
+        jugadores_equipo2 = JugadorEquipo.objects.filter(equipo=partido.equipo2).select_related("jugador__persona")
+
+    context = {
+        "partido": partido,
+        "novedades": novedades,
+        "jugadores_equipo1": jugadores_equipo1,
+        "jugadores_equipo2": jugadores_equipo2,
+        "tipos_novedad": NovedadJugador.TIPO_CHOICES,
+    }
+    return render(request, "partidos/novedades_jugadores.html", context)
+
+
+@admin_required
+@require_POST
+def admin_partido_novedad_crear(request: HttpRequest, pk: int) -> HttpResponse:
+    """Crea una nueva novedad para un jugador en un partido."""
+    partido = get_object_or_404(Partido, pk=pk)
+
+    jugador_equipo_id = request.POST.get("jugador_equipo_id")
+    nombre_libre = request.POST.get("nombre_jugador_libre", "").strip()
+    tipo_novedad = request.POST.get("tipo_novedad")
+    descripcion = request.POST.get("descripcion", "").strip()
+    minuto_str = request.POST.get("minuto", "").strip()
+
+    if not tipo_novedad:
+        messages.error(request, "El tipo de novedad es requerido.")
+        return redirect("tejobar_app:admin_partido_novedades", pk=pk)
+
+    jugador_equipo = None
+    if jugador_equipo_id:
+        try:
+            jugador_equipo = JugadorEquipo.objects.get(pk=jugador_equipo_id)
+        except JugadorEquipo.DoesNotExist:
+            messages.error(request, "Jugador no encontrado.")
+            return redirect("tejobar_app:admin_partido_novedades", pk=pk)
+
+    if not jugador_equipo and not nombre_libre:
+        messages.error(request, "Debes seleccionar un jugador o ingresar un nombre.")
+        return redirect("tejobar_app:admin_partido_novedades", pk=pk)
+
+    minuto = None
+    if minuto_str:
+        try:
+            minuto = int(minuto_str)
+        except ValueError:
+            pass
+
+    NovedadJugador.objects.create(
+        partido=partido,
+        jugador_equipo=jugador_equipo,
+        nombre_jugador_libre=nombre_libre if not jugador_equipo else None,
+        tipo_novedad=tipo_novedad,
+        descripcion=descripcion or None,
+        minuto=minuto,
+        registrado_por=request.user,
+    )
+    messages.success(request, "Novedad registrada correctamente.")
+    return redirect("tejobar_app:admin_partido_novedades", pk=pk)
+
+
+@admin_required
+@require_POST
+def admin_partido_novedad_eliminar(request: HttpRequest, novedad_pk: int) -> HttpResponse:
+    """Elimina una novedad de jugador."""
+    novedad = get_object_or_404(NovedadJugador, pk=novedad_pk)
+    partido_pk = novedad.partido_id
+    novedad.delete()
+    messages.success(request, "Novedad eliminada.")
+    return redirect("tejobar_app:admin_partido_novedades", pk=partido_pk)
+

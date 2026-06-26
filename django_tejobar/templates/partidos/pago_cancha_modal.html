@@ -26,7 +26,7 @@
                 <p class="mb-4">
                     <strong>Tiempo jugado:</strong> {{ partido.horas_jugadas }} h
                     <span class="d-block mt-2 h4 mb-0 {% if modo == 'admin' %}text-success{% else %}text-warning{% endif %}">
-                        Total: ${{ partido.total_cancha|floatformat:0 }}
+                        Total General: ${{ partido.gran_total|floatformat:0 }}
                     </span>
                 </p>
                 <p class="small {% if modo == 'admin' %}text-muted{% else %}text-muted{% endif %} mb-4">
@@ -43,13 +43,13 @@
                                 <label for="equipo_paga_{{ partido.pk }}" class="small font-weight-bold text-muted text-uppercase mb-1">¿A quién se le cobra?</label>
                                 <select name="equipo_paga" id="equipo_paga_{{ partido.pk }}" class="form-control mb-2" required>
                                     {% if not partido.pago_cancha_equipo1 and not partido.pago_cancha_equipo2 %}
-                                    <option value="ambos">Cobrar a Ambos (${{ partido.total_cancha|floatformat:0 }})</option>
+                                    <option value="ambos">Cobrar a Ambos (${{ partido.gran_total|floatformat:0 }})</option>
                                     {% endif %}
                                     {% if not partido.pago_cancha_equipo1 %}
-                                    <option value="equipo1">{{ partido.equipo1.nombre_equipo|default:"Equipo 1" }} (Capitán: {{ partido.equipo1.capitan_nombre }}) - ${{ partido.total_por_equipo|floatformat:0 }}</option>
+                                    <option value="equipo1">{{ partido.equipo1.nombre_equipo|default:"Equipo 1" }} (Capitán: {{ partido.equipo1.capitan_nombre }}) - ${{ partido.gran_total_equipo1|floatformat:0 }} (Cancha: ${{ partido.total_por_equipo|floatformat:0 }}, Consumos: ${{ partido.total_consumos_equipo1|floatformat:0 }})</option>
                                     {% endif %}
                                     {% if not partido.pago_cancha_equipo2 %}
-                                    <option value="equipo2">{{ partido.equipo2.nombre_equipo|default:"Equipo 2" }} (Capitán: {{ partido.equipo2.capitan_nombre }}) - ${{ partido.total_por_equipo|floatformat:0 }}</option>
+                                    <option value="equipo2">{{ partido.equipo2.nombre_equipo|default:"Equipo 2" }} (Capitán: {{ partido.equipo2.capitan_nombre }}) - ${{ partido.gran_total_equipo2|floatformat:0 }} (Cancha: ${{ partido.total_por_equipo|floatformat:0 }}, Consumos: ${{ partido.total_consumos_equipo2|floatformat:0 }})</option>
                                     {% endif %}
                                 </select>
                             </div>

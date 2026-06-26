@@ -1,0 +1,175 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Novedades del Partido #{{ partido.pk }} - Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <a href="{% url 'tejobar_app:admin_partidos_index' %}" class="btn btn-sm btn-outline-secondary mb-2">
+            <i class="fas fa-arrow-left mr-1"></i> Volver a Partidos
+        </a>
+        <h2 class="mb-0">
+            <i class="fas fa-clipboard-list text-primary mr-2"></i>
+            Novedades del Partido #{{ partido.pk }}
+        </h2>
+        <p class="text-muted mb-0 mt-1">
+            <strong>{{ partido.equipo1.nombre_equipo|default:"—" }}</strong>
+            <span class="mx-2">vs</span>
+            <strong>{{ partido.equipo2.nombre_equipo|default:"—" }}</strong>
+            &nbsp;|&nbsp; {{ partido.fecha|date:"d/m/Y" }} {{ partido.hora }}
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Formulario para agregar novedad -->
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-plus-circle mr-2"></i>Registrar Novedad</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'tejobar_app:admin_partido_novedad_crear' partido.pk %}">
+                    {% csrf_token %}
+
+                    <div class="form-group">
+                        <label class="font-weight-bold small text-muted text-uppercase">Tipo de Novedad <span class="text-danger">*</span></label>
+                        <select name="tipo_novedad" class="form-control" required id="id_tipo_novedad">
+                            <option value="">-- Seleccionar --</option>
+                            {% for value, label in tipos_novedad %}
+                            <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="font-weight-bold small text-muted text-uppercase">Jugador</label>
+                        <select name="jugador_equipo_id" class="form-control" id="id_jugador_equipo">
+                            <option value="">-- Jugador registrado (opcional) --</option>
+                            {% if jugadores_equipo1 %}
+                            <optgroup label="🔵 {{ partido.equipo1.nombre_equipo }}">
+                                {% for je in jugadores_equipo1 %}
+                                <option value="{{ je.pk }}">{{ je.get_nombre }}{% if je.es_capitan %} ⭐{% endif %}</option>
+                                {% endfor %}
+                            </optgroup>
+                            {% endif %}
+                            {% if jugadores_equipo2 %}
+                            <optgroup label="🔴 {{ partido.equipo2.nombre_equipo }}">
+                                {% for je in jugadores_equipo2 %}
+                                <option value="{{ je.pk }}">{{ je.get_nombre }}{% if je.es_capitan %} ⭐{% endif %}</option>
+                                {% endfor %}
+                            </optgroup>
+                            {% endif %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="font-weight-bold small text-muted text-uppercase">Nombre (si no está en lista)</label>
+                        <input type="text" name="nombre_jugador_libre" class="form-control" placeholder="Ej: Juan Pérez (invitado)" id="id_nombre_libre">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="font-weight-bold small text-muted text-uppercase">Minuto (opcional)</label>
+                        <input type="number" name="minuto" class="form-control" placeholder="Ej: 45" min="0" max="200">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="font-weight-bold small text-muted text-uppercase">Descripción (opcional)</label>
+                        <textarea name="descripcion" class="form-control" rows="2" placeholder="Detalles adicionales..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block font-weight-bold">
+                        <i class="fas fa-save mr-1"></i> Registrar Novedad
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de novedades registradas -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-dark"><i class="fas fa-list mr-2 text-secondary"></i>Novedades Registradas</h5>
+                <span class="badge badge-secondary badge-pill">{{ novedades.count }}</span>
+            </div>
+            <div class="card-body p-0">
+                {% if novedades %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 text-dark">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Jugador</th>
+                                <th>Equipo</th>
+                                <th>Min.</th>
+                                <th>Descripción</th>
+                                <th>Registrado</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for novedad in novedades %}
+                            <tr>
+                                <td>
+                                    {% if novedad.tipo_novedad == 'gol' %}
+                                        <span class="badge badge-success px-2 py-1">⚽ Gol</span>
+                                    {% elif novedad.tipo_novedad == 'amarilla' %}
+                                        <span class="badge badge-warning text-dark px-2 py-1">🟨 Amarilla</span>
+                                    {% elif novedad.tipo_novedad == 'roja' %}
+                                        <span class="badge badge-danger px-2 py-1">🟥 Roja</span>
+                                    {% elif novedad.tipo_novedad == 'lesion' %}
+                                        <span class="badge badge-secondary px-2 py-1">🤕 Lesión</span>
+                                    {% elif novedad.tipo_novedad == 'falta_asistencia' %}
+                                        <span class="badge badge-dark px-2 py-1">❌ F. Asistencia</span>
+                                    {% else %}
+                                        <span class="badge badge-light text-dark px-2 py-1">📝 Otro</span>
+                                    {% endif %}
+                                </td>
+                                <td class="font-weight-bold">{{ novedad.get_nombre_jugador }}</td>
+                                <td>
+                                    {% if novedad.get_equipo %}
+                                        <span class="small text-muted">{{ novedad.get_equipo.nombre_equipo }}</span>
+                                    {% else %}
+                                        <span class="small text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if novedad.minuto is not None %}
+                                        <span class="badge badge-light text-dark border">{{ novedad.minuto }}'</span>
+                                    {% else %}
+                                        <span class="text-muted small">—</span>
+                                    {% endif %}
+                                </td>
+                                <td class="small text-muted">{{ novedad.descripcion|default:"—" }}</td>
+                                <td class="small text-muted">
+                                    {% if novedad.registrado_por %}
+                                        {{ novedad.registrado_por.username }}
+                                    {% else %}—{% endif %}
+                                    <div class="text-muted" style="font-size:0.75rem;">{{ novedad.fecha_registro|date:"d/m H:i" }}</div>
+                                </td>
+                                <td>
+                                    <form method="post" action="{% url 'tejobar_app:admin_partido_novedad_eliminar' novedad.pk %}" onsubmit="return confirm('¿Eliminar esta novedad?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-clipboard fa-3x mb-3 d-block text-light"></i>
+                    <p class="mb-0">No hay novedades registradas para este partido.</p>
+                    <small>Usa el formulario de la izquierda para agregar la primera.</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

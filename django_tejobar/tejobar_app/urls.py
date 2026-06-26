@@ -101,5 +101,10 @@ urlpatterns = [
     # Descartar Notificaciones
     path("notificaciones/descartar/<str:notif_id>/", views.descartar_notificacion, name="descartar_notificacion"),
     path("notificaciones/marcar-leidas/", views.marcar_notificaciones_leidas, name="marcar_notificaciones_leidas"),
+
+    # Novedades de Jugadores por Partido
+    path("administracion/partidos/<int:pk>/novedades/", views.admin_partido_novedades, name="admin_partido_novedades"),
+    path("administracion/partidos/<int:pk>/novedades/agregar/", views.admin_partido_novedad_crear, name="admin_partido_novedad_crear"),
+    path("administracion/partidos/novedades/<int:novedad_pk>/eliminar/", views.admin_partido_novedad_eliminar, name="admin_partido_novedad_eliminar"),
 ]
 
