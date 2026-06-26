@@ -1065,9 +1065,9 @@ def admin_product_delete(request: HttpRequest, pk: int) -> HttpResponse:
     tiene_historial = producto.historial.exists()
     tiene_apartados = producto.apartados.exists()
     
-    # Solo bloqueamos la eliminación si está activo, o si tiene dependencias (historial/apartados).
+    # Solo bloqueamos la eliminación si está activo, o si tiene dependencias de historial.
     # Si está inactivo y tiene stock, permitimos borrarlo (el POST registrará la pérdida del stock).
-    if esta_activo or tiene_historial or tiene_apartados:
+    if esta_activo or tiene_historial:
         motivos = []
         if esta_activo:
             motivos.append("está activo")
@@ -1075,8 +1075,6 @@ def admin_product_delete(request: HttpRequest, pk: int) -> HttpResponse:
             motivos.append("tiene stock disponible")
         if tiene_historial:
             motivos.append("tiene historial de ventas")
-        if tiene_apartados:
-            motivos.append("tiene apartados")
             
         motivos_str = " y ".join([", ".join(motivos[:-1]), motivos[-1]] if len(motivos) > 1 else motivos)
         
