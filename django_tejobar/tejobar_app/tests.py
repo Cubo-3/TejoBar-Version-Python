@@ -921,7 +921,7 @@ class CustomValidationModelTests(BaseViewTestCase):
         # Fecha de vencimiento menor a 2 semanas
         from django.utils import timezone
         from datetime import timedelta
-        fecha_invalida = timezone.now().date() + timedelta(days=13)
+        fecha_invalida = timezone.now().date() + timedelta(days=5)
         prod3 = Producto(nombre="Test 3", precio=10.0, stock=5, categoria=self.categoria, fecha_vencimiento=fecha_invalida)
         with self.assertRaises(ValidationError) as cm:
             prod3.full_clean()

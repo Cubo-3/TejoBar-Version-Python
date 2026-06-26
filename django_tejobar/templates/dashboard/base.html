@@ -166,21 +166,21 @@
             <button class="dash-hamburger" id="dashHamburger" aria-label="Abrir navegación">
                 <span></span><span></span><span></span>
             </button>
-            <a href="{% url 'tejobar_app:home' %}" class="logo">TejoBar</a>
+            <div class="logo-container" style="display: flex; align-items: center; gap: 20px;">
+                <a href="{% url 'tejobar_app:home' %}" class="logo">TejoBar</a>
+            </div>
             <nav>
                 <ul class="menu-top">
                     <li><a href="{% url 'tejobar_app:home' %}">🏠Inicio</a></li>
                     <li><a href="{% url 'tejobar_app:partidos_index' %}">🥇Partidos</a></li>
                     <li><a href="{% url 'tejobar_app:productos_index' %}">🍻Productos</a></li>
                     {% if user.is_authenticated %}
-                    <li><a href="{% url 'tejobar_app:dashboard' %}">📊Dashboard</a></li>
-                    <!-- Indicador del rol del usuario -->
-                    <li class="nav-item d-inline-block align-middle ml-2 px-2 py-1 rounded" style="font-size: 0.85rem; font-weight: bold; background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.25);">
-                        <span style="color: rgba(255, 255, 255, 0.7); margin-right: 5px;"><i class="fas fa-id-badge"></i></span>
-                        <span class="{% if request.user.persona and request.user.persona.rol == 'admin' or request.user.is_superuser %}text-danger{% elif request.user.persona and request.user.persona.rol == 'capitan' %}text-warning{% else %}text-info{% endif %}">
-                            {% if request.user.persona %}{{ request.user.persona.get_rol_display }}{% elif request.user.is_superuser %}Administrador{% else %}Usuario{% endif %}
+                    <li class="user-profile-item d-md-none">
+                        <span class="user-profile-link" style="color: #FFC107; font-weight: bold;">
+                            <i class="fas fa-user-circle mr-1"></i> {% if user.persona %}{{ user.persona.nombre }} <span class="badge badge-warning ml-1 text-dark" style="font-size: 0.7rem;">{{ user.persona.get_rol_display }}</span>{% else %}{{ user.username }}{% endif %}
                         </span>
                     </li>
+                    <li><a href="{% url 'tejobar_app:dashboard' %}">📊Dashboard</a></li>
                     
                     <li class="dropdown">
                         <a href="#" id="notifDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="position: relative; display: inline-block;">

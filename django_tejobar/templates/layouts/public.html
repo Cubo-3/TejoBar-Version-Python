@@ -289,7 +289,9 @@
     </head>
 <body class="{% block body_class %}{% endblock %}">
     <header>
-        <a href="{% url 'tejobar_app:home' %}" class="logo">TejoBar</a>
+        <div class="logo-container" style="display: flex; align-items: center; gap: 20px;">
+            <a href="{% url 'tejobar_app:home' %}" class="logo">TejoBar</a>
+        </div>
         <!-- Botón hamburguesa (visible solo en móvil) -->
         <button class="hamburger-btn" id="hamburgerBtn" aria-label="Abrir menú" aria-expanded="false">
             <span></span>
@@ -302,9 +304,9 @@
                 <li><a href="{% url 'tejobar_app:partidos_index' %}">🥇Partidos</a></li>
                 <li><a href="{% url 'tejobar_app:productos_index' %}">🍻Comida y Bebida</a></li>
                 {% if user.is_authenticated %}
-                    <li class="user-profile-item">
-                        <span class="user-profile-link">
-                            👤 {% if user.persona %}{{ user.persona.nombre }} <span class="role-badge">{{ user.persona.get_rol_display }}</span>{% else %}{{ user.username }}{% endif %}
+                    <li class="user-profile-item d-md-none">
+                        <span class="user-profile-link" style="color: #FFC107; font-weight: bold;">
+                            <i class="fas fa-user-circle mr-1"></i> {% if user.persona %}{{ user.persona.nombre }} <span class="role-badge">{{ user.persona.get_rol_display }}</span>{% else %}{{ user.username }}{% endif %}
                         </span>
                     </li>
                     <li><a href="{% url 'tejobar_app:dashboard' %}">📊Dashboard</a></li>
