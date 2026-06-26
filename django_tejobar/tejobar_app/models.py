@@ -754,11 +754,39 @@ class HistorialEquipo(models.Model):
     fue_capitan = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.jugador} en {self.equipo} ({self.fecha_ingreso.date()})"
+        return f"{self.jugador.persona.nombre} en {self.equipo.nombre_equipo} ({self.fecha_ingreso.strftime('%d/%m/%Y')} - {'Presente' if not self.fecha_salida else self.fecha_salida.strftime('%d/%m/%Y')})"
     
     @property
     def is_activo(self):
         return self.fecha_salida is None
+
+class Notificacion(models.Model):
+    TIPO_SISTEMA = "sistema"
+    TIPO_PAGO = "pago"
+    TIPO_PARTIDO = "partido"
+    
+    TIPO_CHOICES = [
+        (TIPO_SISTEMA, "Sistema"),
+        (TIPO_PAGO, "Pago"),
+        (TIPO_PARTIDO, "Partido"),
+    ]
+    
+    # Si el usuario es nulo, es una notificación general para todos los administradores
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name="notificaciones", null=True, blank=True)
+    mensaje = models.CharField(max_length=255)
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default=TIPO_SISTEMA)
+    enlace = models.CharField(max_length=255, blank=True, null=True)
+    leida = models.BooleanField(default=False)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ["-fecha_creacion"]
+        verbose_name = "Notificación"
+        verbose_name_plural = "Notificaciones"
+        
+    def __str__(self):
+        destinatario = self.usuario.username if self.usuario else "Admins"
+        return f"[{destinatario}] {self.mensaje[:30]}"
 
 # Configuración de Signals para automatizar el historial
 from django.db.models.signals import post_save, post_delete

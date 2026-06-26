@@ -182,7 +182,6 @@
                         </span>
                     </li>
                     
-                    {% if request.user.persona.rol == 'admin' %}
                     <li class="dropdown">
                         <a href="#" id="notifDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="position: relative; display: inline-block;">
                             🔔
@@ -191,7 +190,7 @@
                             {% endif %}
                         </a>
                         <div class="dropdown-menu dropdown-menu-right shadow-sm p-0" aria-labelledby="notifDropdown" style="min-width: 280px; max-height: 400px; overflow-y: auto;">
-                            <div class="dropdown-header bg-dark text-white">Notificaciones (Dinámicas)</div>
+                            <div class="dropdown-header bg-dark text-white">Notificaciones</div>
                             
                             {% if notificaciones_vencimiento %}
                                 <div class="dropdown-item bg-light font-weight-bold text-danger border-bottom">⚠️ Por vencer / Vencidos</div>
@@ -208,28 +207,24 @@
                                 {% endfor %}
                             {% endif %}
                             
-                            {% if notificaciones_pagos %}
-                                <div class="dropdown-item bg-light font-weight-bold text-success border-bottom">💰 Pagos recientes</div>
-                                {% for pago in notificaciones_pagos %}
-                                <div class="notif-row dropdown-item d-flex align-items-center border-bottom px-3 py-2" data-notif-id="pago_{{ pago.id }}">
-                                    <a class="text-wrap text-decoration-none text-dark flex-grow-1 pr-2" href="{% url 'tejobar_app:admin_novedades_index' %}">
-                                        <small class="d-block"><strong>{{ pago.get_tipo_novedad_display }}</strong></small>
-                                        <small class="text-muted d-block">{{ pago.descripcion|truncatechars:50 }}</small>
-                                        <small class="text-muted d-block" style="font-size: 0.75rem;">{{ pago.fecha|date:"d/m/Y H:i" }}</small>
+                            {% if notificaciones_personales %}
+                                <div class="dropdown-item bg-light font-weight-bold text-primary border-bottom"><i class="fas fa-bell"></i> Avisos Recientes</div>
+                                {% for notif in notificaciones_personales %}
+                                <div class="notif-row dropdown-item d-flex align-items-center border-bottom px-3 py-2">
+                                    <a class="text-wrap text-decoration-none text-dark flex-grow-1" href="{{ notif.enlace|default:'#' }}">
+                                        <small class="d-block"><strong>{{ notif.get_tipo_display }}</strong></small>
+                                        <small class="text-muted d-block">{{ notif.mensaje }}</small>
+                                        <small class="text-muted d-block" style="font-size: 0.75rem;">{{ notif.fecha_creacion|date:"d/m/Y H:i" }}</small>
                                     </a>
-                                    <button type="button" class="close dismiss-notif-btn ml-auto" data-notif-id="pago_{{ pago.id }}" aria-label="Dismiss" style="font-size: 1.2rem; cursor: pointer; padding: 5px; outline: none;">
-                                        <span aria-hidden="true">&times;</span>
-                                    </button>
                                 </div>
                                 {% endfor %}
                             {% endif %}
                             
                             {% if total_notificaciones == 0 %}
-                                <div class="dropdown-item text-center text-muted py-3">Sin novedades recientes</div>
+                                <div class="dropdown-item text-center text-muted py-3">Sin notificaciones recientes</div>
                             {% endif %}
                         </div>
                     </li>
-                    {% endif %}
 
                     <li>
                         <form method="post" action="{% url 'tejobar_app:logout' %}" style="display:inline;">
@@ -465,6 +460,27 @@
                     dropdownMenu.appendChild(emptyMsg);
                 }
             }
+        }
+    });
+    
+    document.addEventListener("DOMContentLoaded", function () {
+        var notifDropdown = document.getElementById('notifDropdown');
+        if(notifDropdown) {
+            notifDropdown.addEventListener('click', function(e) {
+                // Remove badge visually
+                var badge = document.querySelector('#notifDropdown .badge');
+                if (badge) {
+                    badge.remove();
+                }
+                
+                fetch("{% url 'tejobar_app:marcar_notificaciones_leidas' %}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json'
+                    }
+                }).catch(err => console.error('Error al marcar leídas', err));
+            });
         }
     });
     </script>

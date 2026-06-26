@@ -1299,6 +1299,19 @@ def admin_partidos_delete(request: HttpRequest, pk: int) -> HttpResponse:
     return render(request, "partidos/confirm_delete.html", {"partido": partido})
 
 
+def _notificar_capitanes_partido(partido, mensaje):
+    from .models import Notificacion, JugadorEquipo
+    for e_id in [partido.equipo1_id, partido.equipo2_id]:
+        if e_id:
+            je = JugadorEquipo.objects.filter(equipo_id=e_id, es_capitan=True).select_related('jugador__persona__usuario').first()
+            if je and je.jugador.persona.usuario:
+                Notificacion.objects.create(
+                    usuario=je.jugador.persona.usuario,
+                    mensaje=mensaje,
+                    tipo=Notificacion.TIPO_PARTIDO,
+                    enlace="/partidos/"
+                )
+
 @admin_required
 def iniciar_partido(request: HttpRequest, pk: int) -> HttpResponse:
     partido = get_object_or_404(Partido, pk=pk)
@@ -1307,6 +1320,7 @@ def iniciar_partido(request: HttpRequest, pk: int) -> HttpResponse:
         partido.estado = Partido.ESTADO_CONFIRMADA
         partido.save()
         messages.success(request, "Cronómetro del partido iniciado.")
+        _notificar_capitanes_partido(partido, f"¡El Partido #{partido.pk} ha comenzado!")
     else:
         messages.warning(request, "Este partido ya había iniciado.")
     return redirect("tejobar_app:admin_partidos_index")
@@ -1319,6 +1333,7 @@ def finalizar_partido(request: HttpRequest, pk: int) -> HttpResponse:
         partido.hora_fin = timezone.now()
         partido.save()
         messages.success(request, "Cronómetro detenido. Ya puede ver el total a pagar.")
+        _notificar_capitanes_partido(partido, f"El Partido #{partido.pk} ha finalizado. Puedes revisar el total a pagar.")
     else:
         messages.warning(request, "No se puede finalizar este partido.")
     return redirect("tejobar_app:admin_partidos_index")
@@ -1380,8 +1395,30 @@ def _registrar_pago_cancha_efectivo(partido: Partido, equipo_paga: str = "ambos"
         cantidad=1,
         descripcion=descripcion,
     )
-    return True
+    
+    # Notificar a los capitanes involucrados
+    from .models import Notificacion
+    capitanes_notificados = []
+    if equipo_paga in ["equipo1", "ambos"] and partido.equipo1 and partido.equipo1.capitan_nombre:
+        # Aquí idealmente tendríamos el User del capitán, pero actualmente 'capitan_nombre' es char. 
+        # Si el capitán tiene un User en Jugador.persona.usuario, podríamos usarlo.
+        # Por simplificación y dada la estructura, buscaremos si existe un User con ese nombre
+        pass # The current data model might not strictly link a team to a user account directly easily here, I'll attempt to find the user via JugadorEquipo.
 
+    for e_id, e_paga_str in [(partido.equipo1_id, "equipo1"), (partido.equipo2_id, "equipo2")]:
+        if equipo_paga in [e_paga_str, "ambos"]:
+            from .models import JugadorEquipo, User
+            # Buscar el capitán real de este equipo si tiene cuenta de usuario
+            je = JugadorEquipo.objects.filter(equipo_id=e_id, es_capitan=True).select_related('jugador__persona__usuario').first()
+            if je and je.jugador.persona.usuario:
+                Notificacion.objects.create(
+                    usuario=je.jugador.persona.usuario,
+                    mensaje=f"El administrador confirmó el pago de ${partido.total_por_equipo:,.0f} por la cancha del Partido #{partido.pk}",
+                    tipo=Notificacion.TIPO_PAGO,
+                    enlace="/partidos/"
+                )
+                
+    return True
 
 @admin_required
 def pagar_partido(request: HttpRequest, pk: int) -> HttpResponse:
@@ -1664,6 +1701,16 @@ def pago_cancha_efectivo_jugador(request: HttpRequest, pk: int) -> HttpResponse:
     if not _partido_listo_para_pago(partido):
         messages.error(request, "Este partido no está listo para cobrar la cancha.")
         return redirect("tejobar_app:partidos_index")
+    # Notificar a los administradores
+    from .models import Notificacion
+    capitan_nombre = getattr(request.user.persona, "nombre", request.user.username) if hasattr(request.user, "persona") else request.user.username
+    Notificacion.objects.create(
+        usuario=None, # Global para Admins
+        mensaje=f"El capitán {capitan_nombre} avisa pago en caja del Partido #{partido.pk}",
+        tipo=Notificacion.TIPO_PAGO,
+        enlace=f"/partidos/" # Podría ser un link directo al partido
+    )
+    
     messages.info(
         request,
         f"Acércate a la caja del bar para pagar ${partido.total_cancha:,.0f} en efectivo "
@@ -2537,4 +2584,23 @@ def descartar_notificacion(request, notif_id):
         request.session['dismissed_notifications'] = dismissed
         request.session.modified = True
     print("SESSION DISMISSED NOTIFS IN VIEW AFTER:", request.session.get('dismissed_notifications'))
+    return JsonResponse({"success": True})
+
+@login_required
+@require_POST
+def marcar_notificaciones_leidas(request):
+    """Marca como leídas las notificaciones del usuario actual.
+    Si es admin y no tiene un objeto Persona asociado que restrinja, 
+    marcará las notificaciones generales (usuario=None)."""
+    from .models import Notificacion
+    
+    if request.user.is_superuser or getattr(request.user, "persona", None) and request.user.persona.rol == 'admin':
+        # Admin: mark general notifications as read
+        Notificacion.objects.filter(usuario=None, leida=False).update(leida=True)
+        # Also mark their own personal notifications as read if they have any
+        Notificacion.objects.filter(usuario=request.user, leida=False).update(leida=True)
+    else:
+        # Player: mark only their notifications as read
+        Notificacion.objects.filter(usuario=request.user, leida=False).update(leida=True)
+        
     return JsonResponse({"success": True})
