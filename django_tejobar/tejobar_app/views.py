@@ -1306,10 +1306,10 @@ def _notificar_capitanes_partido(partido, mensaje):
     from .models import Notificacion, JugadorEquipo
     for e_id in [partido.equipo1_id, partido.equipo2_id]:
         if e_id:
-            je = JugadorEquipo.objects.filter(equipo_id=e_id, es_capitan=True).select_related('jugador__persona__usuario').first()
-            if je and je.jugador.persona.usuario:
+            je = JugadorEquipo.objects.filter(equipo_id=e_id, es_capitan=True).select_related('jugador__persona__user').first()
+            if je and je.jugador.persona.user:
                 Notificacion.objects.create(
-                    usuario=je.jugador.persona.usuario,
+                    usuario=je.jugador.persona.user,
                     mensaje=mensaje,
                     tipo=Notificacion.TIPO_PARTIDO,
                     enlace="/partidos/"
@@ -1412,10 +1412,10 @@ def _registrar_pago_cancha_efectivo(partido: Partido, equipo_paga: str = "ambos"
         if equipo_paga in [e_paga_str, "ambos"]:
             from .models import JugadorEquipo, User
             # Buscar el capitán real de este equipo si tiene cuenta de usuario
-            je = JugadorEquipo.objects.filter(equipo_id=e_id, es_capitan=True).select_related('jugador__persona__usuario').first()
-            if je and je.jugador.persona.usuario:
+            je = JugadorEquipo.objects.filter(equipo_id=e_id, es_capitan=True).select_related('jugador__persona__user').first()
+            if je and je.jugador.persona.user:
                 Notificacion.objects.create(
-                    usuario=je.jugador.persona.usuario,
+                    usuario=je.jugador.persona.user,
                     mensaje=f"El administrador confirmó el pago de ${partido.total_por_equipo:,.0f} por la cancha del Partido #{partido.pk}",
                     tipo=Notificacion.TIPO_PAGO,
                     enlace="/partidos/"

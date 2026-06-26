@@ -302,11 +302,16 @@ class CanchaForm(forms.ModelForm):
             raise ValidationError(
                 "El nombre de la cancha debe tener entre 2 y 50 caracteres."
             )
-        qs = Cancha.objects.filter(disponibilidad__iexact=nombre)
-        if self.instance.pk:
-            qs = qs.exclude(pk=self.instance.pk)
-        if qs.exists():
-            raise ValidationError("Ya existe una cancha con este nombre.")
+            
+        nombre_limpio = nombre.replace(" ", "").lower()
+        canchas = Cancha.objects.all()
+        if self.instance and self.instance.pk:
+            canchas = canchas.exclude(pk=self.instance.pk)
+            
+        for cancha in canchas:
+            if cancha.disponibilidad.replace(" ", "").lower() == nombre_limpio:
+                raise ValidationError("Ya existe una cancha con este nombre.")
+                
         return nombre
 
     def clean_precio_por_hora(self):
