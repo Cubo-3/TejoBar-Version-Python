@@ -38,13 +38,31 @@ def procesar_archivo_productos(archivo):
                 )
                 return resumen
         else:
+            # Primero leemos para ver si es la plantilla con encabezado en la fila 4
             df = pd.read_excel(archivo)
+            if df.columns[0] == 'Inventario de Productos - Tejobar' or df.iloc[0, 0] == 'Inventario de Productos - Tejobar':
+                # Volver a leer con el header correcto (fila 3 en índice base 0)
+                # Volver al inicio del archivo si es posible
+                if hasattr(archivo, 'seek'):
+                    archivo.seek(0)
+                df = pd.read_excel(archivo, header=3)
+                
     except Exception as e:
         resumen['errores'].append(f"Error crítico al leer el archivo. Verifica el formato. Detalle: {str(e)}")
         return resumen
 
-    # 1. Estandarizar nombres de columnas (minúsculas y sin espacios)
+    # 1. Estandarizar nombres de columnas (minúsculas y sin espacios) y mapear nombres de la plantilla
     df.columns = [str(c).lower().strip() for c in df.columns]
+    
+    # Mapeo para soportar la plantilla específica
+    mapeo_columnas = {
+        'nombre del producto': 'nombre',
+        'categoría': 'categoria',
+        'descripción': 'descripcion',
+        'precio (cop)': 'precio',
+        'fecha de vencimiento': 'fecha_vencimiento'
+    }
+    df = df.rename(columns=mapeo_columnas)
 
     # 2. Definir las columnas obligatorias usando un Set
     columnas_requeridas = {'nombre', 'categoria', 'stock', 'precio'}
@@ -87,7 +105,17 @@ def procesar_archivo_productos(archivo):
                 for col in df.columns:
                     if col in campos_modelo and col not in columnas_requeridas:
                         val = row.get(col)
-                        kwargs[col] = val if not pd.isna(val) else None
+                        if pd.isna(val):
+                            kwargs[col] = None
+                        elif col == 'fecha_vencimiento' and isinstance(val, str):
+                            try:
+                                # Intenta parsear DD/MM/YYYY
+                                from datetime import datetime
+                                kwargs[col] = datetime.strptime(val.strip(), '%d/%m/%Y').date()
+                            except ValueError:
+                                kwargs[col] = val
+                        else:
+                            kwargs[col] = val
 
                 producto_obj = Producto.objects.filter(nombre=nombre).first()
                 if producto_obj:
