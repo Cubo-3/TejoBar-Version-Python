@@ -79,7 +79,7 @@ def procesar_archivo_productos(archivo):
     columnas_csv = set(df.columns)
     
     # Reportar columnas ignoradas (advertencias)
-    columnas_ignoradas = columnas_csv - campos_modelo - {'categoria'} # categoria en CSV es nombre, en DB es id
+    columnas_ignoradas = columnas_csv - campos_modelo - {'categoria', '#'} # categoria en CSV es nombre, en DB es id
     if columnas_ignoradas:
         resumen['errores'].append(f"ADVERTENCIA: Las siguientes columnas fueron ignoradas por no existir en el sistema: {', '.join(columnas_ignoradas)}")
 
@@ -88,7 +88,8 @@ def procesar_archivo_productos(archivo):
             with transaction.atomic():
                 nombre = str(row.get('nombre', '')).strip()
                 if not nombre or pd.isna(nombre) or nombre == 'nan':
-                    raise ValueError("El nombre no puede estar vacío.")
+                    # Skip empty rows completely without raising an error
+                    continue
 
                 precio = float(row.get('precio', 0))
                 stock = int(row.get('stock', 0))
