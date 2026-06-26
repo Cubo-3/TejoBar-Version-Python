@@ -1252,6 +1252,11 @@ def admin_partidos_create(request: HttpRequest) -> HttpResponse:
 @admin_required
 def admin_partidos_update(request: HttpRequest, pk: int) -> HttpResponse:
     partido = get_object_or_404(Partido, pk=pk)
+    
+    if partido.hora_inicio:
+        messages.error(request, "No se puede editar un partido que ya está en curso o ha finalizado.")
+        return redirect("tejobar_app:admin_partidos_index")
+        
     if request.method == "POST":
         form = PartidoForm(request.POST, instance=partido)
         if form.is_valid():
