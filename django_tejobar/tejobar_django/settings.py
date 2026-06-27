@@ -132,7 +132,7 @@ WSGI_APPLICATION = "tejobar_django.wsgi.application"
 ASGI_APPLICATION = "tejobar_django.asgi.application"
 
 # CORREGIDO: Sintaxis limpia para que use la URL de Railway en la nube,
-# o caiga en tu MySQL local si no encuentra la variable de entorno de producción.
+# o caiga en MySQL local si no encuentra la variable de entorno de producción.
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',

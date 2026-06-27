@@ -1011,3 +1011,4 @@ class NovedadJugador(models.Model):
     def __str__(self) -> str:
         return f"{self.get_tipo_novedad_display()} - {self.get_nombre_jugador()} (Partido #{self.partido_id})"
 
+

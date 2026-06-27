@@ -632,22 +632,33 @@ def equipo_detail(request: HttpRequest, pk: int) -> HttpResponse:
 @login_required
 def equipo_create(request: HttpRequest) -> HttpResponse:
     persona = getattr(request.user, "persona", None)
-    if not persona or not hasattr(persona, "jugador"):
-        messages.error(request, "Solo los jugadores pueden crear equipos.")
+    if not persona:
+        messages.error(request, "No tienes un perfil de persona asociado.")
         return redirect("tejobar_app:equipos_index")
 
-    if JugadorEquipo.objects.filter(jugador=persona.jugador).exists():
-        messages.error(request, "Ya perteneces a un equipo.")
-        return redirect("tejobar_app:equipos_index")
+    # Admin puede crear equipos sin necesidad de tener un Jugador
+    es_admin = persona.rol == Persona.ROL_ADMIN
+
+    if not es_admin:
+        if not hasattr(persona, "jugador"):
+            messages.error(request, "Solo los jugadores pueden crear equipos.")
+            return redirect("tejobar_app:equipos_index")
+        if JugadorEquipo.objects.filter(jugador=persona.jugador).exists():
+            messages.error(request, "Ya perteneces a un equipo.")
+            return redirect("tejobar_app:equipos_index")
 
     if request.method == "POST":
         form = EquipoForm(request.POST)
         if form.is_valid():
             equipo = form.save()
-            JugadorEquipo.objects.create(jugador=persona.jugador, equipo=equipo, es_capitan=True)
-            persona.rol = Persona.ROL_CAPITAN
-            persona.save()
-            messages.success(request, "Equipo creado correctamente. Ahora eres el capitán.")
+            if not es_admin:
+                # Para jugadores normales, crear el vínculo de capitán
+                JugadorEquipo.objects.create(jugador=persona.jugador, equipo=equipo, es_capitan=True)
+                persona.rol = Persona.ROL_CAPITAN
+                persona.save()
+                messages.success(request, "Equipo creado correctamente. Ahora eres el capitán.")
+            else:
+                messages.success(request, f"Equipo '{equipo.nombre_equipo}' creado correctamente.")
             return redirect("tejobar_app:equipos_show", pk=equipo.pk)
     else:
         form = EquipoForm()
@@ -840,27 +851,38 @@ def equipo_remove_member(request: HttpRequest, pk: int, jugador_pk: int) -> Http
     assert persona is not None
 
     if request.method == "POST":
+        razon = request.POST.get("razon", "").strip()
+        if not razon or len(razon) < 5:
+            messages.error(request, "Debes indicar una razón de expulsión (mínimo 5 caracteres).")
+            return redirect("tejobar_app:equipos_show", pk=equipo.pk)
+
         is_invitado = request.POST.get("is_invitado") == "1"
 
-        if is_invitado:
-            # Jugador invitado: el pk enviado es el pk de JugadorEquipo
-            miembro_a_expulsar = get_object_or_404(JugadorEquipo, equipo=equipo, pk=jugador_pk)
-        else:
-            # Jugador registrado: el pk enviado es el pk de Persona
-            miembro_a_expulsar = get_object_or_404(JugadorEquipo, equipo=equipo, jugador__persona__pk=jugador_pk)
-
+        try:
+            if is_invitado:
+                # Jugador invitado: el pk enviado es el pk de JugadorEquipo
+                miembro_a_expulsar = get_object_or_404(JugadorEquipo, equipo=equipo, pk=jugador_pk)
+            else:
+                # Jugador registrado: el pk enviado es el pk de Persona
+                miembro_a_expulsar = get_object_or_404(JugadorEquipo, equipo=equipo, jugador__persona__pk=jugador_pk)
+        except Exception:
+            messages.error(request, "No se encontró al jugador en este equipo.")
+            return redirect("tejobar_app:equipos_show", pk=equipo.pk)
+        
         # Prevent captain from removing themselves through this view, they should use delete team
         if miembro_a_expulsar.es_capitan and persona.rol != Persona.ROL_ADMIN:
             messages.error(request, "El capitán no puede ser expulsado. Elimina el equipo si deseas salir.")
             return redirect("tejobar_app:equipos_show", pk=equipo.pk)
 
+        nombre_expulsado = miembro_a_expulsar.get_nombre()
         miembro_a_expulsar.delete()
-        messages.success(request, "Jugador expulsado del equipo.")
+        messages.success(
+            request,
+            f"Jugador '{nombre_expulsado}' expulsado del equipo. Razón: {razon}"
+        )
         return redirect("tejobar_app:equipos_show", pk=equipo.pk)
 
     return redirect("tejobar_app:equipos_show", pk=equipo.pk)
-
-
 
 
 @admin_required
@@ -868,10 +890,17 @@ def admin_venta_directa(request: HttpRequest) -> HttpResponse:
     from django.db import transaction
 
     productos = Producto.objects.filter(stock__gt=0).select_related("categoria").order_by("categoria__nombre", "nombre")
+    canchas = Cancha.objects.filter(estado=True).order_by("disponibilidad")
+
     if request.method == "POST":
         producto_ids = request.POST.getlist("producto_id[]")
         cantidades = request.POST.getlist("cantidad[]")
         cliente_nombre = request.POST.get("cliente_nombre", "").strip()
+        cancha_id = request.POST.get("cancha_id", "").strip()
+
+        cancha = None
+        if cancha_id:
+            cancha = Cancha.objects.filter(pk=cancha_id).first()
 
         if not producto_ids or not cantidades or len(producto_ids) != len(cantidades):
             messages.error(request, "No hay productos en la lista de venta.")
@@ -880,6 +909,7 @@ def admin_venta_directa(request: HttpRequest) -> HttpResponse:
                 with transaction.atomic():
                     total_articulos = 0
                     total_precio = 0
+                    cancha_label = f"Cancha: {cancha.disponibilidad}" if cancha else ""
                     for pid, cant_str in zip(producto_ids, cantidades):
                         cantidad = int(cant_str)
                         if cantidad <= 0: raise ValueError("Cantidad inválida.")
@@ -888,12 +918,18 @@ def admin_venta_directa(request: HttpRequest) -> HttpResponse:
                         if producto.stock < cantidad:
                             raise ValueError(f"Stock insuficiente para {producto.nombre}")
                         
+                        partes_motivo = ["Venta Directa POS"]
+                        if cliente_nombre:
+                            partes_motivo.append(f"Cliente: {cliente_nombre}")
+                        if cancha_label:
+                            partes_motivo.append(cancha_label)
+
                         # Registrar Movimiento
                         MovimientoInventario.objects.create(
                             producto=producto,
                             tipo_movimiento=MovimientoInventario.TIPO_VENTA,
                             cantidad=cantidad,
-                            motivo=f"Venta Directa POS {'- ' + cliente_nombre if cliente_nombre else ''}",
+                            motivo=" | ".join(partes_motivo),
                             usuario=request.user
                         )
                         
@@ -902,12 +938,15 @@ def admin_venta_directa(request: HttpRequest) -> HttpResponse:
                             producto=producto,
                             tipo_novedad=Novedad.TIPO_VENDIDO,
                             cantidad=cantidad,
-                            descripcion=f"Venta Directa: {cliente_nombre if cliente_nombre else 'Cliente General'}"
+                            descripcion=" | ".join(partes_motivo)
                         )
                         total_articulos += cantidad
                         total_precio += (producto.precio * cantidad)
                     
-                    messages.success(request, f"Venta procesada con éxito: {total_articulos} artículos por ${total_precio:,.0f}")
+                    exito_msg = f"Venta procesada con éxito: {total_articulos} artículos por ${total_precio:,.0f}"
+                    if cancha:
+                        exito_msg += f" — {cancha_label}"
+                    messages.success(request, exito_msg)
                     return redirect("tejobar_app:admin_venta_directa")
             except ValueError as e:
                 messages.error(request, str(e))
@@ -916,6 +955,7 @@ def admin_venta_directa(request: HttpRequest) -> HttpResponse:
 
     return render(request, "ventas/directa.html", {
         "productos": productos,
+        "canchas": canchas,
     })
 
 
@@ -1266,6 +1306,7 @@ def admin_novedades_index(request: HttpRequest) -> HttpResponse:
 @admin_required
 def admin_partidos_index(request: HttpRequest) -> HttpResponse:
     partidos = Partido.objects.select_related('equipo1', 'equipo2', 'cancha').order_by('-fecha', '-hora')
+    productos = Producto.objects.filter(stock__gt=0).select_related("categoria").order_by("categoria__nombre", "nombre")
     productos_activos = Producto.objects.filter(activo=True, stock__gt=0).order_by('nombre')
 
     # Para cada partido, pre-cargar jugadores de ambos equipos (para el modal de consumo)
@@ -1287,6 +1328,7 @@ def admin_partidos_index(request: HttpRequest) -> HttpResponse:
         "partidos": partidos,
         "partidos_data": partidos_data,
         "productos_activos": productos_activos,
+        "productos": productos
     })
 
 
@@ -2783,6 +2825,7 @@ def generar_reportes(request: HttpRequest) -> HttpResponse:
             context["datos"] = datos
             return generar_pdf(context, "dashboard/reporte_pdf.html", f"reporte_{modulo.lower()}")
 
+
     metrics = obtener_metricas_reporte(dt_start, dt_end, categoria_id)
     return render(request, "dashboard/generar_reportes.html", {
         "metrics": metrics,
@@ -2972,4 +3015,70 @@ def admin_partido_agregar_consumo(request: HttpRequest, pk: int) -> HttpResponse
     messages.success(request, f"{cantidad}× '{producto.nombre}' añadido a la cuenta de {etiqueta}.")
     return redirect("tejobar_app:admin_partidos_index")
 
+
+
+
+@admin_required
+def admin_pedido_cancha(request: HttpRequest, pk: int) -> HttpResponse:
+    from django.db import transaction
+    
+    partido = get_object_or_404(Partido, pk=pk)
+    
+    if not partido.hora_inicio or partido.hora_fin:
+        messages.error(request, "Solo se pueden agregar pedidos a partidos en curso.")
+        return redirect("tejobar_app:partidos_index_admin")
+        
+    if request.method == "POST":
+        producto_id = request.POST.get("producto_id", "").strip()
+        cantidad_str = request.POST.get("cantidad", "").strip()
+        notas = request.POST.get("notas", "").strip()
+        
+        if not producto_id or not cantidad_str:
+            messages.error(request, "Faltan datos para el pedido.")
+            return redirect("tejobar_app:partidos_index_admin")
+            
+        try:
+            cantidad = int(cantidad_str)
+            if cantidad <= 0: raise ValueError("Cantidad inválida.")
+            
+            with transaction.atomic():
+                producto = get_object_or_404(Producto.objects.select_for_update(), pk=producto_id)
+                if producto.stock < cantidad:
+                    raise ValueError(f"Stock insuficiente para {producto.nombre}. Disponible: {producto.stock}")
+                
+                # Crear PedidoPartido
+                PedidoPartido.objects.create(
+                    partido=partido,
+                    producto=producto,
+                    cantidad=cantidad,
+                    notas=notas,
+                    registrado_por=request.user
+                )
+                
+                motivo = f"Pedido en Cancha: {partido.cancha.disponibilidad} (Partido #{partido.pk})"
+                
+                # Actualizar Stock y Registrar Movimiento
+                MovimientoInventario.objects.create(
+                    producto=producto,
+                    tipo_movimiento=MovimientoInventario.TIPO_VENTA,
+                    cantidad=cantidad,
+                    motivo=motivo,
+                    usuario=request.user
+                )
+                
+                # Novedad
+                Novedad.objects.create(
+                    producto=producto,
+                    tipo_novedad=Novedad.TIPO_VENDIDO,
+                    cantidad=cantidad,
+                    descripcion=motivo
+                )
+                
+                messages.success(request, f"Pedido de {cantidad}x {producto.nombre} agregado al partido correctamente.")
+        except ValueError as e:
+            messages.error(request, str(e))
+        except Exception:
+            messages.error(request, "Error al procesar el pedido a la cancha.")
+            
+    return redirect("tejobar_app:partidos_index_admin")
 

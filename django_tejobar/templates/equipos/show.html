@@ -35,22 +35,12 @@
                     </div>
                     {% if es_capitan or es_admin %}
                         {% if not miembro.es_capitan %}
-                            {% if miembro.tipo_usuario == 'registrado' and miembro.jugador %}
-                            <form method="post" action="{% url 'tejobar_app:equipos_remove_member' equipo.pk miembro.jugador.persona.pk %}" class="m-0" onsubmit="return confirm('\u00bfSeguro de expulsar a este jugador?');">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-outline-danger">
-                                    <i class="fas fa-user-times"></i> Expulsar
-                                </button>
-                            </form>
-                            {% else %}
-                            <form method="post" action="{% url 'tejobar_app:equipos_remove_member' equipo.pk miembro.pk %}" class="m-0" onsubmit="return confirm('\u00bfSeguro de expulsar a este jugador invitado?');">
-                                {% csrf_token %}
-                                <input type="hidden" name="is_invitado" value="1">
-                                <button type="submit" class="btn btn-sm btn-outline-danger">
-                                    <i class="fas fa-user-times"></i> Expulsar
-                                </button>
-                            </form>
-                            {% endif %}
+                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                data-toggle="modal"
+                                data-target="#expulsarModal{{ miembro.pk }}"
+                                title="Expulsar jugador">
+                                <i class="fas fa-user-times"></i> Expulsar
+                            </button>
                         {% endif %}
                     {% endif %}
                 </div>
@@ -226,6 +216,50 @@
     </div>
   </div>
 </div>
+{% endif %}
+
+{% if es_capitan or es_admin %}
+<!-- Modales de Expulsión con Razón -->
+{% for miembro in jugadores_equipo %}
+    {% if not miembro.es_capitan %}
+    <div class="modal fade" id="expulsarModal{{ miembro.pk }}" tabindex="-1" role="dialog" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+          {% if miembro.tipo_usuario == 'registrado' and miembro.jugador %}
+          <form method="post" action="{% url 'tejobar_app:equipos_remove_member' equipo.pk miembro.jugador.persona.pk %}">
+          {% else %}
+          <form method="post" action="{% url 'tejobar_app:equipos_remove_member' equipo.pk miembro.pk %}">
+            <input type="hidden" name="is_invitado" value="1">
+          {% endif %}
+            {% csrf_token %}
+            <div class="modal-header bg-danger text-white">
+              <h5 class="modal-title"><i class="fas fa-user-times mr-2"></i>Expulsar Jugador</h5>
+              <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              <p>¿Estás seguro de expulsar a <strong>{{ miembro.get_nombre }}</strong> del equipo?</p>
+              <div class="form-group">
+                <label for="razon_{{ miembro.pk }}" class="font-weight-bold">Razón de la expulsión <span class="text-danger">*</span></label>
+                <textarea class="form-control" id="razon_{{ miembro.pk }}" name="razon"
+                  rows="3" placeholder="Ej: Inactividad, conducta inapropiada..." required
+                  minlength="5" maxlength="255"></textarea>
+                <small class="form-text text-muted">Mínimo 5 caracteres. Quedará registrado en el historial.</small>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-danger font-weight-bold">
+                <i class="fas fa-user-times mr-1"></i> Confirmar Expulsión
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+{% endfor %}
 {% endif %}
 
 {% endblock %}
