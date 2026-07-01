@@ -865,14 +865,17 @@ class Novedad(models.Model):
         return "N/A"
 
 class HistorialEquipo(models.Model):
-    jugador = models.ForeignKey(Jugador, on_delete=models.CASCADE, related_name="historial_equipos")
+    jugador = models.ForeignKey(Jugador, on_delete=models.CASCADE, related_name="historial_equipos", null=True, blank=True)
+    nombre_invitado = models.CharField(max_length=150, blank=True, null=True)
     equipo = models.ForeignKey(Equipo, on_delete=models.CASCADE, related_name="historial_jugadores")
     fecha_ingreso = models.DateTimeField(auto_now_add=True)
     fecha_salida = models.DateTimeField(null=True, blank=True)
+    razon_salida = models.CharField(max_length=255, blank=True, null=True)
     fue_capitan = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.jugador.persona.nombre} en {self.equipo.nombre_equipo} ({self.fecha_ingreso.strftime('%d/%m/%Y')} - {'Presente' if not self.fecha_salida else self.fecha_salida.strftime('%d/%m/%Y')})"
+        nombre = self.jugador.persona.nombre if self.jugador else self.nombre_invitado
+        return f"{nombre} en {self.equipo.nombre_equipo} ({self.fecha_ingreso.strftime('%d/%m/%Y')} - {'Presente' if not self.fecha_salida else self.fecha_salida.strftime('%d/%m/%Y')})"
     
     @property
     def is_activo(self):
