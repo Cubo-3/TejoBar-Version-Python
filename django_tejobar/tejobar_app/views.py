@@ -764,6 +764,25 @@ def equipo_leave(request: HttpRequest, pk: int) -> HttpResponse:
             messages.error(request, "No puedes salir porque eres el capitán. Debes eliminar el equipo o asignar otro capitan (no habilitado actualmente).")
             return redirect("tejobar_app:equipos_show", pk=equipo.pk)
 
+        # Save reason to history before deleting
+        from .models import HistorialEquipo
+        historial = HistorialEquipo.objects.filter(
+            jugador=miembro.jugador, equipo=equipo, fecha_salida__isnull=True
+        ).first()
+        
+        if not historial:
+            historial = HistorialEquipo(
+                jugador=miembro.jugador,
+                nombre_invitado=None,
+                equipo=equipo,
+                fue_capitan=miembro.es_capitan
+            )
+            
+        historial.razon_salida = "Salida voluntaria"
+        from django.utils import timezone
+        historial.fecha_salida = timezone.now()
+        historial.save()
+
         miembro.delete()
         messages.success(request, f"Has salido del equipo {equipo.nombre_equipo}.")
         return redirect("tejobar_app:equipos_index")
@@ -887,9 +906,18 @@ def equipo_remove_member(request: HttpRequest, pk: int, jugador_pk: int) -> Http
                 nombre_invitado=miembro_a_expulsar.nombre_invitado, equipo=equipo, fecha_salida__isnull=True
             ).first()
             
-        if historial:
-            historial.razon_salida = razon
-            historial.save()
+        if not historial:
+            historial = HistorialEquipo(
+                jugador=miembro_a_expulsar.jugador if miembro_a_expulsar.tipo_usuario == 'registrado' else None,
+                nombre_invitado=miembro_a_expulsar.nombre_invitado if miembro_a_expulsar.tipo_usuario != 'registrado' else None,
+                equipo=equipo,
+                fue_capitan=miembro_a_expulsar.es_capitan
+            )
+            
+        historial.razon_salida = razon
+        from django.utils import timezone
+        historial.fecha_salida = timezone.now()
+        historial.save()
             
         miembro_a_expulsar.delete()
         messages.success(
