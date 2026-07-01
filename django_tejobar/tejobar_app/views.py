@@ -3291,37 +3291,39 @@ def admin_partido_pago_parcial(request: HttpRequest, pk: int) -> HttpResponse:
         minutos = max(1, int(duracion.total_seconds() / 60))
         
         # Calcular consumos acumulados de este jugador
-        player_consumos = partido.consumos.filter(jugador_equipo=je, estado='pendiente')
-        consumos_total = sum(c.cantidad * (c.precio_unitario or c.producto.precio) for c in player_consumos)
-        consumos_total_float = float(consumos_total)
+        player_consumos = list(partido.consumos.filter(jugador_equipo=je, estado='pendiente'))
+        consumos_total_float = sum(float(c.cantidad * (c.precio_unitario or c.producto.precio)) for c in player_consumos)
         
         # Distribuir el monto de pago parcial: primero cubrir consumos de productos, el resto es cancha
         if monto_val >= consumos_total_float:
             total_consumos_pagado = consumos_total_float
             tarifa_cancha_pagada = monto_val - consumos_total_float
-            player_consumos.update(estado='comprado')
+            partido.consumos.filter(jugador_equipo=je, estado='pendiente').update(estado='comprado')
         else:
             total_consumos_pagado = monto_val
             tarifa_cancha_pagada = 0.0
 
-        # Registrar el PagoParcialJugador
-        PagoParcialJugador.objects.create(
-            partido=partido,
-            jugador_equipo=je,
-            tiempo_jugado_minutos=minutos,
-            tarifa_cancha_pagada=tarifa_cancha_pagada,
-            total_consumos_pagado=total_consumos_pagado,
-            total_pagado=monto_val
-        )
-        
-        NovedadJugador.objects.create(
-            partido=partido,
-            jugador_equipo=je,
-            tipo_novedad=NovedadJugador.TIPO_RETIRO,
-            descripcion=f"Se retira temprano y deja pago parcial de ${monto_val:,.0f} (Tiempo jugado: {minutos} min, Cancha: ${tarifa_cancha_pagada:,.0f}, Consumos: ${total_consumos_pagado:,.0f})",
-            registrado_por=request.user
-        )
-        
-        messages.success(request, f"Pago parcial de ${monto_val:,.0f} registrado para el jugador.")
+        try:
+            # Registrar el PagoParcialJugador
+            PagoParcialJugador.objects.create(
+                partido=partido,
+                jugador_equipo=je,
+                tiempo_jugado_minutos=minutos,
+                tarifa_cancha_pagada=tarifa_cancha_pagada,
+                total_consumos_pagado=total_consumos_pagado,
+                total_pagado=monto_val
+            )
+            
+            NovedadJugador.objects.create(
+                partido=partido,
+                jugador_equipo=je,
+                tipo_novedad=NovedadJugador.TIPO_ABANDONO,
+                descripcion=f"Se retira temprano y deja pago parcial de ${monto_val:,.0f} (Tiempo jugado: {minutos} min, Cancha: ${tarifa_cancha_pagada:,.0f}, Consumos: ${total_consumos_pagado:,.0f})",
+                registrado_por=request.user
+            )
+            
+            messages.success(request, f"Pago parcial de ${monto_val:,.0f} registrado para el jugador.")
+        except Exception as e:
+            messages.error(request, f"Error al registrar el pago parcial: Ya existe un pago registrado para este jugador en este partido.")
         
     return redirect("tejobar_app:admin_partidos_index")
