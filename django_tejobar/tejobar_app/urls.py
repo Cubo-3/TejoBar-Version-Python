@@ -68,6 +68,7 @@ urlpatterns = [
     # Partidos
 
     path("partidos/", views.partido_list, name="partidos_index"),
+    path("partidos/<int:pk>/", views.partido_show, name="partidos_show"),
     path("api/disponibilidad-partido/", views.api_disponibilidad_partido, name="api_disponibilidad_partido"),
 
     # Carrito
@@ -109,5 +110,6 @@ urlpatterns = [
 
     # Consumos en partido
     path("administracion/partidos/<int:pk>/consumo/agregar/", views.admin_partido_agregar_consumo, name="admin_partido_agregar_consumo"),
+    path("administracion/partidos/<int:pk>/pago-parcial/", views.admin_partido_pago_parcial, name="admin_partido_pago_parcial"),
 ]
 

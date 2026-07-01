@@ -14,6 +14,19 @@
         </a>
     </div>
 </div>
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="form-inline">
+            <div class="mr-2 mb-2">{{ filtro_form.equipo.label_tag }} {{ filtro_form.equipo }}</div>
+            <div class="mr-2 mb-2">{{ filtro_form.cancha.label_tag }} {{ filtro_form.cancha }}</div>
+            <div class="mr-2 mb-2">{{ filtro_form.fecha_inicio.label_tag }} {{ filtro_form.fecha_inicio }}</div>
+            <div class="mr-2 mb-2">{{ filtro_form.fecha_fin.label_tag }} {{ filtro_form.fecha_fin }}</div>
+            <div class="mr-2 mb-2">{{ filtro_form.estado.label_tag }} {{ filtro_form.estado }}</div>
+            <button type="submit" class="btn btn-primary mb-2 mt-4"><i class="fas fa-search"></i> Filtrar</button>
+            <a href="{% url 'tejobar_app:admin_partidos_index' %}" class="btn btn-outline-secondary mb-2 ml-2 mt-4">Limpiar</a>
+        </form>
+    </div>
+</div>
 
 <div class="card shadow-sm">
     <div class="card-body p-0">
@@ -115,12 +128,24 @@
                                     class="btn btn-outline-secondary" title="Novedades de Jugadores">
                                     <i class="fas fa-clipboard-list"></i>
                                 </a>
+                                <a href="{% url 'tejobar_app:partidos_show' partido.pk %}"
+                                    class="btn btn-outline-primary" title="Ver Detalles">
+                                    <i class="fas fa-eye"></i>
+                                </a>
                                 {% if partido.hora_inicio and not partido.pago_cancha %}
                                 <button type="button"
                                     class="btn btn-outline-success"
                                     data-toggle="modal" data-target="#consumoModal{{ partido.pk }}"
                                     title="Añadir consumo a la cuenta del partido">
                                     <i class="fas fa-shopping-basket"></i>
+                                </button>
+                                {% endif %}
+                                {% if partido.hora_inicio and not partido.esta_finalizado %}
+                                <button type="button"
+                                    class="btn btn-outline-warning"
+                                    data-toggle="modal" data-target="#pagoParcialModal{{ partido.pk }}"
+                                    title="Registrar Cobro Parcial (Retiro)">
+                                    <i class="fas fa-hand-holding-usd"></i>
                                 </button>
                                 {% endif %}
                                 <a href="{% url 'tejobar_app:admin_partidos_update' partido.pk %}"
@@ -155,6 +180,10 @@
 
 {% if partido.hora_inicio and partido.hora_fin and not partido.pago_cancha %}
     {% include "partidos/pago_cancha_modal.html" with partido=partido modal_id_suffix=partido.pk modo="admin" jugadores_e1=item.jugadores_e1 jugadores_e2=item.jugadores_e2 productos_activos=productos_activos %}
+{% endif %}
+
+{% if partido.hora_inicio and not partido.esta_finalizado %}
+    {% include "partidos/pago_parcial_modal.html" with partido=partido jugadores_e1=item.jugadores_e1 jugadores_e2=item.jugadores_e2 %}
 {% endif %}
 
 <!-- Modal: Añadir Consumo en cualquier momento del partido activo -->

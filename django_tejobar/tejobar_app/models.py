@@ -395,6 +395,10 @@ class Apartado(models.Model):
         Producto, on_delete=models.CASCADE, related_name="apartados"
     )
     cantidad = models.IntegerField()
+    precio_unitario = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    jugador_equipo = models.ForeignKey(
+        "JugadorEquipo", on_delete=models.SET_NULL, null=True, blank=True, related_name="consumos_partido"
+    )
     partido = models.ForeignKey(
         "Partido", on_delete=models.CASCADE, related_name="consumos", null=True, blank=True
     )
@@ -412,6 +416,11 @@ class Apartado(models.Model):
 
     def __str__(self) -> str:
         return f"Apartado #{self.pk} - {self.persona} - {self.producto}"
+
+    def save(self, *args, **kwargs):
+        if not self.precio_unitario and self.producto:
+            self.precio_unitario = self.producto.precio
+        super().save(*args, **kwargs)
 
     @classmethod
     def liberar_carritos_abandonados(cls, horas_limite=2):
@@ -599,26 +608,54 @@ class Partido(models.Model):
         from .models import Apartado
         if not self.equipo1: return 0.0
         consumos = self.consumos.filter(equipo=self.equipo1, estado=Apartado.ESTADO_PENDIENTE)
-        return round(sum(float(c.cantidad * c.producto.precio) for c in consumos), 2)
+        return round(sum(float(c.cantidad * (c.precio_unitario or c.producto.precio)) for c in consumos), 2)
 
     @property
     def total_consumos_equipo2(self):
         from .models import Apartado
         if not self.equipo2: return 0.0
         consumos = self.consumos.filter(equipo=self.equipo2, estado=Apartado.ESTADO_PENDIENTE)
-        return round(sum(float(c.cantidad * c.producto.precio) for c in consumos), 2)
+        return round(sum(float(c.cantidad * (c.precio_unitario or c.producto.precio)) for c in consumos), 2)
+
+    @property
+    def pagos_parciales_cancha_equipo1(self):
+        pagos = self.pagos_parciales.filter(jugador_equipo__equipo=self.equipo1)
+        return sum(float(p.tarifa_cancha_pagada) for p in pagos)
+
+    @property
+    def pagos_parciales_cancha_equipo2(self):
+        pagos = self.pagos_parciales.filter(jugador_equipo__equipo=self.equipo2)
+        return sum(float(p.tarifa_cancha_pagada) for p in pagos)
+
+    @property
+    def total_por_equipo1_cancha_restante(self):
+        original = self.total_por_equipo
+        return max(0.0, round(float(original) - self.pagos_parciales_cancha_equipo1, 2))
+
+    @property
+    def total_por_equipo2_cancha_restante(self):
+        original = self.total_por_equipo
+        return max(0.0, round(float(original) - self.pagos_parciales_cancha_equipo2, 2))
+
+    @property
+    def gran_total_equipo1_restante(self):
+        return round(float(self.total_por_equipo1_cancha_restante) + float(self.total_consumos_equipo1), 2)
+
+    @property
+    def gran_total_equipo2_restante(self):
+        return round(float(self.total_por_equipo2_cancha_restante) + float(self.total_consumos_equipo2), 2)
 
     @property
     def gran_total_equipo1(self):
-        return round(float(self.total_por_equipo) + float(self.total_consumos_equipo1), 2)
+        return self.gran_total_equipo1_restante
 
     @property
     def gran_total_equipo2(self):
-        return round(float(self.total_por_equipo) + float(self.total_consumos_equipo2), 2)
+        return self.gran_total_equipo2_restante
 
     @property
     def gran_total(self):
-        return round(self.gran_total_equipo1 + self.gran_total_equipo2, 2)
+        return round(self.gran_total_equipo1_restante + self.gran_total_equipo2_restante, 2)
 
     def is_overlapping_time(self, other) -> bool:
         """Helper para determinar si dos partidos cruzan en horarios basados en strings (HH:MM)."""
@@ -1010,5 +1047,73 @@ class NovedadJugador(models.Model):
 
     def __str__(self) -> str:
         return f"{self.get_tipo_novedad_display()} - {self.get_nombre_jugador()} (Partido #{self.partido_id})"
+
+
+class HistorialSanciones(models.Model):
+    partido = models.ForeignKey(
+        Partido, on_delete=models.CASCADE, related_name="historial_sanciones"
+    )
+    persona = models.ForeignKey(
+        Persona, on_delete=models.SET_NULL, null=True, blank=True, related_name="sanciones"
+    )
+    nombre_jugador = models.CharField(
+        max_length=150, blank=True, null=True,
+        help_text="Nombre del jugador (si es invitado o no registrado)"
+    )
+    tipo_sancion = models.CharField(max_length=50)
+    descripcion = models.TextField(blank=True, null=True)
+    fecha_registro = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-fecha_registro"]
+        verbose_name = "Historial de Sanción"
+        verbose_name_plural = "Historial de Sanciones"
+
+    def __str__(self) -> str:
+        nombre = self.persona.nombre if self.persona else self.nombre_jugador
+        return f"{self.tipo_sancion} - {nombre} (Partido #{self.partido_id})"
+
+
+class PagoParcialJugador(models.Model):
+    partido = models.ForeignKey(
+        Partido, on_delete=models.CASCADE, related_name="pagos_parciales"
+    )
+    jugador_equipo = models.ForeignKey(
+        JugadorEquipo, on_delete=models.CASCADE, related_name="pagos_parciales"
+    )
+    tiempo_jugado_minutos = models.IntegerField()
+    tarifa_cancha_pagada = models.DecimalField(max_digits=10, decimal_places=2)
+    total_consumos_pagado = models.DecimalField(max_digits=10, decimal_places=2)
+    total_pagado = models.DecimalField(max_digits=10, decimal_places=2)
+    fecha_pago = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('partido', 'jugador_equipo')
+        verbose_name = "Pago Parcial de Jugador"
+        verbose_name_plural = "Pagos Parciales de Jugadores"
+
+    def __str__(self) -> str:
+        return f"Pago Parcial #{self.pk} - {self.jugador_equipo.get_nombre()} en Partido #{self.partido_id}"
+
+
+@receiver(post_save, sender=NovedadJugador)
+def crear_historial_sancion(sender, instance, created, **kwargs):
+    if created and instance.tipo_novedad in [NovedadJugador.TIPO_SANCIONADO, NovedadJugador.TIPO_AMONESTADO]:
+        persona = None
+        nombre_jugador = instance.nombre_jugador_libre
+        if instance.jugador_equipo:
+            if instance.jugador_equipo.tipo_usuario == JugadorEquipo.TIPO_REGISTRADO and instance.jugador_equipo.jugador:
+                persona = instance.jugador_equipo.jugador.persona
+            else:
+                nombre_jugador = instance.jugador_equipo.get_nombre()
+
+        HistorialSanciones.objects.create(
+            partido=instance.partido,
+            persona=persona,
+            nombre_jugador=nombre_jugador,
+            tipo_sancion=instance.get_tipo_novedad_display(),
+            descripcion=instance.descripcion or "",
+        )
+
 
 

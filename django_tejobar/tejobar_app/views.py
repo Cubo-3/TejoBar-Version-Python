@@ -1311,6 +1311,34 @@ def admin_novedades_index(request: HttpRequest) -> HttpResponse:
 @admin_required
 def admin_partidos_index(request: HttpRequest) -> HttpResponse:
     partidos = Partido.objects.select_related('equipo1', 'equipo2', 'cancha').order_by('-fecha', '-hora')
+    
+    from .forms import PartidoFiltroForm
+    from django.db.models import Q
+    filtro_form = PartidoFiltroForm(request.GET)
+    if filtro_form.is_valid():
+        equipo = filtro_form.cleaned_data.get('equipo')
+        cancha = filtro_form.cleaned_data.get('cancha')
+        fecha_inicio = filtro_form.cleaned_data.get('fecha_inicio')
+        fecha_fin = filtro_form.cleaned_data.get('fecha_fin')
+        estado = filtro_form.cleaned_data.get('estado')
+
+        if equipo:
+            partidos = partidos.filter(
+                Q(equipo1__nombre_equipo__icontains=equipo) |
+                Q(equipo2__nombre_equipo__icontains=equipo)
+            )
+        if cancha:
+            partidos = partidos.filter(cancha=cancha)
+        if fecha_inicio:
+            partidos = partidos.filter(fecha__gte=fecha_inicio)
+        if fecha_fin:
+            partidos = partidos.filter(fecha__lte=fecha_fin)
+        if estado:
+            if estado == 'pagado':
+                partidos = partidos.filter(pago_cancha=True)
+            else:
+                partidos = partidos.filter(estado=estado)
+
     productos = Producto.objects.filter(stock__gt=0).select_related("categoria").order_by("categoria__nombre", "nombre")
     productos_activos = Producto.objects.filter(activo=True, stock__gt=0).order_by('nombre')
 
@@ -1333,7 +1361,8 @@ def admin_partidos_index(request: HttpRequest) -> HttpResponse:
         "partidos": partidos,
         "partidos_data": partidos_data,
         "productos_activos": productos_activos,
-        "productos": productos
+        "productos": productos,
+        "filtro_form": filtro_form
     })
 
 
@@ -2983,6 +3012,7 @@ def admin_partido_agregar_consumo(request: HttpRequest, pk: int) -> HttpResponse
 
     # Determinar equipo y/o jugador
     equipo_obj = None
+    je_obj = None
     if asignado_a == "equipo1":
         equipo_obj = partido.equipo1
     elif asignado_a == "equipo2":
@@ -2992,8 +3022,8 @@ def admin_partido_agregar_consumo(request: HttpRequest, pk: int) -> HttpResponse
     elif asignado_a.startswith("jugador_"):
         try:
             je_id = int(asignado_a.replace("jugador_", ""))
-            je = JugadorEquipo.objects.get(pk=je_id)
-            equipo_obj = je.equipo
+            je_obj = JugadorEquipo.objects.get(pk=je_id)
+            equipo_obj = je_obj.equipo
         except (JugadorEquipo.DoesNotExist, ValueError):
             messages.error(request, "Jugador no encontrado.")
             return redirect("tejobar_app:admin_partidos_index")
@@ -3002,8 +3032,10 @@ def admin_partido_agregar_consumo(request: HttpRequest, pk: int) -> HttpResponse
         persona=None,
         producto=producto,
         cantidad=cantidad,
+        precio_unitario=producto.precio,
         partido=partido,
         equipo=equipo_obj,
+        jugador_equipo=je_obj,
         estado=Apartado.ESTADO_PENDIENTE,  # Pendiente: se cobra al finalizar
     )
 
@@ -3087,3 +3119,66 @@ def admin_pedido_cancha(request: HttpRequest, pk: int) -> HttpResponse:
             
     return redirect("tejobar_app:partidos_index_admin")
 
+
+def partido_show(request: HttpRequest, pk: int) -> HttpResponse:
+    partido = get_object_or_404(Partido.objects.select_related('equipo1', 'equipo2', 'cancha'), pk=pk)
+    
+    jugadores_e1 = []
+    jugadores_e2 = []
+    if partido.equipo1:
+        jugadores_e1 = list(JugadorEquipo.objects.filter(equipo=partido.equipo1).select_related('jugador__persona'))
+    if partido.equipo2:
+        jugadores_e2 = list(JugadorEquipo.objects.filter(equipo=partido.equipo2).select_related('jugador__persona'))
+        
+    context = {
+        'partido': partido,
+        'jugadores_e1': jugadores_e1,
+        'jugadores_e2': jugadores_e2,
+    }
+    return render(request, "partidos/show.html", context)
+
+
+@admin_required
+def admin_partido_pago_parcial(request: HttpRequest, pk: int) -> HttpResponse:
+    partido = get_object_or_404(Partido, pk=pk)
+    if not partido.hora_inicio or partido.esta_finalizado:
+        messages.error(request, "Solo se pueden registrar pagos parciales en partidos activos (en curso).")
+        return redirect("tejobar_app:admin_partidos_index")
+
+    from .models import PagoParcialJugador
+    if request.method == "POST":
+        jugador_id = request.POST.get("jugador_equipo_id")
+        monto = request.POST.get("monto")
+        
+        try:
+            monto_val = float(monto)
+            if monto_val <= 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            messages.error(request, "Monto inválido.")
+            return redirect("tejobar_app:admin_partidos_index")
+            
+        try:
+            je = JugadorEquipo.objects.get(pk=jugador_id)
+        except JugadorEquipo.DoesNotExist:
+            messages.error(request, "Jugador no encontrado.")
+            return redirect("tejobar_app:admin_partidos_index")
+            
+        PagoParcialJugador.objects.create(
+            partido=partido,
+            jugador_equipo=je,
+            monto=monto_val,
+            registrado_por=request.user
+        )
+        
+        NovedadJugador.objects.create(
+            partido=partido,
+            jugador_equipo=je,
+            tipo_novedad=NovedadJugador.TIPO_RETIRO,
+            descripcion=f"Se retira temprano y deja pago parcial de ${monto_val:,.0f}",
+            registrado_por=request.user
+        )
+        
+        messages.success(request, f"Pago parcial de ${monto_val:,.0f} registrado para el jugador.")
+        
+    return redirect("tejobar_app:admin_partidos_index")

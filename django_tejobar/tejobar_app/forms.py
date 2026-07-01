@@ -431,3 +431,40 @@ class MovimientoPerdidaForm(forms.ModelForm):
                 ]
             )
         }
+
+class PartidoFiltroForm(forms.Form):
+    equipo = forms.CharField(
+        required=False, 
+        label="Equipo", 
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Buscar por equipo...'})
+    )
+    cancha = forms.ModelChoiceField(
+        queryset=Cancha.objects.all(), 
+        required=False, 
+        label="Cancha", 
+        empty_label="Todas las canchas", 
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    fecha_inicio = forms.DateField(
+        required=False, 
+        label="Fecha desde", 
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
+    )
+    fecha_fin = forms.DateField(
+        required=False, 
+        label="Fecha hasta", 
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
+    )
+    ESTADOS = [
+        ('', 'Todos los estados'), 
+        ('pendiente', 'Pendiente'), 
+        ('en_curso', 'En Curso'), 
+        ('finalizado', 'Finalizado'), 
+        ('pagado', 'Pagado')
+    ]
+    estado = forms.ChoiceField(
+        choices=ESTADOS, 
+        required=False, 
+        label="Estado", 
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )

@@ -1,0 +1,50 @@
+<!-- Modal: Pago Parcial Jugador -->
+<div class="modal fade" id="pagoParcialModal{{ partido.pk }}" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-warning text-dark border-0">
+                <h5 class="modal-title font-weight-bold">
+                    <i class="fas fa-hand-holding-usd mr-2"></i>
+                    Cobro Parcial (Retiro) — Partido #{{ partido.pk }}
+                </h5>
+                <button type="button" class="close text-dark" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <form method="post" action="{% url 'tejobar_app:admin_partido_pago_parcial' partido.pk %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">Registra el pago de un jugador que se retira antes de que finalice el partido.</p>
+                    <div class="form-group">
+                        <label class="small font-weight-bold text-muted text-uppercase">Jugador</label>
+                        <select name="jugador_equipo_id" class="form-control" required>
+                            <option value="">-- Seleccionar jugador --</option>
+                            {% if jugadores_e1 %}
+                            <optgroup label="🔵 {{ partido.equipo1.nombre_equipo }}">
+                                {% for je in jugadores_e1 %}
+                                <option value="{{ je.pk }}">{{ je.get_nombre }}</option>
+                                {% endfor %}
+                            </optgroup>
+                            {% endif %}
+                            {% if jugadores_e2 %}
+                            <optgroup label="🔴 {{ partido.equipo2.nombre_equipo }}">
+                                {% for je in jugadores_e2 %}
+                                <option value="{{ je.pk }}">{{ je.get_nombre }}</option>
+                                {% endfor %}
+                            </optgroup>
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="small font-weight-bold text-muted text-uppercase">Monto a Pagar ($)</label>
+                        <input type="number" name="monto" class="form-control" min="1" step="0.01" required placeholder="Ej. 15000">
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning font-weight-bold text-dark">
+                        <i class="fas fa-check mr-1"></i> Registrar Pago Parcial
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

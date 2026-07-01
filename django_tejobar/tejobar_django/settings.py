@@ -131,22 +131,32 @@ TEMPLATES = [
 WSGI_APPLICATION = "tejobar_django.wsgi.application"
 ASGI_APPLICATION = "tejobar_django.asgi.application"
 
-# CORREGIDO: Sintaxis limpia para que use la URL de Railway en la nube,
-# o caiga en MySQL local si no encuentra la variable de entorno de producción.
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('MYSQLDATABASE', 'tejobar_db'),
-        'USER': os.getenv('MYSQLUSER', 'root'),
-        'PASSWORD': os.getenv('MYSQLPASSWORD', ''),
-        'HOST': os.getenv('MYSQLHOST', 'localhost'),
-        'PORT': os.getenv('MYSQLPORT', '3306'),
+import sys
+
+use_sqlite = 'test' in sys.argv or (not os.getenv("DATABASE_URL") and not os.getenv("MYSQL_URL") and not os.getenv("MYSQLDATABASE") and not os.getenv("MYSQLHOST"))
+
+if use_sqlite:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.getenv('MYSQLDATABASE', 'tejobar_db'),
+            'USER': os.getenv('MYSQLUSER', 'root'),
+            'PASSWORD': os.getenv('MYSQLPASSWORD', ''),
+            'HOST': os.getenv('MYSQLHOST', 'localhost'),
+            'PORT': os.getenv('MYSQLPORT', '3306'),
+        }
+    }
 
 # Uso de dj_database_url para Railway usando DATABASE_URL o MYSQL_URL (el que provea Railway)
 db_url = os.getenv("DATABASE_URL") or os.getenv("MYSQL_URL")
-if db_url:
+if db_url and not use_sqlite:
     DATABASES['default'] = dj_database_url.parse(db_url, conn_max_age=600)
 
 if DATABASES["default"]["ENGINE"] == "django.db.backends.mysql":

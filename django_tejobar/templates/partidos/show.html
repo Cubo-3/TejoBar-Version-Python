@@ -1,0 +1,175 @@
+{% extends "layouts/public.html" %}
+{% load static %}
+
+{% block title %}Detalle del Partido #{{ partido.pk }} - TejoBar{% endblock %}
+
+{% block content %}
+<div class="row mb-4 mt-3">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="font-weight-bold" style="color: #e67e22;">
+                <i class="fas fa-trophy mr-2"></i> Detalle del Partido #{{ partido.pk }}
+            </h1>
+            <a href="{% url 'tejobar_app:partidos_index' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left mr-1"></i> Volver
+            </a>
+        </div>
+        
+        <div class="card premium-card mb-4 border-0" style="background: rgba(30,30,30,0.6); border-radius: 15px;">
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-5">
+                        <h2 class="font-weight-bold text-white">{{ partido.equipo1.nombre_equipo|default:"Equipo 1" }}</h2>
+                    </div>
+                    <div class="col-md-2 d-flex flex-column justify-content-center align-items-center">
+                        <div class="vs-badge mb-2" style="background-color: #ff7b00; color: white; border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; box-shadow: 0 4px 6px rgba(0,0,0,0.5);">
+                            VS
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <h2 class="font-weight-bold text-white">{{ partido.equipo2.nombre_equipo|default:"Equipo 2" }}</h2>
+                    </div>
+                </div>
+                <hr style="border-color: rgba(255,255,255,0.1);">
+                <div class="row text-muted text-center">
+                    <div class="col-md-4">
+                        <i class="fas fa-calendar-alt text-warning mr-1"></i> {{ partido.fecha|date:"d M Y" }}
+                    </div>
+                    <div class="col-md-4">
+                        <i class="fas fa-clock text-info mr-1"></i> {{ partido.hora|time:"H:i" }}
+                    </div>
+                    <div class="col-md-4">
+                        <i class="fas fa-map-marker-alt text-danger mr-1"></i> {{ partido.cancha|default:"Por definir" }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card premium-card h-100 border-0" style="background: rgba(30,30,30,0.6); border-radius: 15px;">
+                    <div class="card-header border-0 bg-transparent">
+                        <h4 class="text-white mb-0"><i class="fas fa-users text-warning mr-2"></i> Integrantes {{ partido.equipo1.nombre_equipo|default:"Equipo 1" }}</h4>
+                    </div>
+                    <div class="card-body">
+                        {% if jugadores_e1 %}
+                            <ul class="list-group list-group-flush" style="background: transparent;">
+                                {% for je in jugadores_e1 %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center border-0 mb-1" style="background: rgba(0,0,0,0.3); border-radius: 8px;">
+                                    <span class="text-white">
+                                        <i class="fas fa-user text-secondary mr-2"></i> {{ je.get_nombre }}
+                                        {% if je.es_capitan %}
+                                            <span class="badge badge-warning ml-1" title="Capitán"><i class="fas fa-star"></i></span>
+                                        {% endif %}
+                                    </span>
+                                    {% if je.tipo_usuario == 'invitado' %}
+                                        <span class="badge badge-secondary">Invitado</span>
+                                    {% else %}
+                                        <span class="badge badge-info">Registrado</span>
+                                    {% endif %}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="text-muted mb-0">No hay integrantes registrados.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-4">
+                <div class="card premium-card h-100 border-0" style="background: rgba(30,30,30,0.6); border-radius: 15px;">
+                    <div class="card-header border-0 bg-transparent">
+                        <h4 class="text-white mb-0"><i class="fas fa-users text-warning mr-2"></i> Integrantes {{ partido.equipo2.nombre_equipo|default:"Equipo 2" }}</h4>
+                    </div>
+                    <div class="card-body">
+                        {% if jugadores_e2 %}
+                            <ul class="list-group list-group-flush" style="background: transparent;">
+                                {% for je in jugadores_e2 %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center border-0 mb-1" style="background: rgba(0,0,0,0.3); border-radius: 8px;">
+                                    <span class="text-white">
+                                        <i class="fas fa-user text-secondary mr-2"></i> {{ je.get_nombre }}
+                                        {% if je.es_capitan %}
+                                            <span class="badge badge-warning ml-1" title="Capitán"><i class="fas fa-star"></i></span>
+                                        {% endif %}
+                                    </span>
+                                    {% if je.tipo_usuario == 'invitado' %}
+                                        <span class="badge badge-secondary">Invitado</span>
+                                    {% else %}
+                                        <span class="badge badge-info">Registrado</span>
+                                    {% endif %}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="text-muted mb-0">No hay integrantes registrados.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if user.is_authenticated and user.persona.rol == 'admin' %}
+        <!-- Detalle de Consumos (Solo Admin) -->
+        <div class="card premium-card mt-2 border-0" style="background: rgba(30,30,30,0.6); border-radius: 15px;">
+            <div class="card-header border-0 bg-transparent d-flex justify-content-between align-items-center">
+                <h4 class="text-white mb-0"><i class="fas fa-receipt text-success mr-2"></i> Detalle de Consumos del Partido</h4>
+                <span class="badge badge-success p-2" style="font-size: 1rem;">Total Consumos: ${{ partido.total_consumos|default:"0"|floatformat:0 }}</span>
+            </div>
+            <div class="card-body">
+                {% if partido.consumos.all %}
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover table-borderless table-striped premium-table">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #ff7b00;">
+                                <th>Fecha/Hora</th>
+                                <th>Producto</th>
+                                <th>Asignado a</th>
+                                <th class="text-center">Cant.</th>
+                                <th class="text-right">P. Unitario</th>
+                                <th class="text-right">Subtotal</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for consumo in partido.consumos.all|dictsort:"fecha_apartado" %}
+                            <tr>
+                                <td class="text-muted">{{ consumo.fecha_apartado|date:"d M y H:i" }}</td>
+                                <td>{{ consumo.producto.nombre }}</td>
+                                <td>
+                                    {% if consumo.jugador_equipo %}
+                                        <span class="badge badge-info"><i class="fas fa-user mr-1"></i> {{ consumo.jugador_equipo.get_nombre }}</span>
+                                    {% elif consumo.equipo %}
+                                        <span class="badge badge-secondary"><i class="fas fa-users mr-1"></i> {{ consumo.equipo.nombre_equipo }}</span>
+                                    {% else %}
+                                        <span class="badge badge-dark">General Cancha</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center font-weight-bold">{{ consumo.cantidad }}</td>
+                                <td class="text-right">${{ consumo.precio_unitario|default:consumo.producto.precio|floatformat:0 }}</td>
+                                <td class="text-right font-weight-bold text-success">${% widthratio consumo.cantidad 1 consumo.precio_unitario|default:consumo.producto.precio %}</td>
+                                <td>
+                                    {% if consumo.estado == 'pendiente' %}
+                                        <span class="badge badge-warning text-dark">Pendiente</span>
+                                    {% else %}
+                                        <span class="badge badge-success">Pagado</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert text-center border-0 text-white" style="background: rgba(255,255,255,0.05);">
+                    <i class="fas fa-glass-martini-alt fa-2x text-muted mb-2"></i>
+                    <p class="mb-0">Aún no se han registrado consumos en este partido.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+    </div>
+</div>
+{% endblock %}
