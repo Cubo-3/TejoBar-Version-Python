@@ -1459,6 +1459,26 @@ def iniciar_partido(request: HttpRequest, pk: int) -> HttpResponse:
         partido.hora_inicio = timezone.now()
         partido.estado = Partido.ESTADO_CONFIRMADA
         partido.save()
+
+        # ── Capturar snapshot histórico de integrantes ───────────────────────
+        from .models import PartidoIntegrante
+        # Solo crear si no existe ya (idempotente)
+        if not partido.integrantes_snapshot.exists():
+            for equipo_obj in [partido.equipo1, partido.equipo2]:
+                if not equipo_obj:
+                    continue
+                for je in JugadorEquipo.objects.filter(equipo=equipo_obj).select_related('jugador__persona'):
+                    nombre = je.get_nombre()
+                    PartidoIntegrante.objects.create(
+                        partido=partido,
+                        jugador_equipo=je,
+                        nombre=nombre,
+                        nombre_equipo=equipo_obj.nombre_equipo,
+                        equipo=equipo_obj,
+                        es_capitan=je.es_capitan,
+                        tipo_usuario=je.tipo_usuario,
+                    )
+
         messages.success(request, "Cronómetro del partido iniciado.")
         _notificar_capitanes_partido(partido, f"¡El Partido #{partido.pk} ha comenzado!")
     else:
@@ -2910,22 +2930,36 @@ def marcar_notificaciones_leidas(request):
 @admin_required
 def admin_partido_novedades(request: HttpRequest, pk: int) -> HttpResponse:
     """Vista principal que lista las novedades de un partido y muestra el formulario para agregar."""
+    from .models import PartidoIntegrante
     partido = get_object_or_404(Partido, pk=pk)
-    novedades = partido.novedades_jugadores.select_related("jugador_equipo__equipo", "jugador_equipo__jugador__persona", "registrado_por").order_by("fecha_registro")
+    novedades = partido.novedades_jugadores.select_related(
+        "jugador_equipo__equipo", "jugador_equipo__jugador__persona",
+        "partido_integrante__equipo", "registrado_por"
+    ).order_by("fecha_registro")
 
-    # Construir lista de jugadores de ambos equipos para el selector
-    jugadores_equipo1 = []
-    jugadores_equipo2 = []
-    if partido.equipo1:
-        jugadores_equipo1 = JugadorEquipo.objects.filter(equipo=partido.equipo1).select_related("jugador__persona")
-    if partido.equipo2:
-        jugadores_equipo2 = JugadorEquipo.objects.filter(equipo=partido.equipo2).select_related("jugador__persona")
+    # Usar snapshot histórico si existe, si no, los jugadores actuales del equipo
+    integrantes_e1 = partido.integrantes_snapshot.filter(equipo=partido.equipo1) if partido.equipo1 else []
+    integrantes_e2 = partido.integrantes_snapshot.filter(equipo=partido.equipo2) if partido.equipo2 else []
+
+    # Fallback: si el partido aún no tiene snapshot (partido ya iniciado antes de esta actualización)
+    if not integrantes_e1 and partido.equipo1:
+        integrantes_e1 = list(JugadorEquipo.objects.filter(equipo=partido.equipo1).select_related("jugador__persona"))
+        usar_snapshot = False
+    else:
+        usar_snapshot = True
+
+    if not integrantes_e2 and partido.equipo2:
+        integrantes_e2 = list(JugadorEquipo.objects.filter(equipo=partido.equipo2).select_related("jugador__persona"))
 
     context = {
         "partido": partido,
         "novedades": novedades,
-        "jugadores_equipo1": jugadores_equipo1,
-        "jugadores_equipo2": jugadores_equipo2,
+        "integrantes_e1": integrantes_e1,
+        "integrantes_e2": integrantes_e2,
+        "usar_snapshot": usar_snapshot,
+        # Mantener compatibilidad con templates anteriores
+        "jugadores_equipo1": integrantes_e1,
+        "jugadores_equipo2": integrantes_e2,
         "tipos_novedad": NovedadJugador.TIPO_CHOICES,
     }
     return render(request, "partidos/novedades_jugadores.html", context)
@@ -2935,9 +2969,12 @@ def admin_partido_novedades(request: HttpRequest, pk: int) -> HttpResponse:
 @require_POST
 def admin_partido_novedad_crear(request: HttpRequest, pk: int) -> HttpResponse:
     """Crea una nueva novedad para un jugador en un partido."""
+    from .models import PartidoIntegrante
     partido = get_object_or_404(Partido, pk=pk)
 
-    jugador_equipo_id = request.POST.get("jugador_equipo_id")
+    # Puede venir como snapshot ID o como jugador_equipo ID
+    integrante_id = request.POST.get("integrante_id")       # ID de PartidoIntegrante
+    jugador_equipo_id = request.POST.get("jugador_equipo_id")  # Fallback
     nombre_libre = request.POST.get("nombre_jugador_libre", "").strip()
     tipo_novedad = request.POST.get("tipo_novedad")
     descripcion = request.POST.get("descripcion", "").strip()
@@ -2946,22 +2983,36 @@ def admin_partido_novedad_crear(request: HttpRequest, pk: int) -> HttpResponse:
         messages.error(request, "El tipo de novedad es requerido.")
         return redirect("tejobar_app:admin_partido_novedades", pk=pk)
 
+    partido_integrante = None
     jugador_equipo = None
-    if jugador_equipo_id:
+    nombre_snapshot = None
+
+    if integrante_id:
+        try:
+            partido_integrante = PartidoIntegrante.objects.get(pk=integrante_id, partido=partido)
+            nombre_snapshot = partido_integrante.nombre
+            jugador_equipo = partido_integrante.jugador_equipo  # puede ser None si fue eliminado
+        except PartidoIntegrante.DoesNotExist:
+            messages.error(request, "Jugador del partido no encontrado.")
+            return redirect("tejobar_app:admin_partido_novedades", pk=pk)
+    elif jugador_equipo_id:
         try:
             jugador_equipo = JugadorEquipo.objects.get(pk=jugador_equipo_id)
+            nombre_snapshot = jugador_equipo.get_nombre()
         except JugadorEquipo.DoesNotExist:
             messages.error(request, "Jugador no encontrado.")
             return redirect("tejobar_app:admin_partido_novedades", pk=pk)
 
-    if not jugador_equipo and not nombre_libre:
+    if not partido_integrante and not jugador_equipo and not nombre_libre:
         messages.error(request, "Debes seleccionar un jugador o ingresar un nombre.")
         return redirect("tejobar_app:admin_partido_novedades", pk=pk)
 
     NovedadJugador.objects.create(
         partido=partido,
         jugador_equipo=jugador_equipo,
-        nombre_jugador_libre=nombre_libre if not jugador_equipo else None,
+        partido_integrante=partido_integrante,
+        nombre_jugador_snapshot=nombre_snapshot,
+        nombre_jugador_libre=nombre_libre if not jugador_equipo and not partido_integrante else None,
         tipo_novedad=tipo_novedad,
         descripcion=descripcion or None,
         registrado_por=request.user,

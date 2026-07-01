@@ -990,6 +990,34 @@ class MovimientoInventario(models.Model):
         return f"{self.get_tipo_movimiento_display()} - {self.producto.nombre} ({self.cantidad})"
 
 
+class PartidoIntegrante(models.Model):
+    """Snapshot histórico de los integrantes de cada equipo en el momento de iniciar un partido.
+    Este registro es inmutable y no se elimina aunque el jugador salga del equipo."""
+    partido = models.ForeignKey(
+        Partido, on_delete=models.CASCADE, related_name="integrantes_snapshot"
+    )
+    jugador_equipo = models.ForeignKey(
+        "JugadorEquipo", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="snapshots_partido"
+    )
+    nombre = models.CharField(max_length=150, help_text="Nombre capturado al inicio del partido")
+    nombre_equipo = models.CharField(max_length=150, blank=True, null=True)
+    equipo = models.ForeignKey(
+        "Equipo", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="integrantes_snapshot"
+    )
+    es_capitan = models.BooleanField(default=False)
+    tipo_usuario = models.CharField(max_length=30, blank=True, null=True)
+
+    class Meta:
+        ordering = ["nombre_equipo", "nombre"]
+        verbose_name = "Integrante (Snapshot Partido)"
+        verbose_name_plural = "Integrantes (Snapshot Partido)"
+
+    def __str__(self):
+        return f"{self.nombre} - {self.nombre_equipo} (Partido #{self.partido_id})"
+
+
 class NovedadJugador(models.Model):
     """Registro de eventos/novedades de jugadores durante un partido."""
 
@@ -1015,8 +1043,17 @@ class NovedadJugador(models.Model):
         Partido, on_delete=models.CASCADE, related_name="novedades_jugadores"
     )
     jugador_equipo = models.ForeignKey(
-        JugadorEquipo, on_delete=models.CASCADE, related_name="novedades",
+        JugadorEquipo, on_delete=models.SET_NULL, related_name="novedades",
         null=True, blank=True
+    )
+    partido_integrante = models.ForeignKey(
+        PartidoIntegrante, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="novedades",
+        help_text="Referencia al snapshot histórico del jugador en este partido"
+    )
+    nombre_jugador_snapshot = models.CharField(
+        max_length=150, blank=True, null=True,
+        help_text="Nombre del jugador al momento de registrar la novedad (permanente)"
     )
     nombre_jugador_libre = models.CharField(
         max_length=150, blank=True, null=True,
@@ -1036,11 +1073,21 @@ class NovedadJugador(models.Model):
         verbose_name_plural = "Novedades de Jugadores"
 
     def get_nombre_jugador(self):
+        # 1. Nombre snapshot (permanente, guardado al crear la novedad)
+        if self.nombre_jugador_snapshot:
+            return self.nombre_jugador_snapshot
+        # 2. Snapshot histórico del partido
+        if self.partido_integrante:
+            return self.partido_integrante.nombre
+        # 3. JugadorEquipo (si aún existe en el equipo)
         if self.jugador_equipo:
             return self.jugador_equipo.get_nombre()
+        # 4. Nombre libre para invitados
         return self.nombre_jugador_libre or "Jugador desconocido"
 
     def get_equipo(self):
+        if self.partido_integrante and self.partido_integrante.equipo:
+            return self.partido_integrante.equipo
         if self.jugador_equipo:
             return self.jugador_equipo.equipo
         return None
