@@ -70,6 +70,25 @@
         margin-bottom: 0;
         color: #e67e22;
     }
+
+    .dashboard-clickable {
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+        text-decoration: none;
+        display: block;
+        color: inherit;
+    }
+
+    .dashboard-clickable:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25) !important;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .chart-clickable {
+        cursor: pointer;
+    }
 </style>
 {% endblock %}
 
@@ -82,31 +101,37 @@
 <h4 class="mt-4 mb-3 text-dark"><i class="fas fa-calendar-day text-primary mr-2"></i> Actividad del Inventario (Hoy)</h4>
 <div class="row g-4 mb-4">
     <div class="col-12 col-md-4 mb-3">
-        <div class="card text-center h-100 shadow bg-dark" style="border-radius: 15px; border-left: 5px solid #198754;">
-            <div class="card-body p-4">
-                <span class="d-block mb-2" style="font-size: 2.5rem; color: #198754;"><i class="fas fa-cash-register"></i></span>
-                <p class="text-white mb-1 font-weight-bold">Ventas Totales (Hoy)</p>
-                <h2 class="font-weight-bold mb-0" style="color: #198754;">{{ ventas_hoy }}</h2>
+        <a href="{% url 'tejobar_app:inventario_movimientos' %}?tipo=venta&fecha_inicio={% now 'Y-m-d' %}&fecha_fin={% now 'Y-m-d' %}" class="dashboard-clickable">
+            <div class="card text-center h-100 shadow bg-dark" style="border-radius: 15px; border-left: 5px solid #198754;">
+                <div class="card-body p-4">
+                    <span class="d-block mb-2" style="font-size: 2.5rem; color: #198754;"><i class="fas fa-cash-register"></i></span>
+                    <p class="text-white mb-1 font-weight-bold">Ventas Totales (Hoy)</p>
+                    <h2 class="font-weight-bold mb-0" style="color: #198754;">{{ ventas_hoy }}</h2>
+                </div>
             </div>
-        </div>
+        </a>
     </div>
     <div class="col-12 col-md-4 mb-3">
-        <div class="card text-center h-100 shadow bg-dark" style="border-radius: 15px; border-left: 5px solid #dc3545;">
-            <div class="card-body p-4">
-                <span class="d-block mb-2" style="font-size: 2.5rem; color: #dc3545;"><i class="fas fa-exclamation-triangle"></i></span>
-                <p class="text-white mb-1 font-weight-bold">Pérdidas (Hoy)</p>
-                <h2 class="font-weight-bold mb-0" style="color: #dc3545;">{{ perdidas_hoy }}</h2>
+        <a href="{% url 'tejobar_app:inventario_movimientos' %}?tipo=perdida&fecha_inicio={% now 'Y-m-d' %}&fecha_fin={% now 'Y-m-d' %}" class="dashboard-clickable">
+            <div class="card text-center h-100 shadow bg-dark" style="border-radius: 15px; border-left: 5px solid #dc3545;">
+                <div class="card-body p-4">
+                    <span class="d-block mb-2" style="font-size: 2.5rem; color: #dc3545;"><i class="fas fa-exclamation-triangle"></i></span>
+                    <p class="text-white mb-1 font-weight-bold">Pérdidas (Hoy)</p>
+                    <h2 class="font-weight-bold mb-0" style="color: #dc3545;">{{ perdidas_hoy }}</h2>
+                </div>
             </div>
-        </div>
+        </a>
     </div>
     <div class="col-12 col-md-4 mb-3">
-        <div class="card text-center h-100 shadow bg-dark" style="border-radius: 15px; border-left: 5px solid #0dcaf0;">
-            <div class="card-body p-4">
-                <span class="d-block mb-2" style="font-size: 2.5rem; color: #0dcaf0;"><i class="fas fa-boxes"></i></span>
-                <p class="text-white mb-1 font-weight-bold">Inventario Físico</p>
-                <h2 class="font-weight-bold mb-0" style="color: #0dcaf0;">{{ total_productos_stock }}</h2>
+        <a href="{% url 'tejobar_app:admin_productos_index' %}" class="dashboard-clickable">
+            <div class="card text-center h-100 shadow bg-dark" style="border-radius: 15px; border-left: 5px solid #0dcaf0;">
+                <div class="card-body p-4">
+                    <span class="d-block mb-2" style="font-size: 2.5rem; color: #0dcaf0;"><i class="fas fa-boxes"></i></span>
+                    <p class="text-white mb-1 font-weight-bold">Inventario Físico</p>
+                    <h2 class="font-weight-bold mb-0" style="color: #0dcaf0;">{{ total_productos_stock }}</h2>
+                </div>
             </div>
-        </div>
+        </a>
     </div>
 </div>
 
@@ -118,7 +143,7 @@
             <div class="card-body p-3 d-flex flex-column align-items-center justify-content-center">
                 <h6 class="text-center mb-3 font-weight-bold" style="color: #ff7b00;"><i class="fas fa-users mr-2"></i> Comunidad TejoBar</h6>
                 <div style="position: relative; height: 160px; width: 100%;">
-                    <canvas id="communityChart"></canvas>
+                    <canvas id="communityChart" class="chart-clickable"></canvas>
                 </div>
             </div>
         </div>
@@ -129,7 +154,7 @@
             <div class="card-body p-3 d-flex flex-column">
                 <h6 class="text-center text-info mb-3 font-weight-bold"><i class="fas fa-cogs mr-2"></i> Métricas de Operación</h6>
                 <div style="position: relative; height: 160px; width: 100%; flex-grow: 1;">
-                    <canvas id="operationsChart"></canvas>
+                    <canvas id="operationsChart" class="chart-clickable"></canvas>
                 </div>
             </div>
         </div>
@@ -140,6 +165,37 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
+        function navigateDashboard(url) {
+            if (!url) return;
+            if (url.startsWith('#')) {
+                const target = document.querySelector(url);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            } else {
+                window.location.href = url;
+            }
+        }
+
+        function chartHoverCursor(event, elements) {
+            event.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+        }
+
+        const communityUrls = [
+            "{% url 'tejobar_app:personas_index' %}",
+            "{% url 'tejobar_app:personas_index' %}",
+            "{% url 'tejobar_app:equipos_index' %}"
+        ];
+
+        const operationsUrls = [
+            "{% url 'tejobar_app:admin_productos_index' %}",
+            "{% url 'tejobar_app:admin_productos_index' %}?stock_bajo=1",
+            "#pedidos-entregar",
+            "{% url 'tejobar_app:admin_categorias_index' %}",
+            "{% url 'tejobar_app:admin_partidos_index' %}",
+            "{% url 'tejobar_app:admin_canchas_index' %}"
+        ];
+
         // Datos capturados de Django
         const totalUsuarios = parseInt('{{ total_usuarios }}') || 0;
         const totalJugadores = parseInt('{{ total_jugadores }}') || 0;
@@ -177,13 +233,29 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                onClick: function (event, elements) {
+                    if (elements.length > 0) {
+                        navigateDashboard(communityUrls[elements[0].index]);
+                    }
+                },
+                onHover: chartHoverCursor,
                 plugins: {
                     legend: {
                         position: 'right',
+                        onClick: function (event, legendItem) {
+                            navigateDashboard(communityUrls[legendItem.index]);
+                        },
                         labels: { 
                             color: 'white',
                             padding: 10,
                             font: { size: 12 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            afterLabel: function () {
+                                return 'Clic para ver detalle';
+                            }
                         }
                     }
                 },
@@ -223,12 +295,23 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                onClick: function (event, elements) {
+                    if (elements.length > 0) {
+                        navigateDashboard(operationsUrls[elements[0].index]);
+                    }
+                },
+                onHover: chartHoverCursor,
                 plugins: {
                     legend: { display: false },
                     tooltip: {
                         backgroundColor: 'rgba(0,0,0,0.8)',
                         titleColor: '#ff7b00',
-                        padding: 12
+                        padding: 12,
+                        callbacks: {
+                            afterLabel: function () {
+                                return 'Clic para ir a la sección';
+                            }
+                        }
                     }
                 },
                 scales: {
@@ -247,11 +330,10 @@
     });
 </script>
 
-<div class="d-flex justify-content-between align-items-center mt-5 mb-4">
+<div id="pedidos-entregar" class="d-flex justify-content-between align-items-center mt-5 mb-4">
     <h3 class="mb-0 text-success font-weight-bold"><i class="fas fa-truck-loading text-success mr-2"></i> Pedidos Listos
         para Entregar</h3>
 </div>
-
 <div class="card shadow-sm border-0 mb-5 border-left-success" style="border-left: 4px solid #28a745 !important;">
     <div class="card-body p-0">
         <div class="table-responsive">

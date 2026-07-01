@@ -1014,6 +1014,7 @@ def admin_product_list(request: HttpRequest) -> HttpResponse:
     estado = request.GET.get('estado', '')
     vencimiento = request.GET.get('vencimiento', '')
     orden = request.GET.get('orden', '')
+    stock_bajo = request.GET.get('stock_bajo', '')
 
     if q:
         productos = productos.filter(nombre__icontains=q)
@@ -1035,6 +1036,9 @@ def admin_product_list(request: HttpRequest) -> HttpResponse:
             productos = productos.filter(fecha_vencimiento__gte=today)
         elif vencimiento == 'sin_fecha':
             productos = productos.filter(fecha_vencimiento__isnull=True)
+
+    if stock_bajo == '1':
+        productos = productos.filter(stock__lt=10)
 
     # Ordenamiento
     if orden == 'nombre_asc':
@@ -1061,7 +1065,8 @@ def admin_product_list(request: HttpRequest) -> HttpResponse:
             "categoria": int(categoria_id) if categoria_id.isdigit() else '',
             "estado": estado,
             "vencimiento": vencimiento,
-            "orden": orden
+            "orden": orden,
+            "stock_bajo": stock_bajo,
         }
     }
     return render(request, "productos/admin_index.html", context)
