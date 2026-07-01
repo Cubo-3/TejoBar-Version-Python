@@ -248,9 +248,18 @@
                     <ul class="list-group list-group-flush">
                         {% for c in consumos %}
                         <li class="list-group-item px-0 py-1 small d-flex justify-content-between">
-                            <span>{{ c.cantidad }}× <strong>{{ c.producto.nombre }}</strong></span>
+                            <span>
+                                {{ c.cantidad }}× <strong>{{ c.producto.nombre }}</strong>
+                                <span class="text-muted">(${{ c.precio_unitario|default:c.producto.precio|floatformat:0 }})</span>
+                            </span>
                             <span class="text-muted">
-                                {% if c.equipo %}{{ c.equipo.nombre_equipo }}{% else %}General{% endif %}
+                                {% if c.jugador_equipo %}
+                                    <span class="badge badge-info" title="Asignado a: {{ c.jugador_equipo.get_nombre }}"><i class="fas fa-user mr-1"></i>{{ c.jugador_equipo.get_nombre }}</span>
+                                {% elif c.equipo %}
+                                    <span class="badge badge-secondary" title="Cuenta de: {{ c.equipo.nombre_equipo }}"><i class="fas fa-users mr-1"></i>{{ c.equipo.nombre_equipo }}</span>
+                                {% else %}
+                                    <span class="badge badge-dark">Cancha</span>
+                                {% endif %}
                                 — <span class="{% if c.estado == 'comprado' %}text-success{% else %}text-warning{% endif %}">{{ c.estado|title }}</span>
                             </span>
                         </li>

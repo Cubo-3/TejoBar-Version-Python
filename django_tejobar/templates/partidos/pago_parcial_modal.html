@@ -1,7 +1,7 @@
 <!-- Modal: Pago Parcial Jugador -->
 <div class="modal fade" id="pagoParcialModal{{ partido.pk }}" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content border-0 shadow-lg">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content border-0 shadow-lg text-dark">
             <div class="modal-header bg-warning text-dark border-0">
                 <h5 class="modal-title font-weight-bold">
                     <i class="fas fa-hand-holding-usd mr-2"></i>
@@ -11,62 +11,128 @@
             </div>
             <form method="post" action="{% url 'tejobar_app:admin_partido_pago_parcial' partido.pk %}">
                 {% csrf_token %}
-                <div class="modal-body">
-                    <p class="text-muted small mb-3">Registra el pago de un jugador que se retira antes de que finalice el partido.</p>
-                    <div class="form-group">
-                        <label class="small font-weight-bold text-muted text-uppercase">Jugador</label>
-                        <select name="jugador_equipo_id" class="form-control" required>
-                            <option value="">-- Seleccionar jugador --</option>
-                            {% if jugadores_e1 %}
-                            <optgroup label="🔵 {{ partido.equipo1.nombre_equipo }}">
-                                {% for je in jugadores_e1 %}
-                                <option value="{{ je.pk }}">{{ je.get_nombre }}</option>
-                                {% endfor %}
-                            </optgroup>
-                            {% endif %}
-                            {% if jugadores_e2 %}
-                            <optgroup label="🔴 {{ partido.equipo2.nombre_equipo }}">
-                                {% for je in jugadores_e2 %}
-                                <option value="{{ je.pk }}">{{ je.get_nombre }}</option>
-                                {% endfor %}
-                            </optgroup>
-                            {% endif %}
-                        </select>
-                    </div>
+                <div class="modal-body p-0">
+                    <p class="text-muted small px-4 pt-3 mb-2">Registra el pago de un jugador que se retira antes de que finalice el partido.</p>
 
-                    <!-- Consumos del jugador seleccionado (se actualiza vía JS) -->
-                    <div id="playerConsumosWrapper{{ partido.pk }}" class="mt-3 mb-3" style="display: none;">
-                        <label class="small font-weight-bold text-muted text-uppercase mb-1">Consumos registrados de este jugador</label>
-                        <div class="card bg-light border-0">
-                            <div class="card-body p-2">
-                                <ul class="list-unstyled mb-0">
-                                    {% for c in partido.consumos.all %}
-                                        {% if c.jugador_equipo %}
-                                            <li class="player-consumo-item-{{ partido.pk }} d-flex justify-content-between text-muted" 
-                                                data-jugador-id="{{ c.jugador_equipo_id }}" 
-                                                data-subtotal="{% widthratio c.cantidad 1 c.precio_unitario|default:c.producto.precio %}"
-                                                style="display: none; font-size: 0.85rem;">
-                                                <span>{{ c.cantidad }}x {{ c.producto.nombre }}</span>
-                                                <span>${% widthratio c.cantidad 1 c.precio_unitario|default:c.producto.precio %}</span>
-                                            </li>
-                                        {% endif %}
-                                    {% endfor %}
-                                </ul>
-                                <div class="border-top mt-2 pt-2 text-right small font-weight-bold">
-                                    Total consumos: <span class="text-success" id="playerConsumosSuma{{ partido.pk }}">$0</span>
+                    <!-- ── SECCIÓN 1: ESTADO ACTUAL DEL PARTIDO ── -->
+                    <div class="px-4 py-2 border-bottom bg-light">
+                        <div class="row text-center">
+                            <div class="col-6 border-right">
+                                <div class="small text-muted font-weight-bold text-uppercase">Tiempo Transcurrido</div>
+                                <div class="h5 font-weight-bold mb-0 text-dark">
+                                    <i class="far fa-clock mr-1 text-primary"></i>{{ item.horas_jugadas_actual|floatformat:2 }} h
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="small text-muted font-weight-bold text-uppercase">Costo Cancha Equipo</div>
+                                <div class="h5 font-weight-bold mb-0 text-dark">
+                                    <i class="fas fa-map-marker-alt mr-1 text-danger"></i>${{ item.cancha_costo_actual_por_equipo|floatformat:0 }}
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label class="small font-weight-bold text-muted text-uppercase">Monto a Pagar ($)</label>
-                        <input type="number" name="monto" class="form-control" min="1" step="0.01" required placeholder="Ej. 15000">
+                    <!-- ── SECCIÓN 2: TODOS LOS CONSUMOS ACTUALES DEL PARTIDO ── -->
+                    <div class="px-4 py-3 border-bottom">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="small font-weight-bold text-muted text-uppercase mb-0">Consumos Totales del Partido</label>
+                            <button class="btn btn-sm btn-outline-secondary py-0 px-2" type="button" data-toggle="collapse" data-target="#collapseAllConsumos{{ partido.pk }}">
+                                <i class="fas fa-eye mr-1"></i> Ver Todo
+                            </button>
+                        </div>
+                        <div class="collapse" id="collapseAllConsumos{{ partido.pk }}">
+                            <div class="card card-body bg-light border-0 p-2 mt-1">
+                                {% if partido.consumos.all %}
+                                <ul class="list-unstyled mb-0" style="max-height: 120px; overflow-y: auto;">
+                                    {% for c in partido.consumos.all %}
+                                    <li class="d-flex justify-content-between text-muted small py-1 border-bottom" style="font-size: 0.8rem;">
+                                        <span>
+                                            {{ c.cantidad }}x {{ c.producto.nombre }} 
+                                            {% if c.jugador_equipo %}
+                                                ({{ c.jugador_equipo.get_nombre }})
+                                            {% elif c.equipo %}
+                                                ({{ c.equipo.nombre_equipo }})
+                                            {% else %}
+                                                (General)
+                                            {% endif %}
+                                        </span>
+                                        <span class="font-weight-bold">${% widthratio c.cantidad 1 c.precio_unitario|default:c.producto.precio %}</span>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                {% else %}
+                                <p class="small text-muted mb-0 text-center py-2">No hay consumos de productos registrados aún.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── SECCIÓN 3: SELECTOR DE JUGADOR ── -->
+                    <div class="px-4 py-3">
+                        <div class="form-group mb-3">
+                            <label class="small font-weight-bold text-muted text-uppercase">Seleccionar Jugador</label>
+                            <select name="jugador_equipo_id" class="form-control" required id="selectJugadorPagoParcial{{ partido.pk }}">
+                                <option value="">-- Seleccionar jugador --</option>
+                                {% if jugadores_e1 %}
+                                <optgroup label="🔵 {{ partido.equipo1.nombre_equipo }}">
+                                    {% for je in jugadores_e1 %}
+                                    <option value="{{ je.pk }}">{{ je.get_nombre }}</option>
+                                    {% endfor %}
+                                </optgroup>
+                                {% endif %}
+                                {% if jugadores_e2 %}
+                                <optgroup label="🔴 {{ partido.equipo2.nombre_equipo }}">
+                                    {% for je in jugadores_e2 %}
+                                    <option value="{{ je.pk }}">{{ je.get_nombre }}</option>
+                                    {% endfor %}
+                                </optgroup>
+                                {% endif %}
+                            </select>
+                        </div>
+
+                        <!-- ── SECCIÓN 4: DESGLOSE DINÁMICO DEL JUGADOR ── -->
+                        <div id="playerDesgloseWrapper{{ partido.pk }}" style="display: none;">
+                            <label class="small font-weight-bold text-muted text-uppercase mb-1">Cuentas Sugeridas del Jugador</label>
+                            <div class="card border-warning mb-3">
+                                <div class="card-body p-3">
+                                    <div class="row mb-2">
+                                        <div class="col-7 text-muted">Porción cancha correspondiente:</div>
+                                        <div class="col-5 text-right font-weight-bold text-dark" id="playerPortionCancha{{ partido.pk }}">$0</div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-7 text-muted">Total productos consumidos:</div>
+                                        <div class="col-5 text-right font-weight-bold text-dark" id="playerTotalProductos{{ partido.pk }}">$0</div>
+                                    </div>
+                                    
+                                    <!-- Lista de productos específicos del jugador -->
+                                    <div class="pl-3 py-1 mb-2 border-left" style="background: #fbfbfb;">
+                                        <ul class="list-unstyled mb-0" id="playerSpecificProductsList{{ partido.pk }}">
+                                            <!-- Se rellena vía JS -->
+                                        </ul>
+                                    </div>
+
+                                    <hr class="my-2">
+                                    <div class="row">
+                                        <div class="col-7 text-dark font-weight-bold">Total Sugerido a Cobrar:</div>
+                                        <div class="col-5 text-right font-weight-bold text-success" id="playerTotalSugerido{{ partido.pk }}">$0</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ── SECCIÓN 5: MONTO A PAGAR ── -->
+                        <div class="form-group mb-0">
+                            <label class="small font-weight-bold text-muted text-uppercase">Monto Real Recibido ($)</label>
+                            <input type="number" name="monto" class="form-control form-control-lg font-weight-bold" min="1" step="0.01" required placeholder="Ingresa el monto cobrado">
+                            <small class="form-text text-success font-weight-bold mt-1" id="excessNotice{{ partido.pk }}" style="display: none;">
+                                <i class="fas fa-info-circle mr-1"></i>¡Excelente! El excedente se abonará a la cuenta de la cancha del equipo.
+                            </small>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer border-top">
+                <div class="modal-footer border-top bg-light">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-warning font-weight-bold text-dark">
+                    <button type="submit" class="btn btn-warning font-weight-bold text-dark px-4">
                         <i class="fas fa-check mr-1"></i> Registrar Pago Parcial
                     </button>
                 </div>
@@ -75,45 +141,89 @@
     </div>
 </div>
 
+<!-- Datos en JSON -->
+<script id="playersJsonData{{ partido.pk }}" type="application/json">
+    {{ item.players_json|safe }}
+</script>
+
 <script>
 (function() {
-    var select = document.querySelector('#pagoParcialModal{{ partido.pk }} select[name="jugador_equipo_id"]');
-    var wrapper = document.getElementById('playerConsumosWrapper{{ partido.pk }}');
-    var items = document.querySelectorAll('.player-consumo-item-{{ partido.pk }}');
-    var totalSpan = document.getElementById('playerConsumosSuma{{ partido.pk }}');
+    var select = document.getElementById('selectJugadorPagoParcial{{ partido.pk }}');
+    var wrapper = document.getElementById('playerDesgloseWrapper{{ partido.pk }}');
+    
+    var portionCanchaVal = document.getElementById('playerPortionCancha{{ partido.pk }}');
+    var totalProductsVal = document.getElementById('playerTotalProductos{{ partido.pk }}');
+    var totalSugeridoVal = document.getElementById('playerTotalSugerido{{ partido.pk }}');
+    
+    var productsList = document.getElementById('playerSpecificProductsList{{ partido.pk }}');
     var montoInput = document.querySelector('#pagoParcialModal{{ partido.pk }} input[name="monto"]');
+    var excessNotice = document.getElementById('excessNotice{{ partido.pk }}');
+
+    // Cargar JSON
+    var jsonDataText = document.getElementById('playersJsonData{{ partido.pk }}').textContent;
+    var playersData = {};
+    try {
+        playersData = JSON.parse(jsonDataText);
+    } catch(e) {
+        console.error("Error parsing players JSON", e);
+    }
 
     if (select) {
         select.addEventListener('change', function() {
             var jugadorId = this.value;
-            if (!jugadorId) {
+            if (!jugadorId || !playersData[jugadorId]) {
                 wrapper.style.display = 'none';
+                montoInput.value = '';
+                excessNotice.style.display = 'none';
                 return;
             }
 
-            var total = 0;
-            var hasConsumos = false;
-
-            items.forEach(function(item) {
-                if (item.getAttribute('data-jugador-id') === jugadorId) {
-                    item.style.setProperty('display', 'flex', 'important');
-                    total += parseFloat(item.getAttribute('data-subtotal') || 0);
-                    hasConsumos = true;
-                } else {
-                    item.style.setProperty('display', 'none', 'important');
-                }
-            });
-
-            if (hasConsumos) {
-                wrapper.style.display = 'block';
-                totalSpan.textContent = '$' + total.toLocaleString();
-                montoInput.value = total;
+            var pData = playersData[jugadorId];
+            
+            // Mostrar porciones numéricas
+            portionCanchaVal.textContent = '$' + pData.cancha_portion.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+            totalProductsVal.textContent = '$' + pData.consumos_total.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+            totalSugeridoVal.textContent = '$' + pData.total_sugerido.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+            
+            // Llenar lista de productos
+            productsList.innerHTML = '';
+            if (pData.consumos_list.length > 0) {
+                pData.consumos_list.forEach(function(item) {
+                    var li = document.createElement('li');
+                    li.className = 'd-flex justify-content-between text-muted small py-0.5';
+                    li.style.fontSize = '0.78rem';
+                    li.innerHTML = '<span>' + item.cantidad + 'x ' + item.producto_nombre + '</span><span class="text-secondary">$' + item.subtotal.toLocaleString() + '</span>';
+                    productsList.appendChild(li);
+                });
             } else {
-                wrapper.style.display = 'none';
-                totalSpan.textContent = '$0';
-                montoInput.value = '';
+                var li = document.createElement('li');
+                li.className = 'text-muted small italic';
+                li.style.fontSize = '0.78rem';
+                li.textContent = 'Sin consumos de productos registrados.';
+                productsList.appendChild(li);
             }
+
+            wrapper.style.display = 'block';
+            montoInput.value = Math.ceil(pData.total_sugerido);
+            checkExcess();
         });
+
+        montoInput.addEventListener('input', checkExcess);
+    }
+
+    function checkExcess() {
+        var jugadorId = select.value;
+        if (!jugadorId || !playersData[jugadorId]) {
+            excessNotice.style.display = 'none';
+            return;
+        }
+        var sugerido = playersData[jugadorId].total_sugerido;
+        var ingresado = parseFloat(montoInput.value || 0);
+        if (ingresado > sugerido) {
+            excessNotice.style.display = 'block';
+        } else {
+            excessNotice.style.display = 'none';
+        }
     }
 })();
 </script>

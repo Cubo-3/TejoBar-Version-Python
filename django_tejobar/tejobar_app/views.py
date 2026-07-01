@@ -1310,10 +1310,19 @@ def admin_novedades_index(request: HttpRequest) -> HttpResponse:
 
 @admin_required
 def admin_partidos_index(request: HttpRequest) -> HttpResponse:
-    partidos = Partido.objects.select_related('equipo1', 'equipo2', 'cancha').order_by('-fecha', '-hora')
+    from django.db.models import Case, When, Value, IntegerField, Q
+    from django.utils import timezone
+    import json
+
+    partidos = Partido.objects.select_related('equipo1', 'equipo2', 'cancha').annotate(
+        es_en_curso=Case(
+            When(estado=Partido.ESTADO_CONFIRMADA, then=Value(0)),
+            default=Value(1),
+            output_field=IntegerField(),
+        )
+    ).order_by('es_en_curso', '-id')
     
     from .forms import PartidoFiltroForm
-    from django.db.models import Q
     filtro_form = PartidoFiltroForm(request.GET)
     if filtro_form.is_valid():
         equipo = filtro_form.cleaned_data.get('equipo')
@@ -1351,10 +1360,57 @@ def admin_partidos_index(request: HttpRequest) -> HttpResponse:
             jugadores_e1 = list(JugadorEquipo.objects.filter(equipo=p.equipo1).select_related('jugador__persona'))
         if p.equipo2:
             jugadores_e2 = list(JugadorEquipo.objects.filter(equipo=p.equipo2).select_related('jugador__persona'))
+            
+        # Calcular tiempo transcurrido y costo cancha hasta ahora
+        horas_jugadas_actual = 0.0
+        cancha_costo_actual_por_equipo = 0.0
+        if p.hora_inicio and not p.hora_fin:
+            duracion = timezone.now() - p.hora_inicio
+            horas_jugadas_actual = round(duracion.total_seconds() / 3600.0, 2)
+            cancha_costo_actual_por_equipo = round(horas_jugadas_actual * float(p.cancha.precio_por_hora or 0), 2)
+        elif p.hora_inicio and p.hora_fin:
+            horas_jugadas_actual = p.horas_jugadas
+            cancha_costo_actual_por_equipo = p.total_por_equipo
+            
+        num_e1 = len(jugadores_e1) or 1
+        num_e2 = len(jugadores_e2) or 1
+        
+        cancha_por_jugador_e1 = round(cancha_costo_actual_por_equipo / num_e1, 2)
+        cancha_por_jugador_e2 = round(cancha_costo_actual_por_equipo / num_e2, 2)
+        
+        # Generar JSON de jugadores con sus consumos y porciones de cancha
+        players_data = {}
+        for je in jugadores_e1 + jugadores_e2:
+            je_consumos = p.consumos.filter(jugador_equipo=je, estado='pendiente')
+            consumos_total = sum(c.cantidad * (c.precio_unitario or c.producto.precio) for c in je_consumos)
+            
+            consumos_list = [
+                {
+                    'producto_nombre': c.producto.nombre,
+                    'cantidad': c.cantidad,
+                    'precio_unitario': float(c.precio_unitario or c.producto.precio),
+                    'subtotal': float(c.cantidad * (c.precio_unitario or c.producto.precio))
+                }
+                for c in je_consumos
+            ]
+            
+            cancha_portion = cancha_por_jugador_e1 if je in jugadores_e1 else cancha_por_jugador_e2
+            players_data[str(je.pk)] = {
+                'nombre': je.get_nombre(),
+                'cancha_portion': float(cancha_portion),
+                'consumos_total': float(consumos_total),
+                'total_sugerido': float(cancha_portion + consumos_total),
+                'consumos_list': consumos_list
+            }
+            
         partidos_data.append({
             'partido': p,
             'jugadores_e1': jugadores_e1,
             'jugadores_e2': jugadores_e2,
+            'horas_jugadas_actual': horas_jugadas_actual,
+            'cancha_costo_actual_total': cancha_costo_actual_por_equipo * 2,
+            'cancha_costo_actual_por_equipo': cancha_costo_actual_por_equipo,
+            'players_json': json.dumps(players_data),
         })
 
     return render(request, "partidos/admin_index.html", {
@@ -3205,6 +3261,7 @@ def partido_show(request: HttpRequest, pk: int) -> HttpResponse:
 
 @admin_required
 def admin_partido_pago_parcial(request: HttpRequest, pk: int) -> HttpResponse:
+    from django.utils import timezone
     partido = get_object_or_404(Partido, pk=pk)
     if not partido.hora_inicio or partido.esta_finalizado:
         messages.error(request, "Solo se pueden registrar pagos parciales en partidos activos (en curso).")
@@ -3229,18 +3286,39 @@ def admin_partido_pago_parcial(request: HttpRequest, pk: int) -> HttpResponse:
             messages.error(request, "Jugador no encontrado.")
             return redirect("tejobar_app:admin_partidos_index")
             
+        # Calcular tiempo transcurrido en minutos
+        duracion = timezone.now() - partido.hora_inicio
+        minutos = max(1, int(duracion.total_seconds() / 60))
+        
+        # Calcular consumos acumulados de este jugador
+        player_consumos = partido.consumos.filter(jugador_equipo=je, estado='pendiente')
+        consumos_total = sum(c.cantidad * (c.precio_unitario or c.producto.precio) for c in player_consumos)
+        consumos_total_float = float(consumos_total)
+        
+        # Distribuir el monto de pago parcial: primero cubrir consumos de productos, el resto es cancha
+        if monto_val >= consumos_total_float:
+            total_consumos_pagado = consumos_total_float
+            tarifa_cancha_pagada = monto_val - consumos_total_float
+            player_consumos.update(estado='comprado')
+        else:
+            total_consumos_pagado = monto_val
+            tarifa_cancha_pagada = 0.0
+
+        # Registrar el PagoParcialJugador
         PagoParcialJugador.objects.create(
             partido=partido,
             jugador_equipo=je,
-            monto=monto_val,
-            registrado_por=request.user
+            tiempo_jugado_minutos=minutos,
+            tarifa_cancha_pagada=tarifa_cancha_pagada,
+            total_consumos_pagado=total_consumos_pagado,
+            total_pagado=monto_val
         )
         
         NovedadJugador.objects.create(
             partido=partido,
             jugador_equipo=je,
             tipo_novedad=NovedadJugador.TIPO_RETIRO,
-            descripcion=f"Se retira temprano y deja pago parcial de ${monto_val:,.0f}",
+            descripcion=f"Se retira temprano y deja pago parcial de ${monto_val:,.0f} (Tiempo jugado: {minutos} min, Cancha: ${tarifa_cancha_pagada:,.0f}, Consumos: ${total_consumos_pagado:,.0f})",
             registrado_por=request.user
         )
         
