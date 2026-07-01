@@ -65,7 +65,7 @@ RAILWAY_VOLUME_MOUNT_PATH = _env("RAILWAY_VOLUME_MOUNT_PATH")
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-tejobar-dev-secret-key-no-uso-produccion")
 
-DEBUG = os.getenv("RAILWAY_ENVIRONMENT") is None
+DEBUG = True  # TEMPORAL: activado para ver errores — volver a: os.getenv("RAILWAY_ENVIRONMENT") is None
 
 # CORREGIDO: Se cambió ":" por "="
 ALLOWED_HOSTS = [
