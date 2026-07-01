@@ -915,32 +915,44 @@ from django.dispatch import receiver
 
 @receiver(post_save, sender=JugadorEquipo)
 def gestionar_historial_ingreso(sender, instance, created, **kwargs):
-    if instance.tipo_usuario == JugadorEquipo.TIPO_REGISTRADO and instance.jugador:
-        if created:
-            HistorialEquipo.objects.create(
-                jugador=instance.jugador,
-                equipo=instance.equipo,
-                fue_capitan=instance.es_capitan
-            )
-        else:
-            from django.utils import timezone
+    if created:
+        HistorialEquipo.objects.create(
+            jugador=instance.jugador if instance.tipo_usuario == JugadorEquipo.TIPO_REGISTRADO else None,
+            nombre_invitado=instance.nombre_invitado if instance.tipo_usuario == JugadorEquipo.TIPO_INVITADO else None,
+            equipo=instance.equipo,
+            fue_capitan=instance.es_capitan
+        )
+    else:
+        from django.utils import timezone
+        # Check if captaincy changed
+        if instance.tipo_usuario == JugadorEquipo.TIPO_REGISTRADO:
             historial = HistorialEquipo.objects.filter(
                 jugador=instance.jugador, equipo=instance.equipo, fecha_salida__isnull=True
             ).first()
-            if historial and historial.fue_capitan != instance.es_capitan:
-                historial.fue_capitan = instance.es_capitan
-                historial.save()
+        else:
+            historial = HistorialEquipo.objects.filter(
+                nombre_invitado=instance.nombre_invitado, equipo=instance.equipo, fecha_salida__isnull=True
+            ).first()
+            
+        if historial and historial.fue_capitan != instance.es_capitan:
+            historial.fue_capitan = instance.es_capitan
+            historial.save()
 
 @receiver(post_delete, sender=JugadorEquipo)
 def gestionar_historial_salida(sender, instance, **kwargs):
+    from django.utils import timezone
     if instance.tipo_usuario == JugadorEquipo.TIPO_REGISTRADO and instance.jugador:
-        from django.utils import timezone
         historial = HistorialEquipo.objects.filter(
             jugador=instance.jugador, equipo=instance.equipo, fecha_salida__isnull=True
         ).first()
-        if historial:
-            historial.fecha_salida = timezone.now()
-            historial.save()
+    else:
+        historial = HistorialEquipo.objects.filter(
+            nombre_invitado=instance.nombre_invitado, equipo=instance.equipo, fecha_salida__isnull=True
+        ).first()
+        
+    if historial:
+        historial.fecha_salida = timezone.now()
+        historial.save()
 
 class MovimientoInventario(models.Model):
     TIPO_INGRESO = "ingreso"

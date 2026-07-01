@@ -107,13 +107,20 @@
                         <th class="text-dark">Nombre</th>
                         <th class="text-dark">Fecha Salida</th>
                         <th class="text-dark">Rol Anterior</th>
+                        <th class="text-dark">Motivo</th>
                         <th class="text-dark">Acción</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for registro in historial_pasado %}
                     <tr>
-                        <td class="font-weight-bold text-dark">{{ registro.jugador.persona.nombre }}</td>
+                        <td class="font-weight-bold text-dark">
+                            {% if registro.jugador %}
+                                {{ registro.jugador.persona.nombre }}
+                            {% else %}
+                                {{ registro.nombre_invitado }} <span class="text-muted small">(Invitado)</span>
+                            {% endif %}
+                        </td>
                         <td class="text-dark">{{ registro.fecha_salida|date:"d/m/Y" }}</td>
                         <td>
                             {% if registro.fue_capitan %}
@@ -122,16 +129,23 @@
                                 <span class="badge badge-info text-dark">Jugador</span>
                             {% endif %}
                         </td>
+                        <td class="text-muted small">
+                            {{ registro.razon_salida|default:"-" }}
+                        </td>
                         <td>
-                            {% if equipo.num_jugadores < 5 %}
-                                <form method="post" action="{% url 'tejobar_app:equipos_reinvite_member' equipo.pk registro.jugador.persona.pk %}" class="m-0">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-sm btn-success shadow-sm">
-                                        <i class="fas fa-plus"></i> Invitar de nuevo
-                                    </button>
-                                </form>
+                            {% if registro.jugador %}
+                                {% if equipo.num_jugadores < 5 %}
+                                    <form method="post" action="{% url 'tejobar_app:equipos_reinvite_member' equipo.pk registro.jugador.persona.pk %}" class="m-0">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-success shadow-sm">
+                                            <i class="fas fa-plus"></i> Invitar
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <span class="text-muted small">Equipo lleno</span>
+                                {% endif %}
                             {% else %}
-                                <span class="text-muted small">Equipo lleno</span>
+                                <span class="text-muted small">Invitado (no re-invitable)</span>
                             {% endif %}
                         </td>
                     </tr>

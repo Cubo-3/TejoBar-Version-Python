@@ -79,6 +79,10 @@
                                                 <span class="text-muted font-weight-normal">(Cap: {{ partido.equipo1.capitan_nombre }})</span>
                                             </div>
                                             <div class="small text-muted">Cancha: ${{ partido.total_por_equipo|floatformat:0 }}</div>
+                                            {% if partido.pagos_parciales_cancha_equipo1 > 0 %}
+                                                <div class="small text-danger">Abonos Cancha: -${{ partido.pagos_parciales_cancha_equipo1|floatformat:0 }}</div>
+                                                <div class="small font-weight-bold text-muted">Cancha Restante: ${{ partido.total_por_equipo1_cancha_restante|floatformat:0 }}</div>
+                                            {% endif %}
                                             <div class="small text-muted">Consumos: ${{ partido.total_consumos_equipo1|floatformat:0 }}</div>
                                             {% if partido.total_consumos_equipo1 > 0 %}
                                             <ul class="list-unstyled small mt-2 mb-1 border-top pt-2">
@@ -116,6 +120,10 @@
                                                 <span class="text-muted font-weight-normal">(Cap: {{ partido.equipo2.capitan_nombre }})</span>
                                             </div>
                                             <div class="small text-muted">Cancha: ${{ partido.total_por_equipo|floatformat:0 }}</div>
+                                            {% if partido.pagos_parciales_cancha_equipo2 > 0 %}
+                                                <div class="small text-danger">Abonos Cancha: -${{ partido.pagos_parciales_cancha_equipo2|floatformat:0 }}</div>
+                                                <div class="small font-weight-bold text-muted">Cancha Restante: ${{ partido.total_por_equipo2_cancha_restante|floatformat:0 }}</div>
+                                            {% endif %}
                                             <div class="small text-muted">Consumos: ${{ partido.total_consumos_equipo2|floatformat:0 }}</div>
                                             {% if partido.total_consumos_equipo2 > 0 %}
                                             <ul class="list-unstyled small mt-2 mb-1 border-top pt-2">

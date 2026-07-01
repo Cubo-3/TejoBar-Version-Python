@@ -875,6 +875,22 @@ def equipo_remove_member(request: HttpRequest, pk: int, jugador_pk: int) -> Http
             return redirect("tejobar_app:equipos_show", pk=equipo.pk)
 
         nombre_expulsado = miembro_a_expulsar.get_nombre()
+        
+        # Save reason to history before deleting
+        from .models import HistorialEquipo
+        if miembro_a_expulsar.tipo_usuario == 'registrado' and miembro_a_expulsar.jugador:
+            historial = HistorialEquipo.objects.filter(
+                jugador=miembro_a_expulsar.jugador, equipo=equipo, fecha_salida__isnull=True
+            ).first()
+        else:
+            historial = HistorialEquipo.objects.filter(
+                nombre_invitado=miembro_a_expulsar.nombre_invitado, equipo=equipo, fecha_salida__isnull=True
+            ).first()
+            
+        if historial:
+            historial.razon_salida = razon
+            historial.save()
+            
         miembro_a_expulsar.delete()
         messages.success(
             request,
