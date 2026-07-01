@@ -48,8 +48,11 @@
         <div class="row">
             <div class="col-md-6 mb-4">
                 <div class="card premium-card h-100 border-0" style="background: rgba(30,30,30,0.6); border-radius: 15px;">
-                    <div class="card-header border-0 bg-transparent">
+                    <div class="card-header border-0 bg-transparent d-flex justify-content-between align-items-center">
                         <h4 class="text-white mb-0"><i class="fas fa-users text-warning mr-2"></i> Integrantes {{ partido.equipo1.nombre_equipo|default:"Equipo 1" }}</h4>
+                        {% if tiene_snapshot %}
+                        <span class="badge badge-success" title="Integrantes registrados al inicio del partido"><i class="fas fa-history mr-1"></i> Snapshot</span>
+                        {% endif %}
                     </div>
                     <div class="card-body">
                         {% if jugadores_e1 %}
@@ -57,7 +60,8 @@
                                 {% for je in jugadores_e1 %}
                                 <li class="list-group-item d-flex justify-content-between align-items-center border-0 mb-1" style="background: rgba(0,0,0,0.3); border-radius: 8px;">
                                     <span class="text-white">
-                                        <i class="fas fa-user text-secondary mr-2"></i> {{ je.get_nombre }}
+                                        <i class="fas fa-user text-secondary mr-2"></i>
+                                        {% if tiene_snapshot %}{{ je.nombre }}{% else %}{{ je.get_nombre }}{% endif %}
                                         {% if je.es_capitan %}
                                             <span class="badge badge-warning ml-1" title="Capitán"><i class="fas fa-star"></i></span>
                                         {% endif %}
@@ -79,8 +83,11 @@
 
             <div class="col-md-6 mb-4">
                 <div class="card premium-card h-100 border-0" style="background: rgba(30,30,30,0.6); border-radius: 15px;">
-                    <div class="card-header border-0 bg-transparent">
+                    <div class="card-header border-0 bg-transparent d-flex justify-content-between align-items-center">
                         <h4 class="text-white mb-0"><i class="fas fa-users text-warning mr-2"></i> Integrantes {{ partido.equipo2.nombre_equipo|default:"Equipo 2" }}</h4>
+                        {% if tiene_snapshot %}
+                        <span class="badge badge-success" title="Integrantes registrados al inicio del partido"><i class="fas fa-history mr-1"></i> Snapshot</span>
+                        {% endif %}
                     </div>
                     <div class="card-body">
                         {% if jugadores_e2 %}
@@ -88,7 +95,8 @@
                                 {% for je in jugadores_e2 %}
                                 <li class="list-group-item d-flex justify-content-between align-items-center border-0 mb-1" style="background: rgba(0,0,0,0.3); border-radius: 8px;">
                                     <span class="text-white">
-                                        <i class="fas fa-user text-secondary mr-2"></i> {{ je.get_nombre }}
+                                        <i class="fas fa-user text-secondary mr-2"></i>
+                                        {% if tiene_snapshot %}{{ je.nombre }}{% else %}{{ je.get_nombre }}{% endif %}
                                         {% if je.es_capitan %}
                                             <span class="badge badge-warning ml-1" title="Capitán"><i class="fas fa-star"></i></span>
                                         {% endif %}
@@ -114,7 +122,7 @@
         <div class="card premium-card mt-2 border-0" style="background: rgba(30,30,30,0.6); border-radius: 15px;">
             <div class="card-header border-0 bg-transparent d-flex justify-content-between align-items-center">
                 <h4 class="text-white mb-0"><i class="fas fa-receipt text-success mr-2"></i> Detalle de Consumos del Partido</h4>
-                <span class="badge badge-success p-2" style="font-size: 1rem;">Total Consumos: ${{ partido.total_consumos|default:"0"|floatformat:0 }}</span>
+                <span class="badge badge-success p-2" style="font-size: 1rem;">Total Consumos: ${{ partido.total_consumos|floatformat:0 }}</span>
             </div>
             <div class="card-body">
                 {% if partido.consumos.all %}

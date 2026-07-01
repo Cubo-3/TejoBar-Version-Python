@@ -597,6 +597,12 @@ class Partido(models.Model):
     pago_cancha = models.BooleanField(default=False) # True when both have paid
 
     @property
+    def total_consumos(self):
+        from .models import Apartado
+        consumos = self.consumos.exclude(estado=Apartado.ESTADO_CANCELADO)
+        return round(sum(float(c.cantidad * (c.precio_unitario or c.producto.precio)) for c in consumos), 2)
+
+    @property
     def total_por_equipo(self):
         if not self.cancha or not self.cancha.precio_por_hora:
             return 0.0

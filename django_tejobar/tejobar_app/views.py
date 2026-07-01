@@ -3172,19 +3172,33 @@ def admin_pedido_cancha(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 def partido_show(request: HttpRequest, pk: int) -> HttpResponse:
+    from .models import PartidoIntegrante
     partido = get_object_or_404(Partido.objects.select_related('equipo1', 'equipo2', 'cancha'), pk=pk)
-    
-    jugadores_e1 = []
-    jugadores_e2 = []
-    if partido.equipo1:
-        jugadores_e1 = list(JugadorEquipo.objects.filter(equipo=partido.equipo1).select_related('jugador__persona'))
-    if partido.equipo2:
-        jugadores_e2 = list(JugadorEquipo.objects.filter(equipo=partido.equipo2).select_related('jugador__persona'))
-        
+
+    # Usar snapshot histórico si existe (preserva integrantes aunque salgan del equipo)
+    snapshot_e1 = list(partido.integrantes_snapshot.filter(equipo=partido.equipo1).select_related('equipo')) if partido.equipo1 else []
+    snapshot_e2 = list(partido.integrantes_snapshot.filter(equipo=partido.equipo2).select_related('equipo')) if partido.equipo2 else []
+    tiene_snapshot = bool(snapshot_e1 or snapshot_e2)
+
+    # Fallback: si no hay snapshot, usar los integrantes actuales
+    if not snapshot_e1 and partido.equipo1:
+        snapshot_e1 = list(JugadorEquipo.objects.filter(equipo=partido.equipo1).select_related('jugador__persona'))
+    if not snapshot_e2 and partido.equipo2:
+        snapshot_e2 = list(JugadorEquipo.objects.filter(equipo=partido.equipo2).select_related('jugador__persona'))
+
+    # Total de consumos (todos los estados: pendiente + pagado)
+    consumos = partido.consumos.select_related('producto', 'jugador_equipo', 'equipo')
+    total_consumos_partido = sum(
+        float(c.cantidad) * float(c.precio_unitario or c.producto.precio)
+        for c in consumos
+    )
+
     context = {
         'partido': partido,
-        'jugadores_e1': jugadores_e1,
-        'jugadores_e2': jugadores_e2,
+        'jugadores_e1': snapshot_e1,
+        'jugadores_e2': snapshot_e2,
+        'tiene_snapshot': tiene_snapshot,
+        'total_consumos_partido': round(total_consumos_partido, 0),
     }
     return render(request, "partidos/show.html", context)
 
