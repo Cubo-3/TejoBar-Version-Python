@@ -1382,7 +1382,7 @@ def admin_partidos_index(request: HttpRequest) -> HttpResponse:
         players_data = {}
         for je in jugadores_e1 + jugadores_e2:
             je_consumos = p.consumos.filter(jugador_equipo=je, estado='pendiente')
-            consumos_total = sum(c.cantidad * (c.precio_unitario or c.producto.precio) for c in je_consumos)
+            consumos_total = float(sum(c.cantidad * (c.precio_unitario or c.producto.precio) for c in je_consumos))
             
             consumos_list = [
                 {

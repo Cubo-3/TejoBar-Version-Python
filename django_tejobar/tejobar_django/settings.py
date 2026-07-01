@@ -65,7 +65,7 @@ RAILWAY_VOLUME_MOUNT_PATH = _env("RAILWAY_VOLUME_MOUNT_PATH")
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-tejobar-dev-secret-key-no-uso-produccion")
 
-DEBUG = True  # TEMPORAL: activado para ver errores — volver a: os.getenv("RAILWAY_ENVIRONMENT") is None
+DEBUG = os.getenv("RAILWAY_ENVIRONMENT") is None
 
 # CORREGIDO: Se cambió ":" por "="
 ALLOWED_HOSTS = [
@@ -75,10 +75,10 @@ ALLOWED_HOSTS = [
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    'http://127.0.0.1:8000', 
-    'http://localhost:8000', 
-    'https://127.0.0.1:8000', 
-    'https://localhost:8000', 
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
+    'https://127.0.0.1:8000',
+    'https://localhost:8000',
     "https://*.railway.app"
 ]
 
