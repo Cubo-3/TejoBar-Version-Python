@@ -80,7 +80,19 @@
                                             </div>
                                             <div class="small text-muted">Cancha: ${{ partido.total_por_equipo|floatformat:0 }}</div>
                                             <div class="small text-muted">Consumos: ${{ partido.total_consumos_equipo1|floatformat:0 }}</div>
-                                            <div class="font-weight-bold text-success">Total: ${{ partido.gran_total_equipo1|floatformat:0 }}</div>
+                                            {% if partido.total_consumos_equipo1 > 0 %}
+                                            <ul class="list-unstyled small mt-2 mb-1 border-top pt-2">
+                                                {% for c in partido.consumos.all %}
+                                                    {% if c.equipo_id == partido.equipo1_id %}
+                                                        <li class="d-flex justify-content-between text-muted" style="font-size: 0.8rem;">
+                                                            <span class="text-truncate mr-2">{{ c.cantidad }}x {{ c.producto.nombre }} {% if c.jugador_equipo %}({{ c.jugador_equipo.get_nombre }}){% endif %}</span>
+                                                            <span>${% widthratio c.cantidad 1 c.precio_unitario|default:c.producto.precio %}</span>
+                                                        </li>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </ul>
+                                            {% endif %}
+                                            <div class="font-weight-bold text-success mt-1 border-top pt-1">Total: ${{ partido.gran_total_equipo1|floatformat:0 }}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -105,7 +117,19 @@
                                             </div>
                                             <div class="small text-muted">Cancha: ${{ partido.total_por_equipo|floatformat:0 }}</div>
                                             <div class="small text-muted">Consumos: ${{ partido.total_consumos_equipo2|floatformat:0 }}</div>
-                                            <div class="font-weight-bold text-success">Total: ${{ partido.gran_total_equipo2|floatformat:0 }}</div>
+                                            {% if partido.total_consumos_equipo2 > 0 %}
+                                            <ul class="list-unstyled small mt-2 mb-1 border-top pt-2">
+                                                {% for c in partido.consumos.all %}
+                                                    {% if c.equipo_id == partido.equipo2_id %}
+                                                        <li class="d-flex justify-content-between text-muted" style="font-size: 0.8rem;">
+                                                            <span class="text-truncate mr-2">{{ c.cantidad }}x {{ c.producto.nombre }} {% if c.jugador_equipo %}({{ c.jugador_equipo.get_nombre }}){% endif %}</span>
+                                                            <span>${% widthratio c.cantidad 1 c.precio_unitario|default:c.producto.precio %}</span>
+                                                        </li>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </ul>
+                                            {% endif %}
+                                            <div class="font-weight-bold text-success mt-1 border-top pt-1">Total: ${{ partido.gran_total_equipo2|floatformat:0 }}</div>
                                         </div>
                                     </div>
                                 </div>

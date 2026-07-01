@@ -103,5 +103,13 @@
                 {% endif %}
             </div>
         {% endif %}
+        
+        {% if user.is_authenticated and user.persona.rol == 'admin' %}
+            <div class="text-center mt-3">
+                <a href="{% url 'tejobar_app:partidos_show' partido.pk %}" class="btn btn-outline-info btn-block shadow-sm">
+                    <i class="fas fa-eye mr-2"></i> Ver Detalles Completos
+                </a>
+            </div>
+        {% endif %}
     </div>
 </div>
