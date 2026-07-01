@@ -183,7 +183,7 @@
 {% endif %}
 
 {% if partido.hora_inicio and not partido.esta_finalizado %}
-    {% include "partidos/pago_parcial_modal.html" with partido=partido jugadores_e1=item.jugadores_e1 jugadores_e2=item.jugadores_e2 %}
+    {% include "partidos/pago_parcial_modal.html" with partido=partido jugadores_e1=item.jugadores_e1 jugadores_e2=item.jugadores_e2 horas_jugadas_actual=item.horas_jugadas_actual cancha_costo_actual_por_equipo=item.cancha_costo_actual_por_equipo players_json=item.players_json %}
 {% endif %}
 
 <!-- Modal: Añadir Consumo en cualquier momento del partido activo -->

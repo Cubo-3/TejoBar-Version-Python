@@ -20,13 +20,13 @@
                             <div class="col-6 border-right">
                                 <div class="small text-muted font-weight-bold text-uppercase">Tiempo Transcurrido</div>
                                 <div class="h5 font-weight-bold mb-0 text-dark">
-                                    <i class="far fa-clock mr-1 text-primary"></i>{{ item.horas_jugadas_actual|floatformat:2 }} h
+                                    <i class="far fa-clock mr-1 text-primary"></i>{{ horas_jugadas_actual|floatformat:2 }} h
                                 </div>
                             </div>
                             <div class="col-6">
                                 <div class="small text-muted font-weight-bold text-uppercase">Costo Cancha Equipo</div>
                                 <div class="h5 font-weight-bold mb-0 text-dark">
-                                    <i class="fas fa-map-marker-alt mr-1 text-danger"></i>${{ item.cancha_costo_actual_por_equipo|floatformat:0 }}
+                                    <i class="fas fa-map-marker-alt mr-1 text-danger"></i>${{ cancha_costo_actual_por_equipo|floatformat:0 }}
                                 </div>
                             </div>
                         </div>
@@ -143,7 +143,7 @@
 
 <!-- Datos en JSON -->
 <script id="playersJsonData{{ partido.pk }}" type="application/json">
-    {{ item.players_json|safe }}
+    {{ players_json|safe }}
 </script>
 
 <script>
