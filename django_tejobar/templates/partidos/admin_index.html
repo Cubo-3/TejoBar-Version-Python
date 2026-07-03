@@ -3,10 +3,10 @@
 {% block title %}Administrar Partidos - Dashboard{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="text-dark"><i class="fas fa-trophy mr-2"></i> Administrar Partidos</h2>
-    <div>
-        <a href="{% url 'tejobar_app:partidos_index' %}" class="btn btn-secondary shadow-sm mr-2">
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4" style="gap: 10px;">
+    <h2 class="text-dark mb-0"><i class="fas fa-trophy mr-2"></i> Administrar Partidos</h2>
+    <div class="d-flex flex-wrap" style="gap: 8px;">
+        <a href="{% url 'tejobar_app:partidos_index' %}" class="btn btn-secondary shadow-sm">
             <i class="fas fa-history"></i> Historial
         </a>
         <a href="{% url 'tejobar_app:admin_partidos_create' %}" class="btn btn-primary shadow-sm">
@@ -16,14 +16,33 @@
 </div>
 <div class="card shadow-sm mb-4">
     <div class="card-body">
-        <form method="get" class="form-inline">
-            <div class="mr-2 mb-2">{{ filtro_form.equipo.label_tag }} {{ filtro_form.equipo }}</div>
-            <div class="mr-2 mb-2">{{ filtro_form.cancha.label_tag }} {{ filtro_form.cancha }}</div>
-            <div class="mr-2 mb-2">{{ filtro_form.fecha_inicio.label_tag }} {{ filtro_form.fecha_inicio }}</div>
-            <div class="mr-2 mb-2">{{ filtro_form.fecha_fin.label_tag }} {{ filtro_form.fecha_fin }}</div>
-            <div class="mr-2 mb-2">{{ filtro_form.estado.label_tag }} {{ filtro_form.estado }}</div>
-            <button type="submit" class="btn btn-primary mb-2 mt-4"><i class="fas fa-search"></i> Filtrar</button>
-            <a href="{% url 'tejobar_app:admin_partidos_index' %}" class="btn btn-outline-secondary mb-2 ml-2 mt-4">Limpiar</a>
+        <form method="get">
+            <div class="row">
+                <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-2">
+                    {{ filtro_form.equipo.label_tag }}
+                    {{ filtro_form.equipo }}
+                </div>
+                <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-2">
+                    {{ filtro_form.cancha.label_tag }}
+                    {{ filtro_form.cancha }}
+                </div>
+                <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-2">
+                    {{ filtro_form.fecha_inicio.label_tag }}
+                    {{ filtro_form.fecha_inicio }}
+                </div>
+                <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-2">
+                    {{ filtro_form.fecha_fin.label_tag }}
+                    {{ filtro_form.fecha_fin }}
+                </div>
+                <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-2">
+                    {{ filtro_form.estado.label_tag }}
+                    {{ filtro_form.estado }}
+                </div>
+                <div class="col-12 col-sm-auto mb-2 d-flex align-items-end" style="gap: 8px;">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Filtrar</button>
+                    <a href="{% url 'tejobar_app:admin_partidos_index' %}" class="btn btn-outline-secondary">Limpiar</a>
+                </div>
+            </div>
         </form>
     </div>
 </div>

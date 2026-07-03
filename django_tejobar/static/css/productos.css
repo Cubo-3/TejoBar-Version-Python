@@ -226,8 +226,8 @@ footer {
   text-align: center;
   padding: 15px;
   transition: 1.5s;
-  position: fixed;
-  bottom: 0;
+  position: relative;
+  bottom: auto;
   width: 100%;
 }
 

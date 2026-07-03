@@ -645,6 +645,76 @@ footer {
     font-size: 12px;
     padding: 16px;
   }
+
+  /* ── Contenedor Bootstrap en móvil ── */
+  .container {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  /* ── Formularios de filtro (admin_index) en móvil → columna vertical ── */
+  .form-inline {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px;
+  }
+
+  .form-inline > div,
+  .form-inline .mr-2 {
+    margin-right: 0 !important;
+    width: 100% !important;
+  }
+
+  .form-inline select,
+  .form-inline input[type="date"],
+  .form-inline input[type="text"] {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .form-inline label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 13px;
+  }
+
+  .form-inline .btn {
+    width: 100%;
+    margin-top: 4px !important;
+  }
+
+  /* ── Card-footer con múltiples botones → wrap vertical ── */
+  .card-footer.d-flex {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    justify-content: center !important;
+  }
+
+  .card-footer .btn {
+    flex: 1 1 auto;
+    min-width: 120px;
+    text-align: center;
+    font-size: 14px;
+  }
+
+  /* ── Títulos de página con botón al lado → columna ── */
+  .d-flex.justify-content-between.align-items-center {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  /* ── Btn-group en tablas: más espacio para tocar ── */
+  .btn-group-sm .btn {
+    min-width: 36px;
+    min-height: 36px;
+    padding: 6px 8px;
+  }
+
+  /* ── Alertas con padding reducido ── */
+  .alert {
+    padding: 10px 14px;
+    font-size: 14px;
+  }
 }
 
 /* ---- Breakpoint medio: 769px – 992px (tablet) ---- */
