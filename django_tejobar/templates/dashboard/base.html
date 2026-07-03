@@ -305,16 +305,16 @@
             </div>
             <nav>
                 <ul class="menu-top">
-                    <li><a href="{% url 'tejobar_app:home' %}">🏠Inicio</a></li>
-                    <li><a href="{% url 'tejobar_app:partidos_index' %}">🥇Partidos</a></li>
-                    <li><a href="{% url 'tejobar_app:productos_index' %}">🍻Productos</a></li>
+                    <li class="d-none d-md-block"><a href="{% url 'tejobar_app:home' %}">🏠Inicio</a></li>
+                    <li class="d-none d-md-block"><a href="{% url 'tejobar_app:partidos_index' %}">🥇Partidos</a></li>
+                    <li class="d-none d-md-block"><a href="{% url 'tejobar_app:productos_index' %}">🍻Productos</a></li>
                     {% if user.is_authenticated %}
                     <li class="user-profile-item d-md-none">
                         <span class="user-profile-link" style="color: #FFC107; font-weight: bold;">
                             <i class="fas fa-user-circle mr-1"></i> {% if user.persona %}{{ user.persona.nombre }} <span class="badge badge-warning ml-1 text-dark" style="font-size: 0.7rem;">{{ user.persona.get_rol_display }}</span>{% else %}{{ user.username }}{% endif %}
                         </span>
                     </li>
-                    <li><a href="{% url 'tejobar_app:dashboard' %}">📊Dashboard</a></li>
+                    <li class="d-none d-md-block"><a href="{% url 'tejobar_app:dashboard' %}">📊Dashboard</a></li>
                     
                     <li class="dropdown">
                         <a href="#" id="notifDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="position: relative; display: inline-block;">
@@ -364,8 +364,9 @@
                         <form method="post" action="{% url 'tejobar_app:logout' %}" style="display:inline;">
                             {% csrf_token %}
                             <button type="submit"
-                                style="border: none; background: none; color: inherit; text-decoration: none; cursor: pointer;">
-                                🚪Cerrar Sesión
+                                style="border: none; background: none; color: inherit; text-decoration: none; cursor: pointer;"
+                                title="Cerrar Sesión">
+                                🚪<span class="d-none d-md-inline">Cerrar Sesión</span>
                             </button>
                         </form>
                     </li>
@@ -389,6 +390,18 @@
                     </div>
                 </div>
                 <ul class="nav nav-pills flex-column mb-auto">
+                    <!-- Enlaces al sitio público (visibles solo en móvil) -->
+                    <li class="nav-item d-md-none border-bottom border-secondary pb-2 mb-2">
+                        <a href="{% url 'tejobar_app:home' %}" class="nav-link text-warning">
+                            <i class="fas fa-external-link-alt mr-2"></i> Ir al Sitio Público
+                        </a>
+                        <a href="{% url 'tejobar_app:partidos_index' %}" class="nav-link">
+                            <i class="fas fa-trophy mr-2"></i> Partidos Públicos
+                        </a>
+                        <a href="{% url 'tejobar_app:productos_index' %}" class="nav-link">
+                            <i class="fas fa-beer mr-2"></i> Comida y Bebida
+                        </a>
+                    </li>
                     <li class="nav-item">
                         <a href="{% url 'tejobar_app:dashboard' %}" class="nav-link">
                             <i class="fas fa-home mr-2"></i> Inicio Dashboard
